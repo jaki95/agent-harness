@@ -18,6 +18,61 @@
           "last_incorporated_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
         }
       ]
+    },
+    "harness": {
+      "maintenance_notes": "Replaces the bundled agent-communication draft. Preserve Poteto mode section layout, mode metadata, exact reply and comment sections, separate writing skills, and numbered playbooks. Customize selective explanations and milestone updates. Only communication is implemented. Communication playbooks are original except the adapted authoring-a-skill playbook. No new engineering, verification, delegation, or autonomy policy is adopted.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/poteto-mode/SKILL.md",
+            "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "unslop": {
+      "maintenance_notes": "Restore the pinned upstream instruction body verbatim, including headings, stable rule identifiers, patterns, and examples. Normalize the description to a quoted scalar and retain explicit-only metadata. Add Codex explicit invocation policy. No rules are bundled into another skill.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/unslop/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "technical-writing": {
+      "maintenance_notes": "Restore the pinned upstream instruction body verbatim, including named standards, document purposes, exact sentence guidance, amendment proposal, and worked example. Retain explicit-only metadata and add Codex invocation policy. Requires the separate Unslop skill.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/technical-writing/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
     }
   }
 }

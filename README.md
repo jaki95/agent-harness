@@ -43,6 +43,11 @@ The pinned CLI test creates temporary Git tags and project-local installations. 
 | Skill | Purpose |
 | --- | --- |
 | [grill-me](skills/grill-me/SKILL.md) | Stress-test a plan, decision, or idea in rounds of questions |
+| [harness](skills/harness/SKILL.md) | Communication mode with selective explanations, milestone updates, and routed playbooks |
+| [unslop](skills/unslop/SKILL.md) | Remove AI writing patterns while preserving meaning |
+| [technical-writing](skills/technical-writing/SKILL.md) | Write docs, PR descriptions, and commit messages with the original writing guidance |
+
+Harness uses Poteto Mode's section layout and routes to separate skills and communication playbooks. The two writing skills preserve their pinned upstream instruction bodies. Invoke Harness with `/harness` on hosts that expose skills as slash commands, or `$harness` in Codex. Install `harness`, `unslop`, and `technical-writing` together so its writing routes resolve. The current stage covers communication; engineering, verification workflows, delegation, and autonomy will be designed separately.
 
 ## Add a skill
 

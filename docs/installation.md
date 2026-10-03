@@ -4,7 +4,7 @@
 
 Use Node 22.20 or newer, npm/npx, Git, and access to the private `jaki95/agent-harness` GitHub repository. The tested Skills CLI version is `1.7.0`; commands below pin the installer independently of the harness version. Existing Git credentials, an authenticated GitHub CLI, or SSH can provide repository access. No public directory listing is required.
 
-The collection currently includes `grill-me`. List available skills without installing:
+The collection includes `grill-me`, `harness`, `unslop`, and `technical-writing`. The following command lists skills at the remote revision, so unmerged local changes are not available through `main` yet:
 
 ```sh
 npx skills@1.7.0 add jaki95/agent-harness --list
@@ -19,6 +19,15 @@ Install globally for your personal Codex setup:
 ```sh
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex --global
 npx skills@1.7.0 update grill-me --global
+```
+
+For Harness, install all three communication skills together. The CLI does not install sibling dependencies automatically.
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness unslop technical-writing --agent codex --global
+npx skills@1.7.0 update harness --global
+npx skills@1.7.0 update unslop --global
+npx skills@1.7.0 update technical-writing --global
 ```
 
 For other supported tools, change `--agent`. For project-local installation, run inside the project and omit `--global`; use `--project` on the update command. The CLI uses symlinks to a canonical installed copy by default; `--copy` selects independent copies where preferred.
@@ -49,7 +58,9 @@ To roll back, run the same command with the earlier tag and review the resulting
 
 The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/`, `evaluations/`, or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
 
-Our integration test verifies tagged installs and upgrades with disposable Git repositories. Private GitHub source discovery is checked separately; the actual `grill-me` package is also checked through a disposable project installation when it changes.
+The Harness writing skills preserve explicit-only upstream metadata. They also provide Codex's `agents/openai.yaml` invocation policy. Invoke Harness as `$harness` in Codex. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
+
+Our integration test verifies tagged installs and upgrades with disposable Git repositories. It also installs all owned skills into a temporary project, including the Harness dependency set, and verifies sibling routes and invocation policy files. It does not modify user-wide skill directories or publish local changes.
 
 ## References
 

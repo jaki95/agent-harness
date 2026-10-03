@@ -13,7 +13,9 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 COMMIT = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})")
-HEADER = re.compile(r'\A---\nname: ([^\n]+)\ndescription: ([^\n]+)\n---\n')
+HEADER = re.compile(r'\A---\nname: ([^\n]+)\ndescription: ([^\n]+)\n((?:[a-z][a-z-]*: [^\n]+\n)*)---\n')
+BOOLEAN_FIELDS = {"disable-model-invocation", "mode"}
+STRING_FIELDS = {"icon", "color", "reminder"}
 
 
 def nonempty(value):
@@ -53,6 +55,23 @@ def check_skill(skill):
               or description.strip().lower() in ("true", "false", "null", "yes", "no", "on", "off")
               or re.search(r":(?:\s|$)|(?:^|\s)#", description)):
             errors.append("description must be plain text or a JSON-quoted string")
+        seen = set()
+        for line in header[3].splitlines():
+            key, value = line.split(": ", 1)
+            if key in seen:
+                errors.append(f"duplicate frontmatter field: {key}")
+            seen.add(key)
+            if key in BOOLEAN_FIELDS:
+                if value not in ("true", "false"):
+                    errors.append(f"{key} must be true or false")
+            elif key in STRING_FIELDS:
+                try:
+                    if not nonempty(json.loads(value)):
+                        raise ValueError
+                except (ValueError, TypeError):
+                    errors.append(f"{key} must be a nonempty JSON-quoted string")
+            else:
+                errors.append(f"unsupported frontmatter field: {key}")
         if not text[header.end():].strip():
             errors.append("SKILL.md must contain instructions after the frontmatter")
     for reserved in ("provenance.json", "evaluations.md", "registry", "reviews"):

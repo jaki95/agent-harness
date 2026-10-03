@@ -1,7 +1,7 @@
 // Test the published CLI against disposable Git tags and project-local installs.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -92,10 +92,24 @@ try {
         assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
       }
     }
+    for (const name of ['harness', 'unslop', 'technical-writing']) {
+      assert.match(await readFile(join(installedRoot, name, 'agents/openai.yaml'), 'utf8'),
+        /allow_implicit_invocation: false/);
+    }
+    const mode = join(installedRoot, 'harness');
+    const playbooks = join(mode, 'playbooks');
+    const modeFiles = [join(mode, 'SKILL.md'),
+      ...(await readdir(playbooks)).map(name => join(playbooks, name))];
+    for (const file of modeFiles) {
+      const content = await readFile(file, 'utf8');
+      for (const match of content.matchAll(/\(`([^`]+\.md)`\)|\]\(([^)]+\.md)\)/g)) {
+        await access(resolve(dirname(file), match[1] ?? match[2]));
+      }
+    }
     for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
       assert.ok(!(await readdir(ownedProject)).includes(excluded));
     }
-    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records`);
+    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; Harness routes and policies resolve`);
   }
 } finally {
   await rm(temporary, { recursive: true, force: true });

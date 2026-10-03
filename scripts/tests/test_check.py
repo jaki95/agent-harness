@@ -94,6 +94,33 @@ class CheckTests(unittest.TestCase):
                 path.write_text(original.replace('"Use for an example task."', description), encoding="utf-8")
                 self.assert_fails("plain text or a JSON-quoted string")
 
+    def test_mode_metadata_passes(self):
+        skill = self.add_skill()
+        path = skill / "SKILL.md"
+        path.write_text(path.read_text().replace(
+            '\n---\n# Example',
+            '\ndisable-model-invocation: true\nmode: true\nicon: "crown"\n'
+            'color: "yellow"\nreminder: "Apply the selected mode."\n---\n# Example'),
+            encoding="utf-8")
+        self.assert_passes()
+
+    def test_invalid_mode_metadata_fails(self):
+        skill = self.add_skill()
+        path = skill / "SKILL.md"
+        original = path.read_text()
+        for metadata, expected in (
+            ('mode: "true"', "mode must be true or false"),
+            ('icon: 42', "icon must be a nonempty JSON-quoted string"),
+            ('reminder: ""', "reminder must be a nonempty JSON-quoted string"),
+            ('mode: true\nmode: false', "duplicate frontmatter field: mode"),
+            ('unknown: true', "unsupported frontmatter field: unknown"),
+            ('name: duplicate', "unsupported frontmatter field: name"),
+        ):
+            with self.subTest(metadata=metadata):
+                path.write_text(original.replace('\n---\n# Example',
+                    f'\n{metadata}\n---\n# Example'), encoding="utf-8")
+                self.assert_fails(expected)
+
     def test_adaptation_with_separate_reviewed_and_incorporated_revisions_passes(self):
         self.add_skill([self.source()])
         self.assert_passes()

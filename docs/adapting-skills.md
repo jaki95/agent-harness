@@ -12,7 +12,11 @@
 
 ## Metadata convention
 
-The checker accepts a deliberately small runtime frontmatter format: exactly two fields, `name` followed by `description`. The name must match its directory. Descriptions may be single-line plain YAML text or nonempty JSON-quoted strings. Plain text must start with a letter and avoid reserved boolean/null values, YAML comment markers, and colon-space sequences. Preserve supported upstream formatting; extend the checker explicitly if an import requires additional metadata instead of rewriting instructions to fit the scaffold.
+The checker accepts a small runtime frontmatter format: `name` followed by `description`, then supported optional fields. The name must match its directory. Descriptions may be single-line plain YAML text or nonempty JSON-quoted strings. Plain text must start with a letter and avoid reserved boolean/null values, YAML comment markers, and colon-space sequences. Preserve supported upstream formatting.
+
+The supported optional fields are `disable-model-invocation` and `mode` as unquoted `true` or `false`, and `icon`, `color`, and `reminder` as nonempty JSON-quoted strings. Duplicate and unknown fields are rejected. These preserve mode metadata without adding a YAML dependency. Host support varies; validation does not implement a native mode or reminder.
+
+For explicit-only Codex skills, also provide `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. The upstream `disable-model-invocation` field is retained for hosts that support it. A mode can route to separate skills by relative file paths. Document the required installation set because the Skills CLI does not automatically install those sibling dependencies.
 
 Each active skill must have a nonempty `SKILL.md`, a matching registry entry, and a nonempty evaluation file outside its runtime directory. The checker validates these boundaries, source fields, and revision formats. It does not verify that commits exist remotely, assess instruction quality, or execute evaluation cases.
 
