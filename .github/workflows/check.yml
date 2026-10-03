@@ -3,6 +3,7 @@ name: Check harness
 on:
   push:
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -21,3 +22,11 @@ jobs:
         run: python3 scripts/check.py
       - name: Test maintenance scripts
         run: python3 -m unittest discover -s scripts/tests
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install pinned CLI for compatibility testing
+        run: npm ci --ignore-scripts
+      - name: Verify installation and version upgrades in temporary projects
+        run: npm run test:skills

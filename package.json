@@ -1,0 +1,12 @@
+{
+  "name": "agent-harness",
+  "private": true,
+  "description": "Development tooling for the Git-distributed agent harness.",
+  "engines": { "node": ">=22.20.0" },
+  "scripts": {
+    "check": "python3 scripts/check.py",
+    "test": "python3 -m unittest discover -s scripts/tests",
+    "test:skills": "node scripts/test-skills-cli.mjs"
+  },
+  "devDependencies": { "skills": "1.7.0" }
+}

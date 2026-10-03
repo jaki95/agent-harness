@@ -8,9 +8,11 @@ For example, a shared review skill can describe a review process; a project's in
 
 Local scratch files can live in ignored `local/` or `work/` directories. Credentials belong in the environment or an appropriate credential store. Git ignore rules are convenience filters, not a secret scanner.
 
-## Tool adapters
+## Distribution
 
-The initial scaffold contains no installation adapter. When adding one:
+The Skills CLI handles agent-specific installation paths. Install only selected skills from this repository, using the commands in [installation.md](installation.md). It copies each discovered skill directory to its installed location; maintenance directories remain in the source repository. The harness's top-level scripts are maintenance tools and are not distributed through skill installation. Runtime scripts required by a skill belong inside that skill directory.
+
+If a future tool needs a custom adapter:
 
 - Make its target tool, destination, and scope explicit.
 - Prefer project-local installation for the first integration.
@@ -20,10 +22,10 @@ The initial scaffold contains no installation adapter. When adding one:
 - Package only `skills/<name>/`. Exclude `registry/`, `evaluations/`, `reviews/`, and the harness's own `AGENTS.md` from project installations.
 - Verify the target tool's current discovery and instruction rules before implementing an adapter.
 
-Until an adapter exists, the harness is maintained and validated here but is not automatically discovered by tools running in other projects.
+Work on customized skills in this source repository. Installed copies are updated through the CLI and should not be treated as the source of truth.
 
 ## Version selection
 
-Use Git commits to identify exact harness versions. When connecting a project, record the selected commit and any locally chosen skills in that project. Promote updates after reviewing the diff and trying the relevant evaluation cases. Add release tags when there is a useful first version to distribute.
+Use `main` for personally selected current skills and immutable release tags for reproducible project installations. Commit the CLI-generated `skills-lock.json` and installed project skill files with the consuming project. Follow [versioning.md](versioning.md) for release and update decisions.
 
 Personal and work clones may use different selections. Shared assets should not depend on employer-private content; work-only instructions should remain in an approved work repository.

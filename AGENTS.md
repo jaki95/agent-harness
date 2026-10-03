@@ -10,4 +10,6 @@
 - Resolve filesystem paths relative to the repository or explicit arguments, never a particular user's home directory.
 - Do not install into user-wide agent directories as a side effect of validation or tests.
 - Before completing a change, run `python3 scripts/check.py` and `python3 -m unittest discover -s scripts/tests`.
+- For installation, release, or CLI dependency changes, also run `npm ci --ignore-scripts` and `npm run test:skills`. The test uses temporary fixtures and project-local installs.
+- Release through the manual Release harness workflow on `main`. Never move an existing release tag or publish an empty skill collection.
 - Update documentation when the repository's conventions or commands change.

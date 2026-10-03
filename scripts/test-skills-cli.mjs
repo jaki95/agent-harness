@@ -1,0 +1,81 @@
+// Test the published CLI against disposable Git tags and project-local installs.
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const cli = join(root, 'node_modules/skills/bin/cli.mjs');
+const temporary = await mkdtemp(join(tmpdir(), 'agent-harness-cli-'));
+const source = join(temporary, 'source.git');
+const project = join(temporary, 'project');
+const skill = 'harness-cli-fixture';
+const sourceUrl = 'https://fixture.invalid/harness/skills.git';
+// Exercise the normal HTTPS/ref parser while keeping all Git traffic local.
+const environment = {
+  ...process.env, DISABLE_TELEMETRY: '1', DO_NOT_TRACK: '1', CI: 'true',
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: `url.${pathToFileURL(source).href}.insteadOf`,
+  GIT_CONFIG_VALUE_0: sourceUrl,
+};
+
+function run(command, args, cwd) {
+  const result = spawnSync(command, args, { cwd, env: environment, encoding: 'utf8', timeout: 60000 });
+  assert.equal(result.status, 0, `${command} ${args.join(' ')}\n${result.error ?? ''}\n${result.stdout}\n${result.stderr}`);
+  return result.stdout;
+}
+
+async function writeSkill(version) {
+  await writeFile(join(source, 'skills', skill, 'SKILL.md'),
+    `---\nname: ${skill}\ndescription: "Used only for a disposable installation test."\n---\n# Fixture\nReport fixture version ${version}.\n`);
+}
+
+async function installedVersion(version) {
+  const installed = join(project, '.agents', 'skills', skill);
+  assert.match(await readFile(join(installed, 'SKILL.md'), 'utf8'), new RegExp(`fixture version ${version}\\.`));
+  assert.deepEqual((await readdir(installed)).sort(), ['SKILL.md', 'scripts']);
+  assert.equal(await readFile(join(installed, 'scripts/helper.txt'), 'utf8'), 'runtime-resource\n');
+  const lock = JSON.parse(await readFile(join(project, 'skills-lock.json'), 'utf8'));
+  assert.equal(lock.skills[skill].ref, `v0.${version}.0`);
+  assert.equal(lock.skills[skill].skillPath, `skills/${skill}/SKILL.md`);
+}
+
+try {
+  await mkdir(join(source, 'skills', skill, 'scripts'), { recursive: true });
+  await mkdir(join(source, 'registry'));
+  await mkdir(join(source, 'evaluations'));
+  await mkdir(join(source, 'reviews'));
+  await mkdir(project);
+  await writeFile(join(source, 'registry/skills.json'), '{"maintenance-only":true}\n');
+  await writeFile(join(source, 'evaluations/case.md'), 'maintenance-only\n');
+  await writeFile(join(source, 'reviews/decision.md'), 'maintenance-only\n');
+  await writeFile(join(source, 'AGENTS.md'), 'Harness maintenance instructions only.\n');
+  await writeFile(join(source, 'skills', skill, 'scripts/helper.txt'), 'runtime-resource\n');
+  await writeSkill(1);
+  run('git', ['init', '-b', 'main'], source);
+  run('git', ['add', '.'], source);
+  const commit = ['-c', 'user.name=Harness fixture', '-c', 'user.email=fixture@example.invalid', 'commit'];
+  run('git', [...commit, '-m', 'Fixture version one'], source);
+  run('git', ['tag', 'v0.1.0'], source);
+  await writeSkill(2);
+  run('git', ['add', '.'], source);
+  run('git', [...commit, '-m', 'Fixture version two'], source);
+  run('git', ['tag', 'v0.2.0'], source);
+
+  const options = ['--skill', skill, '--agent', 'codex', '--copy', '--yes'];
+  run(process.execPath, [cli, 'add', `${sourceUrl}#v0.1.0`, ...options], project);
+  await installedVersion(1);
+  run(process.execPath, [cli, 'update', skill, '--project', '--yes'], project);
+  await installedVersion(1);
+  run(process.execPath, [cli, 'add', `${sourceUrl}#v0.2.0`, ...options], project);
+  await installedVersion(2);
+  const projectFiles = await readdir(project);
+  for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
+    assert.ok(!projectFiles.includes(excluded), `${excluded} leaked into the project`);
+  }
+  console.log('OK: tagged install, pinned update, explicit upgrade, resources, and maintenance exclusion');
+} finally {
+  await rm(temporary, { recursive: true, force: true });
+}
