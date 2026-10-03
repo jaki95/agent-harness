@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Codex can discover the routed Unslop and technical-writing skills through implicit invocation; Harness remains explicitly activated.
 - Harness playbooks work without a todo-list tool; direct technical-writing calls discover and read Unslop by name with a missing-skill fallback.
 - Removed evaluation records and their mandatory checker requirement; upstream review records are optional for consequential adoption decisions.
 

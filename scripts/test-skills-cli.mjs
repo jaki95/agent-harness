@@ -91,8 +91,11 @@ try {
       }
     }
     for (const name of ['harness', 'unslop', 'technical-writing']) {
+      const expected = name === 'harness'
+        ? /allow_implicit_invocation: false/
+        : /allow_implicit_invocation: true/;
       assert.match(await readFile(join(installedRoot, name, 'agents/openai.yaml'), 'utf8'),
-        /allow_implicit_invocation: false/);
+        expected, `${name} has the intended Codex invocation policy`);
     }
     const standaloneProject = join(temporary, 'standalone-project');
     await mkdir(standaloneProject);

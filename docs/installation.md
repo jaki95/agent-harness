@@ -68,7 +68,9 @@ To roll back, run the same command with the earlier tag and review the resulting
 
 The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/` or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
 
-The Harness writing skills preserve explicit-only upstream metadata. They also provide Codex's `agents/openai.yaml` invocation policy. Invoke Harness as `$harness` in Codex. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
+Harness uses `policy.allow_implicit_invocation: false` in Codex. Invoke it as `$harness`. Unslop and technical writing use `true`, so Codex can discover them when Harness routes to them. They can also be selected for writing tasks outside Harness. This Codex policy is a deliberate adaptation of the upstream explicit-only settings. See [OpenAI's invocation-policy documentation](https://learn.chatgpt.com/docs/build-skills#optional-metadata).
+
+The upstream `disable-model-invocation: true` frontmatter is retained. Other hosts that honor it may require explicitly invoking the writing skills alongside Harness. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
 
 Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate writing skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
 

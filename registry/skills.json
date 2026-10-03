@@ -39,7 +39,7 @@
       ]
     },
     "unslop": {
-      "maintenance_notes": "Uses the pinned upstream instruction body unchanged, including headings, stable rule identifiers, patterns, and examples. The description is a quoted scalar with the original value. Includes explicit-only metadata and Codex invocation policy.",
+      "maintenance_notes": "Uses the pinned upstream instruction body unchanged, including headings, stable rule identifiers, patterns, and examples. The description is a quoted scalar with the original value. Retains upstream explicit-only frontmatter. Codex allows implicit invocation so Harness can discover this skill by name; it can also be selected for writing tasks outside Harness.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -57,7 +57,7 @@
       ]
     },
     "technical-writing": {
-      "maintenance_notes": "Preserves the pinned upstream named standards, document purposes, sentence guidance, amendment proposals, and worked example. The Unslop dependency rule adds discovery by installed skill name, explicit reading, and a fallback to this skill's own rules when Unslop cannot be located or read. Includes explicit-only metadata and Codex invocation policy.",
+      "maintenance_notes": "Preserves the pinned upstream named standards, document purposes, sentence guidance, amendment proposals, and worked example. The Unslop dependency rule adds discovery by installed skill name, explicit reading, and a fallback to this skill's own rules when Unslop cannot be located or read. Retains upstream explicit-only frontmatter. Codex allows implicit invocation so Harness can discover this skill by name; it can also be selected for writing tasks outside Harness.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {

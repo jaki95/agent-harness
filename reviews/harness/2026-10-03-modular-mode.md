@@ -18,7 +18,7 @@ The source is [Poteto Mode](https://github.com/cursor/plugins/blob/23e4138daa01c
 Harness uses its section order and unchanged reply and comment sections.
 The mode metadata includes explicit-only invocation, an icon, a color, and a reminder.
 Quoted scalars follow the harness checker convention.
-All three communication skills include Codex's explicit-only policy in `agents/openai.yaml`.
+Harness uses Codex's explicit-only policy in `agents/openai.yaml`. The separate writing skills allow implicit invocation so Codex can discover their names and locations for Harness's routes. They can also be selected for writing tasks outside Harness.
 Host support determines whether `/harness`, native mode features, and reminders are available. Codex uses `$harness`.
 
 ## Adaptations
