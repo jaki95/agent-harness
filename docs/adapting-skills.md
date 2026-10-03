@@ -17,7 +17,9 @@ The supported optional fields are `disable-model-invocation` and `mode` as unquo
 
 For explicit-only Codex skills, provide `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. A skill routed by another skill needs implicit invocation enabled so Codex can discover it, or the user must invoke it explicitly too. Harness stays explicit-only; its separate writing skills enable implicit invocation. The upstream `disable-model-invocation` field is retained for hosts that support it. Route to separate skills by name through the host's skill catalog. Use relative paths for resources bundled in the same skill package. Document dependency availability and missing-skill behavior because the Skills CLI does not automatically install other skills. Repository links identify source locations rather than installed instructions.
 
-Each active skill must have a nonempty `SKILL.md` and a matching registry entry. The checker validates runtime boundaries, source fields, and revision formats. It does not verify that commits exist remotely, assess instruction quality, or test agent behavior.
+The upstream `disable-model-invocation` flag alone does not declare a Codex explicit-only contract. Codex invocation intent is set independently in `agents/openai.yaml`; the writing skills deliberately use a different policy from their retained upstream frontmatter. Do not require Codex's policy to be false solely because the upstream flag is true.
+
+Each active skill must have a nonempty `SKILL.md` and a matching registry entry. The checker validates runtime boundaries, source fields, and revision formats. It does not validate Codex invocation policies, verify that commits exist remotely, assess instruction quality, or test agent behavior. The installation integration test checks the intended Codex policies for the current communication skills; it is not a generic policy validator for future skills.
 
 ## Maintain intentionally
 

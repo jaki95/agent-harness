@@ -62,6 +62,7 @@ def check_skill(skill):
                 errors.append(f"duplicate frontmatter field: {key}")
             seen.add(key)
             if key in BOOLEAN_FIELDS:
+                # Upstream host flags do not declare Codex's separate invocation policy.
                 if value not in ("true", "false"):
                     errors.append(f"{key} must be true or false")
             elif key in STRING_FIELDS:
