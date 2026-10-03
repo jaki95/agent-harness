@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 COMMIT = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})")
-HEADER = re.compile(r'\A---\nname: ([^\n]+)\ndescription: ("[^\n]*")\n---\n')
+HEADER = re.compile(r'\A---\nname: ([^\n]+)\ndescription: ([^\n]+)\n---\n')
 
 
 def nonempty(value):
@@ -42,11 +42,17 @@ def check_skill(skill):
     else:
         if header[1] != skill.name:
             errors.append("frontmatter name must match the skill directory")
-        try:
-            if not nonempty(json.loads(header[2])):
-                errors.append("description must be nonempty")
-        except json.JSONDecodeError:
-            errors.append("description must be a JSON-quoted string")
+        description = header[2]
+        if description.startswith('"'):
+            try:
+                if not nonempty(json.loads(description)):
+                    errors.append("description must be nonempty")
+            except json.JSONDecodeError:
+                errors.append("description must be a valid JSON-quoted string")
+        elif (not description[0].isalpha()
+              or description.strip().lower() in ("true", "false", "null", "yes", "no", "on", "off")
+              or re.search(r":(?:\s|$)|(?:^|\s)#", description)):
+            errors.append("description must be plain text or a JSON-quoted string")
         if not text[header.end():].strip():
             errors.append("SKILL.md must contain instructions after the frontmatter")
     for reserved in ("provenance.json", "evaluations.md", "registry", "reviews"):

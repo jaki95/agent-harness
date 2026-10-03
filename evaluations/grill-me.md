@@ -1,6 +1,6 @@
 # Grill Me evaluations
 
-Reviewed on 2026-10-03. These are manual behavioral cases, separate from runtime instructions. Initial instruction walkthroughs are recorded below; live multi-turn agent evaluation remains to be done during first use. Repository and CLI checks verify packaging and structure, not interview quality.
+Reviewed against the restored upstream baseline on 2026-10-03. These are manual behavioral cases, separate from runtime instructions. Initial instruction walkthroughs are recorded below; live multi-turn agent evaluation remains to be done during first use. Repository and CLI checks verify packaging and structure, not interview quality.
 
 ## Independent decisions in the same round
 
@@ -16,30 +16,27 @@ Reviewed on 2026-10-03. These are manual behavioral cases, separate from runtime
 - Walkthrough: Capacity depends on meeting format, so it is excluded from the initial frontier. This remains true even if the agent recommends an in-person event.
 - Live outcome: Not yet run.
 
-## Retrieve project facts directly
+## Delegate fact-finding as upstream specifies
 
 - Fixture: A disposable project with `README.md` saying "The app uses SQLite and has no hosted database." The user asks: "Grill me about deploying this app."
-- Expected: Read the supplied project context before posing deployment decisions. Do not ask the user which database the README already identifies. Present a relevant hosting or persistence choice with a recommendation.
-- Walkthrough: The database is a fact to retrieve; selecting deployment requirements is a user decision. Fact lookup does not authorize deployment.
+- Expected: Dispatch a subagent to inspect the supplied project context before posing decisions that depend on it. Do not ask the user which database the README already identifies. Ask other independently answerable decisions while that research is running.
+- Walkthrough: The database is a fact for delegated research; selecting deployment requirements is a user decision. Dependent questions wait for the research result, while independent questions can proceed.
 - Live outcome: Not yet run.
 
-## No delegation tool
+## Completion requires confirmation
 
-- Input: The deployment scenario above in an environment without subagents.
-- Expected: Inspect the files directly and proceed with independently answerable questions. Do not claim to have dispatched a subagent or treat its absence as a blocker.
-- Walkthrough: Conditional delegation preserves fact-finding without a required tool dependency.
-- Live outcome: Not yet run.
-
-## Explicit deferral and completion
-
-- Input: After resolving the event's audience, format, and budget, the user says: "Leave the catering decision until next month."
-- Expected: Record catering as explicitly deferred, summarize the settled decisions, and request confirmation of shared understanding. Do not keep reopening the deferred branch or begin booking anything.
-- Walkthrough: Explicit deferral is included in the final summary; it is not silently settled. Follow-on work still needs the user's confirmation and applicable authorization.
+- Input: All branches of the event's decision tree have been explored and settled.
+- Expected: End the interview only when the frontier is empty and no branch is silently assumed. Wait for the user's confirmation of shared understanding before acting on the plan.
+- Walkthrough: Completion and acting on the plan are separate. The original upstream confirmation requirement is preserved.
 - Live outcome: Not yet run.
 
 ## Outside scope
 
 - Input: "Rename the button from Start to Continue."
 - Expected: Handle the requested edit using the relevant workflow; do not activate an unsolicited grilling interview.
-- Walkthrough: The description requires an invocation or an explicit request to challenge thinking, so an ordinary edit does not match.
+- Walkthrough: The description targets stress-testing or grill trigger phrases; an ordinary button edit contains neither.
 - Live outcome: Not yet run.
+
+## Prerequisite note
+
+The restored upstream instructions require a subagent for environment fact-finding. They provide no direct-inspection fallback; that earlier local behavior was removed. Behavior in an environment without delegation is not specified by this baseline and should not be invented as an evaluation expectation.

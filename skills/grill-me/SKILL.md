@@ -1,26 +1,28 @@
 ---
 name: grill-me
-description: "Stress-test a plan, decision, or idea through a focused interview. Use when the user invokes grill-me, asks to be grilled, or explicitly wants their thinking challenged."
+description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
 
-# Grill Me
+Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
-Interview the user until the important decisions and assumptions are understood together. Organize the discussion as a decision tree: some choices can be made now; others depend on answers still missing.
+Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
-## Work in rounds
+Format a round like so:
 
-Identify the current frontier: unresolved decisions whose prerequisites are settled. Ask all independently answerable questions in that frontier together, numbered, with a short title and your recommended answer plus its reasoning. Include options when they help the user choose.
+```
+❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
-Wait for the user's answers before advancing. Update the tree after each round. Defer any question that depends on an unanswered question, even when both concern the same topic. Do not silently treat a recommendation as an accepted decision.
+➡️ <your recommended answer>
 
-If an answer leaves a material ambiguity, resolve it before asking the questions that depend on it. Challenge weak assumptions directly and constructively; investigate consequential branches without inventing irrelevant decisions.
+---
 
-## Find facts; ask for decisions
+❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
-Inspect available project files, documentation, and tools to establish facts before asking the user. Ask the user to make choices, not to retrieve information you can access yourself. Explain what remains unknown when a fact cannot be verified.
+➡️ <your recommended answer>
+```
 
-Use a subagent for independent fact-finding when delegation is available and permitted. Otherwise investigate directly. Pending research leaves its dependent branch unresolved; continue asking independently answerable questions while it runs. Do not choose a user preference merely because research is unfinished.
+Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
-## Finish with shared understanding
+Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
 
-When no material branch remains unresolved, briefly summarize the agreed decisions, constraints, and any explicitly deferred issues. Ask the user to confirm that this captures their intent before starting implementation or other follow-on work. If they correct the summary, revisit the affected branches.
+The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.

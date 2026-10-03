@@ -4,15 +4,15 @@
 
 1. Define the recurring task, its triggers, and an outcome that would make the skill useful.
 2. Choose public references and record their repositories, relevant paths, and exact commits.
-3. Create `skills/<lowercase-kebab-name>/SKILL.md` from `templates/skill/SKILL.md.tmpl`. Only runtime instructions and supporting files belong in that directory.
-4. Customize the workflow. Remove assumptions about other people's directories, tools, organizations, permissions, and preferences. Include prerequisites and boundaries.
+3. For an upstream import, copy the selected canonical skill and its runtime resources into `skills/<lowercase-kebab-name>/`, applying only requested naming changes. For independently authored skills, start from `templates/skill/SKILL.md.tmpl`. Only runtime instructions and supporting files belong in that directory.
+4. Preserve the imported baseline. Propose further customizations separately, including any tool or environment assumptions that need changing. Apply instruction or behavior changes only after agreeing them with the user; a goal of eventually owning customized skills does not authorize immediate rewrites.
 5. Add an entry keyed by the skill name to `registry/skills.json`, using `templates/registry-entry.json.tmpl`. Record each source as `adapted` or `inspired`, using `templates/source.json.tmpl` and the conventions in [registry.md](registry.md). Independently authored work can have an empty sources list.
 6. Create `evaluations/<skill-name>.md` from `templates/evaluations.md.tmpl`. Cover normal use, a case that must not trigger, and a relevant failure or permission boundary. Try the cases in a disposable project and record outcomes.
 7. Run the checks and review the diff before committing.
 
 ## Metadata convention
 
-The checker accepts a deliberately small runtime frontmatter format: exactly two fields, `name` followed by `description`. The name must match its directory. The description must be a nonempty, single-line JSON-quoted string, which is also valid YAML. Normalize upstream metadata to this format when adapting; extend the checker explicitly if more metadata becomes useful.
+The checker accepts a deliberately small runtime frontmatter format: exactly two fields, `name` followed by `description`. The name must match its directory. Descriptions may be single-line plain YAML text or nonempty JSON-quoted strings. Plain text must start with a letter and avoid reserved boolean/null values, YAML comment markers, and colon-space sequences. Preserve supported upstream formatting; extend the checker explicitly if an import requires additional metadata instead of rewriting instructions to fit the scaffold.
 
 Each active skill must have a nonempty `SKILL.md`, a matching registry entry, and a nonempty evaluation file outside its runtime directory. The checker validates these boundaries, source fields, and revision formats. It does not verify that commits exist remotely, assess instruction quality, or execute evaluation cases.
 

@@ -1,5 +1,7 @@
 # Initial upstream adaptation
 
+This records the initial implementation, which included unrequested changes subsequently rejected by the user. It is historical, not the current skill specification. See [the baseline restoration](2026-10-03-restore-upstream-baseline.md).
+
 - Skill: `grill-me`
 - Source ID: `matt-pocock-grilling`
 - Review date: 2026-10-03
@@ -13,7 +15,7 @@
 
 Reviewed `SKILL.md` and `agents/openai.yaml`. The current skill is self-contained. Its core workflow maps decisions and their prerequisites, asks the current frontier in rounds with recommended answers, retrieves facts, and waits for confirmation of shared understanding before acting.
 
-## Local choices
+## Initial agent choices, subsequently corrected
 
 - User requested `grill-me` despite the upstream rename to `grilling`; the display name is `Grill Me`.
 - Retained rounds of independent questions rather than restoring the older one-question-at-a-time approach.

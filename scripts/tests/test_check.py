@@ -77,6 +77,23 @@ class CheckTests(unittest.TestCase):
         self.add_skill()
         self.assert_passes()
 
+    def test_plain_upstream_description_passes_without_rewriting(self):
+        skill = self.add_skill()
+        path = skill / "SKILL.md"
+        path.write_text(path.read_text(encoding="utf-8").replace(
+            'description: "Use for an example task."',
+            "description: Challenge a plan when the user says 'grill me'."), encoding="utf-8")
+        self.assert_passes()
+
+    def test_invalid_plain_yaml_description_fails(self):
+        skill = self.add_skill()
+        path = skill / "SKILL.md"
+        original = path.read_text(encoding="utf-8")
+        for description in ("Use this: for tasks", "false"):
+            with self.subTest(description=description):
+                path.write_text(original.replace('"Use for an example task."', description), encoding="utf-8")
+                self.assert_fails("plain text or a JSON-quoted string")
+
     def test_adaptation_with_separate_reviewed_and_incorporated_revisions_passes(self):
         self.add_skill([self.source()])
         self.assert_passes()
