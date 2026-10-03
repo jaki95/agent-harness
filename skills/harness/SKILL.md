@@ -63,7 +63,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 ## Playbooks
 
-Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below, open its file, and copy its steps in verbatim.
+Match the task to a playbook below, open its file, and follow its steps. If the host provides a todo-list tool, open a list whose first items are the playbook's steps, copied in verbatim, before any task-specific todos. Without that tool, follow the steps directly. Record any skipped step with a one-line `skip: <reason>` in the list when available, or in the handoff otherwise.
 
 Read **Progress update** when reporting a milestone. Follow it without resetting the active task's todo list. If no communication playbook matches, keep the task's existing workflow and apply the writing skills. This stage does not route engineering, verification, or long-run audit workflows.
 

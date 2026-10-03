@@ -38,6 +38,8 @@ npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex -
 
 Harness resolves `unslop` and `technical-writing` by name through the host's skill catalog. Their installation directories can differ from Harness's directory. If a writing skill is unavailable, Harness reports its name and continues with its own communication rules. Bundled playbooks remain available. The [source collection](https://github.com/jaki95/agent-harness) identifies where the separate skills can be obtained; it does not load or install them automatically.
 
+Direct technical-writing calls locate and read the installed Unslop skill by name, without requiring Harness or automatic skill injection. If Unslop cannot be located or read, technical writing reports it as unavailable and uses its own rules. Harness follows bundled playbook steps directly when the host has no todo-list tool.
+
 For other supported tools, change `--agent`. For project-local installation, run inside the project and omit `--global`; use `--project` on the update command. The CLI uses symlinks to a canonical installed copy by default; `--copy` selects independent copies where preferred.
 
 Select skill names explicitly so you control what is installed or updated. Make edits in the harness source repository, then distribute them through the CLI. An update can replace installed files, including edits made directly to those files.

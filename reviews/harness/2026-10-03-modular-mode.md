@@ -31,5 +31,6 @@ The authoring-a-skill playbook is adapted from [the upstream authoring playbook]
 It uses host authoring guidance and ends with a handoff. Creating a PR requires task authorization.
 Named skill references resolve through the host's available skill catalog.
 Relative paths reference playbooks bundled inside the Harness package.
+Playbook steps use a todo list when the host provides that tool and are followed directly otherwise.
 If a writing skill is unavailable, the mode reports its name and continues with Harness's own communication rules.
 The source-collection link identifies where the separate skills can be obtained. It is not an installed skill or authorization to fetch or install instructions.

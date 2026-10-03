@@ -90,7 +90,7 @@ Don't mix modes: no reference tables inside a tutorial, no tutorial hand-holding
 
 ## Voice and repo specifics
 
-- Apply the **unslop** skill to every doc this skill touches. That skill owns the slop-pattern catalog: AI vocabulary, filler, hedging, formatting tells.
+- Before drafting, locate **unslop** by name through the host's installed-skill catalog or discovery mechanism. Read its `SKILL.md` from the discovered location and apply it to every doc this skill touches, even when it was not automatically loaded. If it cannot be located or read, report Unslop as unavailable and continue with this skill's own writing rules. Do not claim Unslop was applied or fetch or install it without task authorization. That skill owns the slop-pattern catalog: AI vocabulary, filler, hedging, formatting tells.
 - PR descriptions and commit messages are writing too. Every layer except Diátaxis applies to them. A PR body is a briefing that a reviewer can read in under a minute. Do not paste swarm logs, SHA lists, or metric tables. Link them.
 - Product UI strings are not documentation. Use your product's copy guidelines for those.
 - Indent code snippets with tabs. Write real paths and real symbols. Make every count or tree claim true at the commit that lands it, and include the command that regenerates it.
