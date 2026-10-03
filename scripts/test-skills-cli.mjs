@@ -42,6 +42,19 @@ async function installedVersion(version) {
   assert.equal(lock.skills[skill].skillPath, `skills/${skill}/SKILL.md`);
 }
 
+async function skillFiles(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      files.push(...(await skillFiles(join(directory, entry.name)))
+        .map(file => join(entry.name, file)));
+    } else {
+      files.push(entry.name);
+    }
+  }
+  return files.sort();
+}
+
 try {
   await mkdir(join(source, 'skills', skill, 'scripts'), { recursive: true });
   await mkdir(join(source, 'registry'));
@@ -84,13 +97,19 @@ try {
     const installedRoot = join(ownedProject, '.agents/skills');
     assert.deepEqual((await readdir(installedRoot)).sort(), owned.sort());
     for (const name of owned) {
-      assert.equal(await readFile(join(installedRoot, name, 'SKILL.md'), 'utf8'),
-        await readFile(join(root, 'skills', name, 'SKILL.md'), 'utf8'));
+      const runtime = join(root, 'skills', name);
+      const installed = join(installedRoot, name);
+      const files = await skillFiles(runtime);
+      assert.deepEqual(await skillFiles(installed), files, `${name} includes every runtime resource`);
+      for (const file of files) {
+        assert.deepEqual(await readFile(join(installed, file)),
+          await readFile(join(runtime, file)), `${name}/${file} installs unchanged`);
+      }
       for (const reserved of ['provenance.json', 'registry', 'reviews']) {
         assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
       }
     }
-    for (const name of ['harness', 'unslop', 'technical-writing']) {
+    for (const name of ['harness', 'unslop', 'technical-writing', 'deslop', 'no-comments', 'interrogate', 'show-me-your-work', 'figure-it-out', 'benchmark-checklist', 'how', 'why', 'architect', 'arena', 'swarm', 'control-ui', 'control-cli', 'principle-laziness-protocol', 'principle-foundational-thinking', 'principle-redesign-from-first-principles', 'principle-attack-the-premise', 'principle-subtract-before-you-add', 'principle-minimize-reader-load', 'principle-outcome-oriented-execution', 'principle-experience-first', 'principle-exhaust-the-design-space', 'principle-build-the-lever', 'principle-model-the-domain', 'principle-boundary-discipline', 'principle-type-system-discipline', 'principle-make-operations-idempotent', 'principle-migrate-callers-then-delete-legacy-apis', 'principle-separate-before-serializing-shared-state', 'principle-prove-it-works', 'principle-fix-root-causes', 'principle-sequence-verifiable-units', 'principle-test-behavior-not-implementation', 'principle-explain-the-number', 'principle-guard-the-context-window', 'principle-never-block-on-the-human', 'principle-encode-lessons-in-structure']) {
       const expected = name === 'harness'
         ? /allow_implicit_invocation: false/
         : /allow_implicit_invocation: true/;
@@ -107,9 +126,9 @@ try {
       await readFile(join(root, 'skills/harness/SKILL.md'), 'utf8'));
     assert.match(await readFile(join(mode, 'agents/openai.yaml'), 'utf8'),
       /allow_implicit_invocation: false/);
-    const playbooks = join(mode, 'playbooks');
-    const modeFiles = [join(mode, 'SKILL.md'),
-      ...(await readdir(playbooks)).map(name => join(playbooks, name))];
+    const modeFiles = (await skillFiles(mode))
+      .filter(name => name.endsWith('.md'))
+      .map(name => join(mode, name));
     for (const file of modeFiles) {
       const content = await readFile(file, 'utf8');
       for (const match of content.matchAll(/\(`([^`]+\.md)`\)|\]\(([^)]+\.md)\)/g)) {
@@ -118,10 +137,25 @@ try {
         await access(target);
       }
     }
+    const store = join(temporary, 'installed-orchestration-store');
+    const helper = join(mode, 'scripts/orch.py');
+    run('python3', [helper, '--store', store, 'init'], standaloneProject);
+    const inbox = JSON.parse(run('python3', [helper, '--store', store, 'inbox', 'drain', '--json'], standaloneProject));
+    assert.deepEqual(inbox, { batch: null, pointers: [] });
+    const audit = JSON.parse(run('python3', [join(mode, 'scripts/worktree-audit.py'), '--repo', source, '--base', 'main'], standaloneProject));
+    assert.equal(audit.worktrees.length, 1);
+    assert.ok(audit.worktrees[0].reasons.includes('primary-worktree'));
+    const emptyPlan = join(temporary, 'empty-plan.md');
+    await writeFile(emptyPlan, '');
+    const planResult = spawnSync(process.execPath, [join(mode, 'scripts/check-plan.mjs'), emptyPlan],
+      { cwd: standaloneProject, env: environment, encoding: 'utf8', timeout: 60000 });
+    assert.equal(planResult.status, 1, planResult.stderr);
+    assert.match(planResult.stderr, /no H1 title/, `${planResult.stdout}\n${planResult.stderr}\n${planResult.error ?? ''}`);
+
     for (const excluded of ['registry', 'reviews', 'AGENTS.md']) {
       assert.ok(!(await readdir(ownedProject)).includes(excluded));
     }
-    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; standalone Harness includes its playbooks and policy without installing writing skills`);
+    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; standalone Harness includes its playbooks and policy without installing routed skills`);
   }
 } finally {
   await rm(temporary, { recursive: true, force: true });
