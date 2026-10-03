@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { access, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -96,20 +96,31 @@ try {
       assert.match(await readFile(join(installedRoot, name, 'agents/openai.yaml'), 'utf8'),
         /allow_implicit_invocation: false/);
     }
-    const mode = join(installedRoot, 'harness');
+    const standaloneProject = join(temporary, 'standalone-project');
+    await mkdir(standaloneProject);
+    run(process.execPath, [cli, 'add', root, '--skill', 'harness', '--agent', 'codex', '--copy', '--yes'], standaloneProject);
+    const standaloneRoot = join(standaloneProject, '.agents/skills');
+    assert.deepEqual(await readdir(standaloneRoot), ['harness']);
+    const mode = join(standaloneRoot, 'harness');
+    assert.equal(await readFile(join(mode, 'SKILL.md'), 'utf8'),
+      await readFile(join(root, 'skills/harness/SKILL.md'), 'utf8'));
+    assert.match(await readFile(join(mode, 'agents/openai.yaml'), 'utf8'),
+      /allow_implicit_invocation: false/);
     const playbooks = join(mode, 'playbooks');
     const modeFiles = [join(mode, 'SKILL.md'),
       ...(await readdir(playbooks)).map(name => join(playbooks, name))];
     for (const file of modeFiles) {
       const content = await readFile(file, 'utf8');
       for (const match of content.matchAll(/\(`([^`]+\.md)`\)|\]\(([^)]+\.md)\)/g)) {
-        await access(resolve(dirname(file), match[1] ?? match[2]));
+        const target = resolve(dirname(file), match[1] ?? match[2]);
+        assert.ok(target.startsWith(`${mode}${sep}`), `${file} refers outside the Harness package`);
+        await access(target);
       }
     }
     for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
       assert.ok(!(await readdir(ownedProject)).includes(excluded));
     }
-    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; Harness routes and policies resolve`);
+    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; standalone Harness includes its playbooks and policy without installing writing skills`);
   }
 } finally {
   await rm(temporary, { recursive: true, force: true });

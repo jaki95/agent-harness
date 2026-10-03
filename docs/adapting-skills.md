@@ -16,7 +16,7 @@ The checker accepts a small runtime frontmatter format: `name` followed by `desc
 
 The supported optional fields are `disable-model-invocation` and `mode` as unquoted `true` or `false`, and `icon`, `color`, and `reminder` as nonempty JSON-quoted strings. Duplicate and unknown fields are rejected. These preserve mode metadata without adding a YAML dependency. Host support varies; validation does not implement a native mode or reminder.
 
-For explicit-only Codex skills, also provide `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. The upstream `disable-model-invocation` field is retained for hosts that support it. A mode can route to separate skills by relative file paths. Document the required installation set because the Skills CLI does not automatically install those sibling dependencies.
+For explicit-only Codex skills, also provide `agents/openai.yaml` with `policy.allow_implicit_invocation: false`. The upstream `disable-model-invocation` field is retained for hosts that support it. Route to separate skills by name through the host's skill catalog. Use relative paths for resources bundled in the same skill package. Document dependency availability and missing-skill behavior because the Skills CLI does not automatically install other skills. Repository links identify source locations rather than installed instructions.
 
 Each active skill must have a nonempty `SKILL.md`, a matching registry entry, and a nonempty evaluation file outside its runtime directory. The checker validates these boundaries, source fields, and revision formats. It does not verify that commits exist remotely, assess instruction quality, or execute evaluation cases.
 

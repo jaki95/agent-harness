@@ -29,8 +29,10 @@ Progress updates report meaningful findings, decisions, obstacles, and substanti
 The progress-update, handoff, and technical-writing playbooks are original communication workflows with numbered steps and a reply specification.
 The authoring-a-skill playbook is adapted from [the upstream authoring playbook](https://github.com/cursor/plugins/blob/23e4138daa01c42d4969f7a5465f82704e64f798/pstack/skills/poteto-mode/playbooks/authoring-a-skill.md).
 It uses host authoring guidance and ends with a handoff. Creating a PR requires task authorization.
-Relative file paths connect installed skills and playbooks.
-The mode reports missing dependencies.
+Named skill references resolve through the host's available skill catalog.
+Relative paths reference playbooks bundled inside the Harness package.
+If a writing skill is unavailable, the mode reports its name and continues with Harness's own communication rules.
+The source-collection link identifies where the separate skills can be obtained. It is not an installed skill or authorization to fetch or install instructions.
 
 ## Validation
 
@@ -39,6 +41,7 @@ The writing-skill instruction bodies match their pinned sources.
 `python3 scripts/check.py` validated all four owned skills.
 `python3 -m unittest discover -s scripts/tests` passed all 21 tests.
 `npm ci --ignore-scripts` and `npm run test:skills` passed.
-The CLI check installed all four skills into a temporary project and verified Harness's routes and invocation policy files.
+The CLI check covers installation of all four skills and a separate standalone Harness package.
+The standalone check verifies bundled playbooks, invocation policy, and package-local file references without the separate writing skills.
 These checks establish content and packaging properties.
 Native mode behavior and independent agent adherence are unverified.

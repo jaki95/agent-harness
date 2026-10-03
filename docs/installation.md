@@ -21,7 +21,7 @@ npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex 
 npx skills@1.7.0 update grill-me --global
 ```
 
-For Harness, install all three communication skills together. The CLI does not install sibling dependencies automatically.
+For Harness's full writing workflow, select all three communication skills. The CLI does not install other skills automatically.
 
 ```sh
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness unslop technical-writing --agent codex --global
@@ -29,6 +29,14 @@ npx skills@1.7.0 update harness --global
 npx skills@1.7.0 update unslop --global
 npx skills@1.7.0 update technical-writing --global
 ```
+
+Harness can also be installed alone:
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex --global
+```
+
+Harness resolves `unslop` and `technical-writing` by name through the host's skill catalog. Their installation directories can differ from Harness's directory. If a writing skill is unavailable, Harness reports its name and continues with its own communication rules. Bundled playbooks remain available. The [source collection](https://github.com/jaki95/agent-harness) identifies where the separate skills can be obtained; it does not load or install them automatically.
 
 For other supported tools, change `--agent`. For project-local installation, run inside the project and omit `--global`; use `--project` on the update command. The CLI uses symlinks to a canonical installed copy by default; `--copy` selects independent copies where preferred.
 
@@ -60,7 +68,7 @@ The CLI distributes a skill's directory, including its runtime resources. It doe
 
 The Harness writing skills preserve explicit-only upstream metadata. They also provide Codex's `agents/openai.yaml` invocation policy. Invoke Harness as `$harness` in Codex. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
 
-Our integration test verifies tagged installs and upgrades with disposable Git repositories. It also installs all owned skills into a temporary project, including the Harness dependency set, and verifies sibling routes and invocation policy files. It does not modify user-wide skill directories or publish local changes.
+Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate writing skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
 
 ## References
 

@@ -14,16 +14,19 @@ reminder: "New task while Harness is selected? Apply /harness. Casual turn or us
 
 Explain consequential choices and the specific outcome they change. Give the reason, meaningful tradeoff, and uncertainty. Name a principle when it helps explain the choice. Keep routine mechanics brief.
 
+Resolve routed skills by name through the host's available skill catalog and read their instructions from the location it provides. Skill names do not imply an installation directory. Playbook paths are relative to this Harness package.
+
 Remaining triggers:
 
-- Any prose surface → the **unslop** skill (`../unslop/SKILL.md`). Your reply is a prose surface. Write it per **Writing the reply**.
-- Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill (`../technical-writing/SKILL.md`).
+- Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**.
+- Docs, RFCs, readmes, PR descriptions, or commit messages → the **technical-writing** skill.
 - Before tool work → a brief statement of the intended action and any consequential assumption.
 - A meaningful finding, consequential decision, obstacle, or substantial completed step → the **Progress update** playbook (`playbooks/progress-update.md`). Follow the host's required status cadence during long operations.
 - Completing a task → the **Handoff** playbook (`playbooks/handoff.md`).
 - Writing a document → the **Technical writing** playbook (`playbooks/technical-writing.md`).
 - Authoring or modifying a skill → the **Authoring or modifying a skill** playbook (`playbooks/authoring-a-skill.md`).
-- Missing a routed skill or playbook → report the missing dependency. Do not claim its rules were applied. Use the installed sibling paths above; no upstream plugin or model is required.
+- Missing a routed skill → report its name and continue with Harness's own communication rules. Do not claim the missing skill was applied. The separate skills are available from [agent-harness](https://github.com/jaki95/agent-harness). A source link is not an installed skill; fetching or installing it requires task authorization.
+- Missing a bundled playbook → report the incomplete Harness package. Do not claim that workflow was followed.
 
 ## Principles
 
