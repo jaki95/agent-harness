@@ -9,8 +9,7 @@ Public skills are reference material for deliberate adaptation, with sources and
 ```text
 skills/                 Runtime instructions and supporting files only
 registry/skills.json     Maintenance index: sources and upstream revision tracking
-evaluations/            Manual evaluation cases, one file per skill
-reviews/                Upstream update decisions and reasoning
+reviews/                Optional consequential upstream adoption decisions
 scripts/                Portable maintenance utilities and their tests
 templates/              Runtime and maintenance templates
 docs/                   Adaptation, registry, and portability conventions
@@ -43,10 +42,15 @@ The pinned CLI test creates temporary Git tags and project-local installations. 
 | Skill | Purpose |
 | --- | --- |
 | [grill-me](skills/grill-me/SKILL.md) | Stress-test a plan, decision, or idea in rounds of questions |
+| [harness](skills/harness/SKILL.md) | Communication mode with selective explanations, milestone updates, and routed playbooks |
+| [unslop](skills/unslop/SKILL.md) | Remove AI writing patterns while preserving meaning |
+| [technical-writing](skills/technical-writing/SKILL.md) | Write docs, PR descriptions, and commit messages with the original writing guidance |
+
+Harness uses Poteto Mode's section layout and routes to separate skills by name through the host's skill catalog. Its communication playbooks are bundled inside its package. Unslop preserves its pinned upstream instruction body. Technical writing adds named Unslop discovery and a missing-skill fallback. Invoke Harness with `/harness` on hosts that expose skills as slash commands, or `$harness` in Codex. Install `unslop` and `technical-writing` for the full writing workflow. A standalone Harness install uses its own communication rules and reports unavailable writing skills. Execution and delegation follow the host and task rules.
 
 ## Add a skill
 
-Follow [the adaptation workflow](docs/adapting-skills.md). Each skill has runtime instructions, a separate registry entry, and separate evaluation cases. Templates are inactive until you customize and place them in their intended locations.
+Follow [the adaptation workflow](docs/adapting-skills.md). Each skill has runtime instructions and a separate registry entry. Review records are optional for consequential upstream adoption decisions. Templates are inactive until you customize and place them in their intended locations.
 
 ## Track upstream sources
 
@@ -66,6 +70,6 @@ Install the available skill from approved changes on `main`, running inside your
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex
 ```
 
-Follow [the release workflow](docs/versioning.md) to publish the first version after behavioral evaluation. Releases are manually triggered, validated, and tagged; the workflow rejects empty collections and existing tags.
+Follow [the release workflow](docs/versioning.md) to publish a validated collection. Repository checks verify structure and packaging, not agent behavior. Releases are manually triggered, validated, and tagged; the workflow rejects empty collections and existing tags.
 
 Keep reusable behavior here and project context in project repositories. See [portability conventions](docs/portability.md) for the distribution boundary.

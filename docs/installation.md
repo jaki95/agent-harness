@@ -4,7 +4,7 @@
 
 Use Node 22.20 or newer, npm/npx, Git, and access to the private `jaki95/agent-harness` GitHub repository. The tested Skills CLI version is `1.7.0`; commands below pin the installer independently of the harness version. Existing Git credentials, an authenticated GitHub CLI, or SSH can provide repository access. No public directory listing is required.
 
-The collection currently includes `grill-me`. List available skills without installing:
+The collection includes `grill-me`, `harness`, `unslop`, and `technical-writing`. The following command lists skills at the remote revision, so unmerged local changes are not available through `main` yet:
 
 ```sh
 npx skills@1.7.0 add jaki95/agent-harness --list
@@ -20,6 +20,25 @@ Install globally for your personal Codex setup:
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex --global
 npx skills@1.7.0 update grill-me --global
 ```
+
+For Harness's full writing workflow, select all three communication skills. The CLI does not install other skills automatically.
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness unslop technical-writing --agent codex --global
+npx skills@1.7.0 update harness --global
+npx skills@1.7.0 update unslop --global
+npx skills@1.7.0 update technical-writing --global
+```
+
+Harness can also be installed alone:
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex --global
+```
+
+Harness resolves `unslop` and `technical-writing` by name through the host's skill catalog. Their installation directories can differ from Harness's directory. If a writing skill is unavailable, Harness reports its name and continues with its own communication rules. Bundled playbooks remain available. The [source collection](https://github.com/jaki95/agent-harness) identifies where the separate skills can be obtained; it does not load or install them automatically.
+
+Direct technical-writing calls locate and read the installed Unslop skill by name, without requiring Harness or automatic skill injection. If Unslop cannot be located or read, technical writing reports it as unavailable and uses its own rules. Harness follows bundled playbook steps directly when the host has no todo-list tool.
 
 For other supported tools, change `--agent`. For project-local installation, run inside the project and omit `--global`; use `--project` on the update command. The CLI uses symlinks to a canonical installed copy by default; `--copy` selects independent copies where preferred.
 
@@ -47,9 +66,13 @@ To roll back, run the same command with the earlier tag and review the resulting
 
 ## Source and installation boundaries
 
-The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/`, `evaluations/`, or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
+The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/` or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
 
-Our integration test verifies tagged installs and upgrades with disposable Git repositories. Private GitHub source discovery is checked separately; the actual `grill-me` package is also checked through a disposable project installation when it changes.
+Harness uses `policy.allow_implicit_invocation: false` in Codex. Invoke it as `$harness`. Unslop and technical writing use `true`, so Codex can discover them when Harness routes to them. They can also be selected for writing tasks outside Harness. This Codex policy is a deliberate adaptation of the upstream explicit-only settings. See [OpenAI's invocation-policy documentation](https://learn.chatgpt.com/docs/build-skills#optional-metadata).
+
+The upstream `disable-model-invocation: true` frontmatter is retained. Other hosts that honor it may require explicitly invoking the writing skills alongside Harness. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
+
+Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate writing skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
 
 ## References
 

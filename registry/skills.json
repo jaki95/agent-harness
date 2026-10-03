@@ -2,7 +2,7 @@
   "schema_version": 1,
   "skills": {
     "grill-me": {
-      "maintenance_notes": "Matt Pocock's grilling skill at the recorded upstream commit, preserved verbatim except for name: grill-me and UI display_name: Grill Me. The initial unauthorized rewrites were removed; future instruction changes require explicit user agreement.",
+      "maintenance_notes": "Matt Pocock's grilling skill at the recorded upstream commit, preserved verbatim except for name: grill-me and UI display_name: Grill Me.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -16,6 +16,61 @@
           "baseline_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
           "last_reviewed_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
           "last_incorporated_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
+        }
+      ]
+    },
+    "harness": {
+      "maintenance_notes": "Communication mode with selective explanations, milestone updates, and Poteto Mode's section layout and metadata. Uses unchanged upstream reply and comment sections, writing skills resolved by name through the host catalog, and bundled numbered playbooks with optional todo-list tooling. A standalone install reports unavailable writing skills and uses Harness's own communication rules. The authoring-a-skill playbook is adapted from upstream; the other communication playbooks are original. Execution and delegation follow host and task rules.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/poteto-mode/SKILL.md",
+            "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "unslop": {
+      "maintenance_notes": "Uses the pinned upstream instruction body unchanged, including headings, stable rule identifiers, patterns, and examples. The description is a quoted scalar with the original value. Retains upstream explicit-only frontmatter. Codex allows implicit invocation so Harness can discover this skill by name; it can also be selected for writing tasks outside Harness.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/unslop/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "technical-writing": {
+      "maintenance_notes": "Preserves the pinned upstream named standards, document purposes, sentence guidance, amendment proposals, and worked example. The Unslop dependency rule adds discovery by installed skill name, explicit reading, and a fallback to this skill's own rules when Unslop cannot be located or read. Retains upstream explicit-only frontmatter. Codex allows implicit invocation so Harness can discover this skill by name; it can also be selected for writing tasks outside Harness.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/technical-writing/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
         }
       ]
     }

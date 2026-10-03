@@ -27,9 +27,11 @@ For a new adaptation, initialize all three revisions to the source commit. For i
 
 ## Review decisions
 
-Keep decisions in `reviews/<skill-name>/` as dated Markdown records, with the source ID, previous and reviewed commits, decision (`adopt`, `partial`, or `keep`), relevant changes, reasoning, and evaluation results. Source IDs let one skill track several independent references.
+Maintenance notes and reviews describe final behavior, source differences, reasons, and validation. Use Git history for editing chronology.
 
-After review, update the index and record together in one Git change. Keeping a customization still advances `last_reviewed_revision`; otherwise a monitor would repeatedly report the same rejected changes. `last_incorporated_revision` is provenance, not a claim that the local skill equals upstream. The checker validates registry records; it does not yet validate or reconcile review-history files.
+Use optional `reviews/<skill-name>/` records for consequential upstream adoption decisions. Include the source ID, previous and reviewed commits, decision (`adopt`, `partial`, or `keep`), selected changes, and reasoning. Source IDs let one skill track several independent references.
+
+After review, update the index and any decision record together in one Git change. Keeping a customization still advances `last_reviewed_revision`; otherwise a monitor would repeatedly report the same rejected changes. `last_incorporated_revision` is provenance, not a claim that the local skill equals upstream. The checker validates registry records; it does not yet validate or reconcile review-history files.
 
 ## Future monitoring contract
 
@@ -39,6 +41,6 @@ When relevant changes appear, produce a review proposal with an upstream diff an
 
 ## Context boundary
 
-Agents doing project work need `skills/<name>/SKILL.md` and runtime resources. Registry entries, evaluations, and review history are for agents maintaining the harness. Installers should package only runtime content, never the maintenance index or harness-level `AGENTS.md`.
+Agents doing project work need `skills/<name>/SKILL.md` and runtime resources. Registry entries and review history are for agents maintaining the harness. Installers should package only runtime content, never the maintenance index or harness-level `AGENTS.md`.
 
 Keeping a file next to a skill does not by itself prove it will be loaded into context; tools differ. This layout makes the intended distribution boundary explicit and independent of those discovery rules.
