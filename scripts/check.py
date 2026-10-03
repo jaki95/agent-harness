@@ -138,13 +138,22 @@ def check_record(record):
     return errors
 
 
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
 def load_index(root):
     text, errors = check_text(root / "registry" / "skills.json")
     if errors:
         return {}, errors
     try:
-        index = json.loads(text)
-    except json.JSONDecodeError as exc:
+        index = json.loads(text, object_pairs_hook=unique_object)
+    except ValueError as exc:
         return {}, [f"invalid registry JSON: {exc}"]
     if not isinstance(index, dict):
         return {}, ["registry must contain an object"]

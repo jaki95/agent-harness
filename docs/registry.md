@@ -2,6 +2,8 @@
 
 `registry/skills.json` is the source of truth for maintenance data. Its top-level `schema_version` is `1`; `skills` is an object keyed by the runtime skill directory name. An empty object is valid before any skills are added.
 
+The checker rejects duplicate JSON object keys, including keys inside skill and source records.
+
 Each skill entry contains:
 
 | Field | Meaning |

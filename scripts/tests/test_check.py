@@ -133,6 +133,21 @@ class CheckTests(unittest.TestCase):
         self.add_skill([adapted, inspired])
         self.assert_passes()
 
+    def test_duplicate_registry_keys_fail_without_traceback(self):
+        self.add_skill([self.source()])
+        original = json.dumps(self.index)
+        for key, duplicate in (
+            ("schema_version", '"schema_version": 0, "schema_version":'),
+            ("skills", '"skills": {}, "skills":'),
+            ("example-skill", '"example-skill": null, "example-skill":'),
+            ("repository", '"repository": null, "repository":'),
+            ("repository", '"\\u0072epository": null, "repository":'),
+        ):
+            with self.subTest(duplicate=duplicate):
+                text = original.replace(f'"{key}":', duplicate, 1)
+                (self.root / "registry/skills.json").write_text(text, encoding="utf-8")
+                self.assert_fails(f"invalid registry JSON: duplicate object key {key!r}")
+
     def test_duplicate_source_ids_fail(self):
         self.add_skill([self.source(), self.source("inspired")])
         self.assert_fails("duplicate source id")
