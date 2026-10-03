@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Registry validation rejects duplicate JSON object keys before parsing can discard provenance records.
 - Add multi-phase planning, session pickup, explicit pause, and scoped cleanup, with an adaptive plan checker and portable read-only worktree audit.
 
 - Add Orchestrate, both Autopilots, and Swarm with host delegation, gh, scoped verification, and a portable helper with recoverable inbox batches.
