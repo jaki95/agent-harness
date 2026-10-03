@@ -1,0 +1,7 @@
+interface:
+  display_name: "Swarm"
+  short_description: "Run independent workers and consolidate evidence"
+  default_prompt: "Use $swarm to divide or race this work and return one evidenced report."
+
+policy:
+  allow_implicit_invocation: true

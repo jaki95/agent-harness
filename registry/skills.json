@@ -20,7 +20,7 @@
       ]
     },
     "harness": {
-      "maintenance_notes": "Communication mode with selective explanations, milestone updates, and Poteto Mode's section layout and metadata. Uses unchanged upstream reply and comment sections, writing skills resolved by name through the host catalog, and bundled numbered playbooks with optional todo-list tooling. A standalone install reports unavailable writing skills and uses Harness's own communication rules. The authoring-a-skill playbook is adapted from upstream; the other communication playbooks are original. Execution and delegation follow host and task rules.",
+      "maintenance_notes": "Working mode with selective explanations, milestone updates, separate engineering principles, and Poteto Mode's section layout and metadata. Uses unchanged upstream reply and comment sections, routed skills resolved by name through the host catalog, and bundled numbered playbooks with optional todo-list tooling. A standalone install reports unavailable routed skills and uses Harness's own communication rules. The authoring-a-skill playbook is adapted from upstream; the other communication playbooks are original. The Investigation playbook is unchanged and routes to separate How and Why skills. Investigation delegation follows their workflows with host tools and existing model configuration. Execution and delegation follow host and task rules. Adopts the upstream always-ready PR policy: disable draft defaults, mark accidental drafts ready, and verify status before reporting readiness. Routes code changes through Deslop before committing them for a PR. Routes code through No-comments before submitting it for PR review, retaining unresolved comments until their purpose is established or a tested replacement makes them unnecessary. Routes subagents preparing to open a PR through Interrogate for an adversarial verdict. Uses the pinned Opening a PR worktree paragraph unchanged, including worktrees off main, delegate isolation, patch transfer for unrelated dirty work, and reset-based recovery. Uses the pinned Opening a PR commit paragraph unchanged, including frequent commits, rebasing into small ordered landable commits, amending related fixes, and separating independent changes. Uses the pinned Opening a PR writing paragraph with installed skill names instead of upstream slash commands and collection attribution. PR titles, descriptions, and commit bodies use every technical-writing layer except Di\u00e1taxis, followed by Unslop. Aligns the bundled technical-writing playbook with this PR-specific layer selection. Uses the pinned Opening a PR title paragraph unchanged, including Conventional Commit types, changed-area scopes, short imperative subjects, symbol naming, and no trailing period. Uses the pinned Opening a PR description section unchanged, including the brief reading time and approximate 40-line limit, ordered headings, mandatory Scope, concrete verification outcomes, linked detailed evidence, and claim-supporting media. Uses GitHub CLI (gh) for forge operations throughout the PR workflow, removing upstream Origin preference and forge-selection fallbacks. Uses gh for all PR operations instead of preferring a built-in PR tool. Created PR URLs are registered or attached through host PR tracking when provided or required; existing PRs are attached when required for review or update tasks. Preserves the pinned narrow-PR and base-branch stack rules, with gh-only child creation and retargeting commands. Readiness uses gh to omit draft creation, mark accidental drafts ready, and inspect PR status. Bundles these PR-specific rules in the Opening a PR playbook, routed for authorized PR preparation or creation. Preserves the pinned default Babysit paragraph unchanged: PR creation reports the URL and continues the build; a separate monitoring pass waits for a user request after the stack exists. Subagents return to the parent after posting the URL. Autopilot owners receive their monitoring assignment through their lifecycle brief; ordinary PR creation retains the user-requested monitoring boundary. Routes UI/IDE and CLI/TUI verification to the separate Control UI and Control CLI skills by name, replacing the upstream collection attribution with installed-skill routing. Bundles the pinned six-step Bug fix workflow with host delegation and control tools, catalog-based named skills, explicit missing-capability reporting, and the configured bug-fix model or parent inheritance. Replaces Cursor /loop with an evidence-driven hypothesis loop that ends on a confirmed mechanism or concrete blocker. Normalizes How, Architect, and Sequence Work into Verifiable Units references and links the bundled Opening a PR playbook. Preserves same-surface reproduction and verification, evidence-only changes, failing-repro-before-fix commits, the conditional TDD cadence, and the failing-then-passing output requirement. Persistent goal modes are not required or activated by the playbook. Adopts the pinned Feature opening: every feature begins with How over the affected subsystem, followed by Architect for parallel design exploration before implementation. Adopts the four-item Feature throughput checkpoint before delegation: blocking first steps, independent workstreams, shared mutable state, and smallest safe decomposition. Keeps nonapplicable dimensions with n/a and a reason. Uses the task plan when the host lacks a todo-list tool and the full skill name for Separate Before Serializing Shared State. Preserves the pinned Feature implementation rule, including mandatory delegation regardless of size, scoped files, domain data shape and success criteria, Arena for multiple valid implementation shapes, the child-agent no-spawn exception with separate review, source grounding, consistent comments, shared-primitive changes across consumers, and frequent commits. Uses the configured host feature model or parent inheritance instead of the fixed Grok default. Preserves the pinned Feature verification sentence unchanged: verify on the matching surface and flag inconclusive or wrong-surface results rather than counting them as a pass. Preserves the pinned Feature delivery rule, including building, verifying, and committing each small unit before the next, small ordered rebased commits, and stacked follow-ups. Uses the full installed skill name for Sequence Work into Verifiable Units. Preserves the pinned Feature contested-design gate through Interrogate before shipping, using the installed skill name. Connects the final Feature PR step to the approved bundled Opening a PR workflow under task authorization. Bundles the pinned eight-step Feature workflow and routes feature work to it. Preserves the ownership paragraph and reply requirement unchanged: one owner for coupled feature or migration work, internal fan-out after blockers, parent fan-out for independent artifacts, checkpoints rewritten at phase boundaries, and fresh owners rather than chained interrupts. Declares host delegation and target-surface assumptions with the same missing-capability reporting as Bug fix. Preserves the pinned Refactoring behavior boundary and scope-separation sentences unchanged: structural work holds behavior, newly discovered features or bugs are split out, and named redesigns route to Feature. Preserves the first Refactoring step unchanged: How establishes the affected behavior contract, then a characterization test, snapshot, or equivalence harness captures current behavior before structure changes. Missing coverage must be added first; type checking and linting alone do not establish the contract. Preserves the second Refactoring step unchanged: name the missing domain structure, retain code whose shape is already clear and local, and require the reshape to delete branches or invalid states rather than add indirection. Preserves the third Refactoring step unchanged: name the target module layout, types, and call graph using Foundational Thinking and Redesign from First Principles, then run Architect before moves whose target crosses a function boundary. Preserves the fourth Refactoring step unchanged: remove dead code, one-caller wrappers, redundant validators, and orphan references before introducing the target shape; ship the smallest change that reaches it and revert speculative cleanup. Preserves the fifth Refactoring step except for the configured host refactoring model or parent inheritance instead of the fixed Grok default. Keeps small behavior-preserving steps green, migrates every API caller and deletes the old API in one wave without compatibility shims or parallel paths, checks renames in files, strings, prose, and back-references, and delegates mechanical edits with explicit scope. Preserves the sixth Refactoring step unchanged: prove behavior on the real artifact rather than compilation alone, with old-versus-new output comparison, recorded baseline replay, or matching-surface smoke checks for larger reshapes. Prove It Works resolves by installed skill name and is included as a separate skill. Preserves the seventh Refactoring step unchanged: reduced reader load is the success measure, and a diff that lowers reader load nowhere is reverted. Preserves the eighth Refactoring commit-order rule: subtraction, reshape, then follow-on cleanup, with each behavior-preserving slice green before the next. Uses the full installed Sequence Work into Verifiable Units skill name and links the bundled Opening a PR playbook under task authorization. Preserves the Refactoring reply requirement unchanged: changed structure, preserved behavior baseline, equivalence proof, reader-load delta, shipped and reverted work, and no new behavior. Bundles the complete pinned Refactoring playbook with host tool assumptions, configured refactoring model or parent inheritance, normalized Sequence Work into Verifiable Units naming, and authorized PR routing. Preserves its focused-to-medium scope, large-work Figure It Out route, and reply requirement. Routes large migrations, ambitious multi-part changes, work reviewed after stepping away, unmatched tasks, and explicit requests to the separate Figure It Out skill by name. Large or cross-cutting efforts use that skill even when a narrower playbook fits. Routes decision-trail writing and auditing to the separate Show Me Your Work skill by installed name; that skill owns its format, helper, transcript auditing, separate review, and Attention reply requirements. Bundles the six-step pinned Perf issue workflow with its unchanged measurement-story opening, baseline and later-number vetting through Benchmark Checklist, How grounding, eight trace-supported strategy families, selective Architect exploration, delegated implementation, diff review, post-fix tracing, per-attempt verification, parsed artifact comparisons, measurement citations, and baseline/result/delta/artifact reply. Keeps elimination semantics separate from cost evidence, invalidation requirements for caching, critical-path cost accounting, redundancy headroom, and interactive-path measurement for scheduling. Uses installed How, Architect, and full Sequence Work into Verifiable Units names, the configured host performance model or parent inheritance instead of the fixed Grok default, and the bundled Opening a PR playbook under task authorization. Host tools, permissions, and missing-capability reporting are explicit. Routes sustained metric improvement to the bundled Hillclimb playbook. Routes measured performance numbers to the separate Benchmark Checklist skill by installed name. That skill owns measurement validity, repeatability, verdicts, and reporting. Bundles the eight-step pinned Hillclimb workflow: workload and architecture grounding, a reproducing case, one metric and direction, an agreed target plus minimum-attempt predicate, a sensitivity-proven and Benchmark-vetted frozen harness, noise-clearing sampling, baseline and green regression gate, mechanism-grounded hypotheses, supervised scoped delegates, isolated parallel hypotheses, before/after measurements, full failed-attempt reverts, scoped staging and one commit per accepted fix, plateau exploration, correctness and simplicity priority, honest cost-bounded stopping, ordered accepted commits for authorized PR work, and the metric/result/attempts/fixes/log/next-idea reply. Uses the configured host hillclimb model or parent inheritance instead of the fixed Grok default and full installed principle names. Show Me Your Work owns the canonical format, location, and commit policy, with one row per attempt and linked artifacts for attempt-specific measurements and decisions. The log and evidence stay local and uncommitted by default. The reply names the actual decision-log path. Host tools, existing authorization, and unavailable-capability reporting are explicit. Hillclimb borrows only the adopted Autonomous run host wake mechanism and retains its own stop rule. Bundles Runtime forensics and Trace forensics for evidence-cited diagnoses without a fix unless requested. Runtime preserves live signal capture, reduction to the hot path or retention mechanism, large-artifact delegation, live mechanism confirmation, source mapping, the one-line throughput checkpoint, and reply evidence. Live instrumentation uses host-appropriate tools with CDP eval as an example, retaining the no-reload live-code option under existing task authorization and host permissions. Trace preserves fixed-dataset analysis without workload reruns, format identification, large-artifact delegation, queryable shaping, causal narrowing, symbol resolution or explicit missing-symbol reporting, paired-capture comparison, unconfirmed-hypothesis labeling without a pair, the throughput checkpoint, and reply evidence. SQLite is an option for a suitable queryable representation rather than mandatory for every artifact. Normalizes Guard the Context Window to its full installed name and links the bundled Bug fix and Perf issue handoff routes. Host tool and named-skill assumptions and missing-capability reporting are explicit. Bundles the six-step pinned Prototype workflow and unchanged throwaway-design opening, speed-over-polish stance, deliberately light implementation, and reply requirement. Requires a concrete decision or routes to Feature; gathers references and user-selected directions when the design space is open; builds in isolated scratch space with the lightest visual stack or behavioral script, without production frameworks, automated tests, or abstractions; compares labeled alternatives behind a switcher; observes them on the matching surface; and presents evidence, tradeoffs, a recommendation, and scratch location before handing the chosen direction to Feature or Architect. Uses the full installed Exhaust the Design Space and Architect names and a bundled Feature link. Host filesystem, execution, reference-search, and control tooling, existing task permissions, and unavailable-capability reporting are explicit. Bundles the five-step pinned Visual parity workflow and unchanged pixel-exact opening and reply. Requires a baseline harness before migration, preserves all baseline and harness anti-shortcut clauses including stopping to ask when a baseline appears wrong, migrates shared primitives first, assigns one component owner with isolated parallel worktrees, verifies each component by matching-surface image comparison, and treats every nonzero pixel diff as a failure. Replaces Cursor /loop with per-component evidence-driven iterations until zero diff or a reported concrete blocker, never counting the blocker as a pass. Uses the full installed Separate Before Serializing Shared State name and bundled Opening a PR link for task-authorized component or safe-batch PR delivery. Host Git, filesystem, execution, image-comparison, control, and delegation assumptions, existing permissions, and missing-capability reporting are explicit; missing baselines or comparisons cannot support a parity claim. Routes Verification to five separate pinned principle skills: Prove It Works, Fix Root Causes, Sequence Work into Verifiable Units, Test Behavior Not Implementation, and Explain the Number. The root-cause guard rule allows corrective boundary validation rather than masking symptoms. Test review asks whether plausible defects can pass, treating assertion patterns as scrutiny prompts rather than categorical deletion rules. Agent-evaluation scope is excluded. Each principle owns its body, adaptations, and provenance. Routes Delegation to Guard the Context Window and Never Block on the Human and Meta to Encode Lessons in Structure as separate pinned skills. Subagents follow Harness through host delegation bindings instead of Cursor poteto-agent wrappers and Task flags. Routed workflows retain their prescribed roles and reviewers. Host background or asynchronous execution, file pointers, role-appropriate tool access, existing role configuration, configured difficulty tiers, and parent inheritance replace native flags and fixed models. Missing delegation, models, and diversity are reported without false claims. The parent reviews actual diffs and artifacts, owns the result, and writes its own summary; independent verification remains required. Preserves fresh agents by default with consolidated directives and the original costly-state-only reuse exceptions, including active checkouts, uncommitted changes, and running processes. Execution stays within task authorization and host permissions. Task/project notes replace personal brain-note routing; memory updates follow host and user rules. Adopts the four-paragraph core Autonomy structure: proceed with authorized work and routine execution decisions using available host tools, preserve existing task authorization, pause for irreversible or externally consequential actions only when authorization is missing or the host requires approval, and persist on explicit autonomous-run requests until completion, explicit pause, or a concrete blocker requiring input. Persistence grants no broader scope or permissions. Keeps the pinned No is an Acceptable Answer candor paragraph unchanged. Omits upstream blanket external-action permission and agent-evaluation actions; drafting does not authorize sending. Operational autonomy playbooks are adopted separately; Autonomous run uses supported host wake mechanisms. Bundles Babysit and Shipping with the pinned review-triage reference. Babysit preserves explicit drive/background/threads-only/check modes, small/docs-only check mode, lowest-unmerged frontier focus, one babysitter per stack, no topology mutation, merged-owner follow-up PR handling, conflicts-before-threads-before-CI ordering, batched push waves, skeptical review triage, red-first findings, safe JSON reply payloads, documented low-risk repeat-pass dismissals, human approval boundaries, fixed queue snapshots, merge-ready stopping, and candidate rubric proposals. Shipping preserves one independent verifier per PR, real parent-versus-head surface checks, PASS/PASS+NOTES/FAIL verdicts, contiguous verified ceiling, SHA and stable patch-id validation, build-noise comparison before lane reuse, fresh checks, bottom-only preparation and arming, squash one PR at a time, merge confirmation, queue recomputation, hard-failure versus pending-state distinction, and ceiling-limited stopping. Shipping reads required checks separately, treats UNSTABLE alone as nonterminal, and returns to the current bottom PR merge step when required checks and other merge requirements pass. DIRTY remains a topology failure when auto-merge is not pending. Uses gh only and host delegates instead of Origin, Cursor cloud agents, and fixed watchers. gh status/check watches and supported host wake mechanisms replace scripts/watch-pr and Cursor /loop, with explicit monitoring gaps and a gh-derived four-column status table. Posting verdicts, replies, resolutions, follow-up PRs, and CI retriggers follow task authorization. CI classification uses logs and history; untouched-code failures do not prove base drift, and repeated failures do not disprove flakiness. Triage investigates before asking about unresolved consequential judgment; novelty alone does not pause authorized execution. Autopilot-specific owner exceptions are omitted until those workflows are adopted. The triage reference retains pinned generic patterns and examples rather than importing project-specific rules or private memory. Bundles the six-step Autonomous run workflow with its unchanged exit-condition opening and reply, checkable predicate before iteration, event-based wake with long heartbeat fallback or an appropriately spaced fixed heartbeat, smallest evidence-supported changes, per-unit verification, accepted-change commits and failed-change reverts, incremental Show Me Your Work rows, plateau persistence, and no predicate relaxation. Host-supported watch/wake mechanisms replace Cursor /loop; missing unattended execution is disclosed without an active-watcher claim, while independent authorized work continues. Mid-run fixes stay task-related and authorized; independent fixes get separate PRs when authorized and unrelated discoveries become concrete follow-ups. Uses the full installed Sequence Work into Verifiable Units name. Explicit user pause ends the run. Hillclimb borrows only this wake mechanism and retains its own stopping rule. Host tools and missing-capability reporting are explicit. Bundles Orchestrate, Autopilot-full, and Autopilot-stack with pinned section and step structure, role ownership, scoped standalone briefs, pilot and rolling windows, continuous authorized landing, budget cutoff, exact-head verdicts, early ready PRs, hourly audits, operator gates, patch-id reuse, fix-forward rounds, post-merge sweeps, and reply contracts. Host delegation, nesting and concurrency limits, configured models or parent inheritance, available independent model families with gaps disclosed, gh-only forge operations, installed package reads, authorized project stores, and supported watch/wake mechanisms replace Cursor, cloud placement, fixed model paths, /loop, and Graphite. Missing capability remains incomplete. Autopilot stalled-lane replacement inspects actual host status and operation before classification and requires a confirmed stopped writer or isolated replacement. Stop orders request supported cancellation and report unconfirmed stops. Orchestrate ledger writes belong to the coordinator, preserving independent-verifier precedence over late worker reports. The bundled Python 3.10+ standard-library orchestration helper ports the plain-file command surface and records with no dependency bootstrap or installation. Kernel process locks release on exit, use a persistent lock file, and cannot be stolen from live writers; the upstream --force override is omitted. Atomic file replacement retains TSV and JSON records. Inbox drain claims and retains a batch until explicit acknowledgement after updates, replays it after interruption, separates later arrivals, and makes acknowledgement idempotent. gh records repository identity and reads declared same-repository chains and published heads twice, rejecting repository mismatch, drift, ambiguous or incomplete topology, forks, duplicate heads, and closed-unmerged PRs without replacing the prior frontier. Merged historical prefixes remain scoped; multiple stacks use separate frontier stores. Gate defaults never supply missing approval. Opening a PR and Babysit include the upstream Autopilot owner exceptions with bundled playbook paths. Runtime tests validate state, interrupted drains, process locking, current-head lookup, and frontier rejection; no agent evaluations run. Bundles the final four operational playbooks with pinned section and numbered-step structure and reply contracts. Multi-phase or multi-PR plan retains prototype-first planning, delegated exploration, the full checklist and nine per-PR subblocks, plan-only delivery, explicit execution go, all technical-writing layers, real evidence, trunk regression, comparable-metric performance checks or absolute budgets, interaction review with screenshots and video, and the checker. Host delegation, configured or inherited models, concurrency limits, gh-only PR operations, installed package/catalog reads, supported hourly audit wake mechanisms, exact stopped-writer or isolated replacement rules, authorized project docs and evidence locations, and named skills replace Cursor tools, private stores, fixed models, cloud VMs, and /loop. Lane counts follow distinct scenarios and risks instead of a fixed ten; visual lanes retain screenshots, nonvisual lanes name actual artifacts. Unit, live, and perf sections remain, with explicit concrete nonapplicability reasons and no boxes in nonapplicable blocks; missing capability is incomplete. Runnable behavior changes retain live proof. Autopilot-full honors approved plan applicability while preserving that floor. The Node 22.20+ standard-library checker is adapted for those policies, declared lane order and count, evidence and pass predicates, regression lane, nonapplicability, required perf items, media review, and visible CLI failures. It checks structure, not evidence validity. Session pickup uses accessible current-project records, verifies repo/branch/head/landed state, preserves completed work and applicable evidence, and selectively checks inherited claims needed for the remaining task. Pause is explicit-only, requests and confirms supported cancellation, stages only task-owned paths or hunks, preserves unrelated edits, writes authorized resume notes, and keeps execution active through compaction. Cleanup uses the bundled Python read-only audit with NUL-delimited Git paths/status, no fetch or deletion, optional gh/sizes, exact-head merge receipts, and current project usage evidence. Primary/invocation/locked worktrees, pinned or active work, missing/stale ownership/activity, detached heads, tracked edits, untracked or ignored content, open PRs, and incomplete evidence stay held. Closed PRs never prove merge; newer local commits are not covered by older merged heads. Candidate buckets require immediate rechecks and task authority. Forced cleanup is limited to reviewed disposable content and exact Git-listed candidates with committed work retained; simulator/cache reclamation is scoped to confirmed IDs and paths with preservation checks. Runtime tests cover actual disposable Git worktrees and plan acceptance/rejection; no agent evaluations run.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -30,7 +30,35 @@
           "ref": "main",
           "paths": [
             "pstack/skills/poteto-mode/SKILL.md",
-            "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md"
+            "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
+            "pstack/skills/poteto-mode/playbooks/investigation.md",
+            "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
+            "pstack/skills/poteto-mode/playbooks/bug-fix.md",
+            "pstack/skills/poteto-mode/playbooks/feature.md",
+            "pstack/skills/poteto-mode/playbooks/refactoring.md",
+            "pstack/skills/poteto-mode/playbooks/perf-issue.md",
+            "pstack/skills/poteto-mode/playbooks/hillclimb.md",
+            "pstack/skills/poteto-mode/playbooks/runtime-forensics.md",
+            "pstack/skills/poteto-mode/playbooks/trace-forensics.md",
+            "pstack/skills/poteto-mode/playbooks/prototype.md",
+            "pstack/skills/poteto-mode/playbooks/visual-parity.md",
+            "pstack/skills/poteto-mode/playbooks/babysit.md",
+            "pstack/skills/poteto-mode/playbooks/shipping.md",
+            "pstack/skills/poteto-mode/references/bugbot-triage.md",
+            "pstack/skills/poteto-mode/playbooks/autonomous-run.md",
+            "pstack/skills/poteto-mode/playbooks/orchestrate.md",
+            "pstack/skills/poteto-mode/playbooks/autopilot-full.md",
+            "pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
+            "pstack/skills/poteto-mode/scripts/orch/orch.ts",
+            "pstack/skills/poteto-mode/scripts/orch/store.ts",
+            "pstack/skills/poteto-mode/scripts/orch/orch.test.ts",
+            "pstack/skills/poteto-mode/scripts/bootstrap.ts",
+            "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
+            "pstack/skills/poteto-mode/playbooks/session-pickup.md",
+            "pstack/skills/poteto-mode/playbooks/pause-safely.md",
+            "pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
+            "pstack/skills/poteto-mode/scripts/check-plan.mjs",
+            "pstack/skills/poteto-mode/scripts/worktree-audit.sh"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
           "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
@@ -67,6 +95,675 @@
           "ref": "main",
           "paths": [
             "pstack/skills/technical-writing/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-laziness-protocol": {
+      "maintenance_notes": "Preserves the pinned Laziness Protocol except for its fixed three-file-or-layer flattening threshold. The call-hierarchy rule instead inspects indirection and flattens unnecessary chains when that improves comprehension without erasing meaningful responsibility boundaries. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-laziness-protocol/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-foundational-thinking": {
+      "maintenance_notes": "Preserves the pinned Foundational Thinking instructions except for the concurrency corollary. It prefers isolated state and requires explicit ownership and synchronization when sharing is necessary, rather than mandating isolation whenever another actor can affect the state. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-foundational-thinking/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-redesign-from-first-principles": {
+      "maintenance_notes": "Uses the pinned Redesign From First Principles SKILL.md unchanged, including its triggers, foundational-design question, affected-reference updates, and incremental delivery. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-redesign-from-first-principles/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-attack-the-premise": {
+      "maintenance_notes": "Retains the upstream repeated-failure trigger and Why, Pattern, and Stop layout. Generalizes the actor census into five steps: state the premise, choose a discriminating observation, gather evidence, revise contradicted premises, and limit conclusions to the evidence. Actor imbalance remains an example; a balanced census does not validate other premises. Removes the mandatory census-script and sibling-skill file dependencies. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-attack-the-premise/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-subtract-before-you-add": {
+      "maintenance_notes": "Uses the pinned Subtract Before You Add SKILL.md unchanged, including sequencing removal before construction, observed usage over speculation, and pruning redundant prompts and empty references. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-subtract-before-you-add/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-minimize-reader-load": {
+      "maintenance_notes": "Preserves the pinned Minimize Reader Load rules and 30-second test unchanged. Replaces the sibling-file link to Guard the Context Window with its skill name. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-minimize-reader-load/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-outcome-oriented-execution": {
+      "maintenance_notes": "Uses the pinned Outcome-Oriented Execution SKILL.md unchanged, including planned, scoped, reversible intermediate breakage, explicit phase boundaries, focused migration checks, and full static and runtime verification at completion. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-outcome-oriented-execution/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-experience-first": {
+      "maintenance_notes": "Uses the pinned Experience First SKILL.md unchanged, including justified features and controls, fewer polished features, design prototypes, attention to details, a focused core workflow, and the experience of consumers and maintainers. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-experience-first/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-exhaust-the-design-space": {
+      "maintenance_notes": "Uses the pinned Exhaust the Design Space SKILL.md unchanged, including two or three distinct prototypes or sketches, comparison before committing, and its applicability boundaries for novel interactions and design decisions. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-exhaust-the-design-space/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-build-the-lever": {
+      "maintenance_notes": "Preserves the pinned Build the Lever rules unchanged, including the non-triviality threshold, reproducible tools, shared delegate contracts, artifact requirement, and committing tools when the work outlives the session. Replaces the three sibling-file links with skill names. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-build-the-lever/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-model-the-domain": {
+      "maintenance_notes": "Uses the pinned Model the Domain SKILL.md unchanged, including domain structures in place of scattered conditionals, ownership rather than execution-order decomposition, and restraint when existing local code is clear. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-model-the-domain/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-boundary-discipline": {
+      "maintenance_notes": "Uses the pinned Boundary Discipline SKILL.md unchanged, including validation at system boundaries, trust in internal types, pure business logic, thin framework wiring, and public interfaces expressed in domain concepts. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-boundary-discipline/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-type-system-discipline": {
+      "maintenance_notes": "Preserves the pinned Type System Discipline rules unchanged, including valid-state construction, semantic primitives, boundary parsing, exhaustive matching, schema-derived types, and strengthening types where partiality appears. Uses the full skill names for the Boundary Discipline and Encode Lessons in Structure references. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-type-system-discipline/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-make-operations-idempotent": {
+      "maintenance_notes": "Uses the pinned Make Operations Idempotent SKILL.md unchanged, including convergence after retries and partial failures, startup reconciliation, content-based cleanup, stale-lock detection, and idempotent scheduling. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-make-operations-idempotent/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-migrate-callers-then-delete-legacy-apis": {
+      "maintenance_notes": "Uses the pinned Migrate Callers Then Delete Legacy APIs SKILL.md unchanged, including coordinated internal caller migration and deletion, exceptional time-boxed adapters, tests for the new contract, and applicability limited to projects that can absorb breaking changes without external compatibility obligations. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-separate-before-serializing-shared-state": {
+      "maintenance_notes": "Uses the pinned Separate Before Serializing Shared State SKILL.md unchanged, including identifying shared mutation, eliminating independent shared write targets, and structural serialization when one canonical write target is a real invariant. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "how": {
+      "maintenance_notes": "Preserves the pinned How workflow: one explainer for narrow questions, two to four parallel explorers followed by one explainer for complex questions, and the original explanation structure. Replaces Cursor Task tool settings and fixed model defaults with host delegation tools, existing role configuration or parent-model inheritance, concurrency-limit scheduling, and explicit tool-access limitations. The two prompt templates use host read/search tools. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/how/"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "why": {
+      "maintenance_notes": "Preserves the pinned Why workflow, seven evidence categories, default parallel investigation, separate synthesizer, confidence framework, source playbooks, output sections, and rare inline exception. Replaces Cursor Task, MCP-directory discovery, Ask-mode settings, and fixed model defaults with host tools, existing role configuration or parent-model inheritance, concurrency-limit scheduling, and read/query access without writes. Names missing source-control access as a gap. All bundled references are unchanged. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/why/"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "architect": {
+      "maintenance_notes": "Preserves the pinned five-phase Architect workflow, How/Why grounding, independent candidate design, opt-in human checkpoint, implementation, redesign, and design rationale. Uses host tools, optional todo lists, existing role models or parent-model inheritance, and Arena's default three candidates. Requires two structurally distinct completed candidates after dropouts. Uses full skill names and removes the sibling Arena path. Aligns the runner's fixed three-file flattening threshold with the agreed Laziness rule. Candidates need not use different models when none are configured. Bundled design red flags remain unchanged. Codex allows implicit invocation for name-based routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/architect/"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "arena": {
+      "maintenance_notes": "Preserves the pinned six-phase Arena workflow, hidden rubric, independent isolated candidates, separate cross-judge after candidate completion, complete reading and scoring, base selection, coherent grafting, verification, and synthesis record. Replaces Cursor Task and personal model-config paths with host tools, existing runner and judge configuration, or three parent-model candidates and an inherited judge. Uses host temporary directories, concurrency-limit scheduling, optional todo lists, and full skill names. Missing skills and tool access are reported. Codex allows implicit invocation for name-based routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/arena/"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "deslop": {
+      "maintenance_notes": "Uses the pinned Deslop SKILL.md unchanged, including branch-diff cleanup, local style, minimal edits, and preserving behavior except for clear bug fixes. Adds Codex implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-team-kit",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "cursor-team-kit/skills/deslop/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "no-comments": {
+      "maintenance_notes": "Preserves the pinned scoped reviewer-and-fix workflow, confirmed keep exceptions, suppression audit, rejection/rerun limit, Architect sketch step, and smallest in-scope root-cause fixes. Replaces delete-on-doubt with preserving or restoring unresolved comments in both the parent workflow and bundled reviewer prompt. Unapproved constraint encodings retain the comment; approved replacements are verified before deletion. Removes the evaluation-specific invocation clause. Uses host delegation tools, existing reviewer configuration or parent-model inheritance, named How/Why/Architect references, and missing-tool/skill reporting. Bundles the Comment Sicko agent prompt as a reference rather than requiring a Cursor custom agent type. Omits the forced opening catchphrase. Codex allows implicit invocation for name-based Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/no-comments/SKILL.md",
+            "pstack/agents/comment-sicko.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "interrogate": {
+      "maintenance_notes": "Preserves the pinned five-step adversarial review workflow, identical reviewer prompts, code-quality lens, pragmatic lead judgment, output structure, and verdict without automatic edits. Uses host delegation and read/search tools, read-only reviewers, concurrency-limit scheduling, and the existing host reviewer roster. Without a roster, uses three independent parent-model reviewers and reports that this lacks model diversity; same-model agreement is not cross-model consensus. Rejected configured models fall back to an available same-family equivalent or parent inheritance, with the rejected and actual models reported. Removes automatic maintenance PR creation for unsupported models. Reviewer prompt, code-quality lens, and lead-judgment references remain unchanged; only named read/search tools change in the rubric. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/interrogate/"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "control-ui": {
+      "maintenance_notes": "Uses the pinned Control UI SKILL.md unchanged, including repository-native harness discovery, local automation examples, interaction and evidence capture, profiling options, guardrails, and cleanup. Retains upstream default invocation metadata. Adds Codex implicit invocation for name-based Harness routing. Browser or terminal runtimes remain host or project requirements; installation distributes instructions only.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-team-kit",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "cursor-team-kit/skills/control-ui/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "control-cli": {
+      "maintenance_notes": "Uses the pinned Control CLI SKILL.md unchanged, including repository-native harness discovery, local automation examples, interaction and evidence capture, profiling options, guardrails, and cleanup. Retains upstream default invocation metadata. Adds Codex implicit invocation for name-based Harness routing. Browser or terminal runtimes remain host or project requirements; installation distributes instructions only.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-team-kit",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "cursor-team-kit/skills/control-cli/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "show-me-your-work": {
+      "maintenance_notes": "Preserves the pinned section layout, invocation metadata, canonical TSV format and examples, logging threshold, run-boundary markers, local-by-default locations, conditional commit policy, append-only history, evidence rules, audit scope and superseding corrections, trail-reading guidance, and name-based composition. The bundled decision-log template and Bash helper are byte-identical to the source, with executable mode retained. Uses the full installed Encode Lessons in Structure skill name. Replaces Cursor transcript paths with host-provided current-run access, prohibits scanning unrelated chats, and reports missing transcript access without claiming an audit ran. Retains separate review of the trail and transcript before handoff and all source flag categories. Uses another model family when available; otherwise uses an available separate reviewer and reports missing diversity without claiming cross-family review. Self-review is not a substitute. Missing delegation or transcript access is an incomplete review. Attention names the actual reviewer, points flags to rows or moments, allows No flags only after completed review, and reports incomplete review without inventing a model. Declares filesystem, Bash-helper, transcript, and delegation requirements; named skills resolve through the host catalog, with unavailable dependencies reported. Codex allows implicit invocation for named routing. Runtime installation does not provide host tools, transcripts, or models.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/show-me-your-work/SKILL.md",
+            "pstack/skills/show-me-your-work/references/decision-log-template.tsv",
+            "pstack/skills/show-me-your-work/scripts/log.sh"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "figure-it-out": {
+      "maintenance_notes": "Preserves the pinned metadata, section layout, five-phase workflow, concrete framing and consequence-scaled rigor, long-run checkpoint, atomic independently-landable units, riskiest-unknown-first sequencing, verification before features, original baseline capture, selective Architect and Arena exploration, isolated limited fan-out, written phase list, experiment loop and judge requirements, explicit verdicts, incremental Show Me Your Work trail, real-product final verification, recurring-correction gates, and reply requirement. Startup reads Harness Principles through the installed-name catalog instead of Poteto Mode. Todo lists are used when available, otherwise the same items go in the task plan, including concrete work after Phase C and before Phase D. Normalizes all principle references to their full installed names. Declares host filesystem, read/search, measurement, and delegation tools, existing task authorization and host permissions, and unavailable-capability reporting without false completion. Missing named skills are reported and its own workflow is followed where possible. Codex allows implicit invocation for named routing. Installation does not supply tools, models, transcripts, or other skills.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/figure-it-out/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "benchmark-checklist": {
+      "maintenance_notes": "Preserves the pinned metadata, section layout, performance-number scope, run-evidence requirement, explicitly requested quick-ballpark exception, intended-claim and script-inspection preparation, all seven benchmark questions, verdict and reporting rules, PR evidence guidance, and composition with Perf issue and Hillclimb. System-load and core-count commands are host-appropriate instead of requiring uptime and nproc; competing work can be stopped only within task authorization and host permissions, otherwise comparison runs share the noise through interleaving and disclosure. CPU, runtime, I/O, and syscall tools use host-appropriate equivalents with the source commands retained as examples. Names the limiter from a separate unreported profiling run, checks generator saturation, and maps hot spots to source. Remaining tuning, capacity arithmetic, error and correctness counts, at-least-five alternating runs, median and range, close-call statistics, end-to-end relevance, and timed-work checks are unchanged. Uses the full installed Explain the Number skill name instead of a sibling relative path. Declares host tools, catalog routing, existing authorization, and unavailable-capability reporting without false completion. Codex allows implicit invocation for named routing. Installation does not supply measurement tools, named dependencies, or the Perf issue and Hillclimb playbooks.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/benchmark-checklist/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-prove-it-works": {
+      "maintenance_notes": "Uses the pinned Prove It Works SKILL.md byte-identically: direct verification of real outputs and process state, scrutiny of observation methods, repeatable scripted comparisons where possible, visible evidence, and conditional artifact commits for complex work through Show Me Your Work. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-prove-it-works/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-fix-root-causes": {
+      "maintenance_notes": "Preserves the pinned reproduction-first root-cause workflow, pattern-wide investigation, instrumentation, workaround guidance, and persistent-state suspicion for restart bugs. Replaces the blanket no-guards instruction with avoiding guards that merely hide the defect, while recognizing that correct boundary validation can fix the root cause. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-fix-root-causes/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-sequence-verifiable-units": {
+      "maintenance_notes": "Preserves the pinned small-unit execution and delivery workflow, known-good baseline, per-unit checks before advancing, clean-trunk baseline, and commit/PR order that demonstrates failing repro then fix, subtraction then reshape, baseline then treatment, or scaffold then feature. Normalizes Prove It Works and Build the Lever to their full installed skill names. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-sequence-verifiable-units/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-test-behavior-not-implementation": {
+      "maintenance_notes": "Preserves user-facing interface calls, observable outcomes and literal expectations, concrete inputs, mock payload or state checks, self-reference and constant-pin guidance, table-relation and compile-time exceptions, and the assertion examples. Replaces the false imported-functions-return-undefined heuristic with asking whether a plausible defect could still pass. Treats the five assertion patterns as prompts for scrutiny rather than automatic deletion rules, explicitly recognizing that toBeDefined fails for undefined and empty results can be valid. Strengthens absence-only assertions when they could miss a defect, and deletes tests only when they observe no behavior and cannot be strengthened. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-test-behavior-not-implementation/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-explain-the-number": {
+      "maintenance_notes": "Preserves the pinned evidence-based limiter, alternative-explanation elimination, run count and spread, plausibility check, performance Benchmark Checklist route, and distinction from real-output verification. Replaces sibling-relative Benchmark Checklist and Prove It Works links with full installed skill names. Removes agent-evaluation scope and trial instructions under the requested exclusion of evaluations. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-explain-the-number/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-guard-the-context-window": {
+      "maintenance_notes": "Preserves the pinned scope, context-cost rationale, bulky-payload isolation, summaries in the parent, frequently-used inline material, and phase scope and budget discipline. Declares host delegation limits and permissions; missing delegation uses bounded reads and reduced outputs with explicit disclosure and no false delegate claim. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-guard-the-context-window/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-never-block-on-the-human": {
+      "maintenance_notes": "Preserves asynchronous supervision, reasonable execution decisions, proceed-then-present, corrective follow-up, and human ownership of product direction. Scopes execution to current task authorization and host permissions without granting new rights or broadening the task. Reversible work is explicitly authorized; irreversible actions require confirmation only when authorization is missing or the host requires it, preserving existing authorization across turns. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-never-block-on-the-human/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "principle-encode-lessons-in-structure": {
+      "maintenance_notes": "Preserves the pinned recurring-correction workflow, judgment-only instruction fallback, strongest feasible mechanism ordering, structural-only corollary, capture/route/close feedback loop, and anti-patterns. Replaces brain-note routing and its example with authorized task or project notes. Structural changes and notes follow current authorization and host permissions; personal-memory updates follow host and user rules and are not authorized by the principle. Codex allows implicit invocation for named Harness routing.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/principle-encode-lessons-in-structure/SKILL.md"
+          ],
+          "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
+          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+        }
+      ]
+    },
+    "swarm": {
+      "maintenance_notes": "Preserves the pinned four-phase Swarm workflow, coverage/race/mixed shapes, declared race selection, user-derived total worker count, exclusive writable outputs, exact-SHA and measurement-method briefs, evidenced PASS/ISSUES/BLOCKED reports, all proven issues, dropout reporting, one retry for missing required metadata, explicit gaps, and consolidated report. Replaces mandatory todo tooling with an available todo list or task plan, Cursor Task/cloud flags and branch setup with supported host delegation and actual checkout verification, personal model config and fixed Grok fallback with existing configured models or parent inheritance, and all-at-once dispatch with rolling scheduling within host concurrency limits. Reports unavailable tools, model fallback, and missing diversity. Codex implicit invocation supports Harness name-based routing; retained upstream frontmatter is unchanged.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/swarm/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
           "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
