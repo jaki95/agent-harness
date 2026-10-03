@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Validate owned skill structure and provenance using only the standard library."""
+"""Validate runtime skills and the separate maintenance index; no network access."""
 
 import argparse
 from datetime import date
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import sys
 from urllib.parse import urlparse
@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+COMMIT = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})")
 HEADER = re.compile(r'\A---\nname: ([^\n]+)\ndescription: ("[^\n]*")\n---\n')
 
 
@@ -19,53 +20,94 @@ def nonempty(value):
     return isinstance(value, str) and bool(value.strip())
 
 
+def relative_path(value):
+    return (nonempty(value) and not value.startswith("/") and "\\" not in value
+            and not re.match(r"[A-Za-z]:", value)
+            and ".." not in PurePosixPath(value).parts)
+
+
+def check_text(path):
+    try:
+        text = path.read_text(encoding="utf-8")
+        return text, [] if text.strip() else [f"{path.name} must not be empty"]
+    except (OSError, UnicodeError) as exc:
+        return "", [f"cannot read {path.name}: {exc}"]
+
+
 def check_skill(skill):
-    errors = []
-    if not NAME.fullmatch(skill.name):
-        errors.append("directory name must be lowercase kebab-case")
-    contents = {}
-    for filename in ("SKILL.md", "provenance.json", "evaluations.md"):
+    text, errors = check_text(skill / "SKILL.md")
+    header = HEADER.match(text)
+    if not header:
+        errors.append("SKILL.md must use the frontmatter format in templates/skill")
+    else:
+        if header[1] != skill.name:
+            errors.append("frontmatter name must match the skill directory")
         try:
-            contents[filename] = (skill / filename).read_text(encoding="utf-8")
-            if not contents[filename].strip():
-                errors.append(f"{filename} must not be empty")
-        except (OSError, UnicodeError) as exc:
-            errors.append(f"cannot read {filename}: {exc}")
-
-    if "SKILL.md" in contents:
-        header = HEADER.match(contents["SKILL.md"])
-        if not header:
-            errors.append("SKILL.md must use the frontmatter format in templates/skill")
-        else:
-            if header[1] != skill.name:
-                errors.append("frontmatter name must match the skill directory")
-            try:
-                if not nonempty(json.loads(header[2])):
-                    errors.append("description must be nonempty")
-            except json.JSONDecodeError:
-                errors.append("description must be a JSON-quoted string")
-            if not contents["SKILL.md"][header.end():].strip():
-                errors.append("SKILL.md must contain instructions after the frontmatter")
-
-    if "provenance.json" in contents:
-        try:
-            provenance = json.loads(contents["provenance.json"])
-        except json.JSONDecodeError as exc:
-            errors.append(f"invalid provenance.json: {exc}")
-        else:
-            errors.extend(check_provenance(provenance, skill))
+            if not nonempty(json.loads(header[2])):
+                errors.append("description must be nonempty")
+        except json.JSONDecodeError:
+            errors.append("description must be a JSON-quoted string")
+        if not text[header.end():].strip():
+            errors.append("SKILL.md must contain instructions after the frontmatter")
+    for reserved in ("provenance.json", "evaluations.md", "registry", "reviews"):
+        if (skill / reserved).exists():
+            errors.append(f"{reserved} belongs outside the runtime skill directory")
     return errors
 
 
-def check_provenance(record, skill):
-    if not isinstance(record, dict):
-        return ["provenance.json must contain an object"]
+def check_source(source, root):
+    if not isinstance(source, dict):
+        return ["source must be an object"]
     errors = []
-    origin = record.get("origin")
-    if origin not in ("original", "adapted"):
-        errors.append("origin must be original or adapted")
-    if not nonempty(record.get("adaptation_summary")):
-        errors.append("adaptation_summary must be nonempty")
+    if not nonempty(source.get("id")) or not NAME.fullmatch(source["id"]):
+        errors.append("id must be lowercase kebab-case")
+    relationship = source.get("relationship")
+    if relationship not in ("adapted", "inspired"):
+        errors.append("relationship must be adapted or inspired")
+    try:
+        url = urlparse(source.get("repository") or "")
+        valid_url = url.scheme in ("http", "https") and bool(url.netloc)
+    except (ValueError, AttributeError, TypeError):
+        valid_url = False
+    if not valid_url:
+        errors.append("repository must be an HTTP(S) URL")
+    if not nonempty(source.get("ref")):
+        errors.append("ref must be nonempty")
+    paths = source.get("paths")
+    if not isinstance(paths, list) or not paths or not all(relative_path(p) for p in paths):
+        errors.append("paths must be a nonempty list of repository-relative paths")
+    for field in ("baseline_revision", "last_reviewed_revision", "last_incorporated_revision"):
+        revision = source.get(field)
+        if field == "last_incorporated_revision" and relationship == "inspired" and revision is None:
+            continue
+        if not nonempty(revision) or not COMMIT.fullmatch(revision):
+            errors.append(f"{field} must be a full Git commit ID")
+    if relationship == "adapted":
+        for field in ("license", "license_file"):
+            if not nonempty(source.get(field)):
+                errors.append(f"{field} is required for adaptations")
+    notice = source.get("license_file")
+    if notice is not None:
+        if not relative_path(notice):
+            errors.append("license_file must be repository-relative")
+        else:
+            try:
+                resolved = (root / notice).resolve()
+                if not resolved.is_relative_to(root):
+                    errors.append("license_file must stay inside the repository")
+                elif not resolved.is_file() or resolved.stat().st_size == 0:
+                    errors.append("license_file must point to a nonempty file")
+            except (OSError, RuntimeError) as exc:
+                errors.append(f"cannot resolve license_file: {exc}")
+    return errors
+
+
+def check_record(record, root):
+    if not isinstance(record, dict):
+        return ["registry entry must contain an object"]
+    errors = []
+    if not nonempty(record.get("maintenance_notes")):
+        errors.append("maintenance_notes must be nonempty")
     reviewed = record.get("reviewed_on")
     try:
         if not isinstance(reviewed, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", reviewed):
@@ -74,61 +116,70 @@ def check_provenance(record, skill):
             errors.append("reviewed_on must not be in the future")
     except ValueError:
         errors.append("reviewed_on must be a valid YYYY-MM-DD date")
-    upstream = record.get("upstream")
-    if not isinstance(upstream, list):
-        return errors + ["upstream must be a list"]
-    if origin == "adapted" and not upstream:
-        errors.append("adapted skills must record at least one upstream source")
-    if origin == "original" and upstream:
-        errors.append("skills with upstream sources must use origin adapted")
-    for index, source in enumerate(upstream, 1):
-        prefix = f"upstream source {index}"
-        if not isinstance(source, dict):
-            errors.append(f"{prefix} must be an object")
-            continue
-        for field in ("url", "revision", "license", "license_file"):
-            if not nonempty(source.get(field)):
-                errors.append(f"{prefix}: {field} must be nonempty")
-        if nonempty(source.get("url")):
-            try:
-                url = urlparse(source["url"])
-                valid_url = url.scheme in ("https", "http") and bool(url.netloc)
-            except ValueError:
-                valid_url = False
-            if not valid_url:
-                errors.append(f"{prefix}: url must be an HTTP(S) URL")
-        if nonempty(source.get("license_file")):
-            notice = Path(source["license_file"])
-            resolved = (skill / notice).resolve()
-            if notice.is_absolute() or not resolved.is_relative_to(skill.resolve()):
-                errors.append(f"{prefix}: license_file must stay inside the skill directory")
-            elif not resolved.is_file() or resolved.stat().st_size == 0:
-                errors.append(f"{prefix}: license_file must point to a nonempty file")
+    sources = record.get("sources")
+    if not isinstance(sources, list):
+        return errors + ["sources must be a list"]
+    ids = set()
+    for index, source in enumerate(sources, 1):
+        errors.extend(f"source {index}: {error}" for error in check_source(source, root))
+        if isinstance(source, dict) and nonempty(source.get("id")):
+            if source["id"] in ids:
+                errors.append(f"source {index}: duplicate source id {source['id']}")
+            ids.add(source["id"])
     return errors
+
+
+def load_index(root):
+    text, errors = check_text(root / "registry" / "skills.json")
+    if errors:
+        return {}, errors
+    try:
+        index = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return {}, [f"invalid registry JSON: {exc}"]
+    if not isinstance(index, dict):
+        return {}, ["registry must contain an object"]
+    if type(index.get("schema_version")) is not int or index["schema_version"] != 1:
+        errors.append("registry schema_version must be 1")
+    skills = index.get("skills")
+    if not isinstance(skills, dict):
+        return {}, errors + ["registry skills must contain an object"]
+    return skills, errors
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--skills-dir", type=Path, default=ROOT / "skills")
-    args = parser.parse_args()
-    if not args.skills_dir.is_dir():
-        print(f"FAIL: skills directory does not exist: {args.skills_dir}", file=sys.stderr)
-        return 1
-    count = 0
-    failures = []
-    for entry in sorted(args.skills_dir.iterdir()):
-        if entry.name == ".gitkeep":
-            continue
-        if entry.is_symlink() or not entry.is_dir():
-            failures.append(f"{entry.name}: expected a skill directory, not a file or symlink")
-            continue
-        count += 1
-        failures.extend(f"{entry.name}: {error}" for error in check_skill(entry))
+    parser.add_argument("--root", type=Path, default=ROOT, help="harness repository root")
+    root = parser.parse_args().root.resolve()
+    index, failures = load_index(root)
+    skills = root / "skills"
+    names = set()
+    if not skills.is_dir():
+        failures.append("skills directory does not exist")
+    else:
+        for entry in sorted(skills.iterdir()):
+            if entry.name == ".gitkeep":
+                continue
+            if entry.is_symlink() or not entry.is_dir() or not NAME.fullmatch(entry.name):
+                failures.append(f"{entry.name}: expected a lowercase kebab-case skill directory")
+                continue
+            names.add(entry.name)
+            failures.extend(f"{entry.name}: {error}" for error in check_skill(entry))
+            if entry.name not in index:
+                failures.append(f"{entry.name}: missing registry entry")
+            _, errors = check_text(root / "evaluations" / f"{entry.name}.md")
+            failures.extend(f"{entry.name}: {error}" for error in errors)
+    for name, record in index.items():
+        if not NAME.fullmatch(name):
+            failures.append(f"registry key {name!r} must be lowercase kebab-case")
+        if name not in names:
+            failures.append(f"{name}: registry entry has no runtime skill")
+        failures.extend(f"{name}: {error}" for error in check_record(record, root))
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)
         return 1
-    print(f"OK: {count} skill(s) validated")
+    print(f"OK: {len(names)} skill(s) and maintenance index validated")
     return 0
 
 

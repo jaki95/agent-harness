@@ -7,12 +7,15 @@ Skills start empty. Public skills are reference material for deliberate adaptati
 ## Layout
 
 ```text
-skills/                 Owned skills, one directory per skill
+skills/                 Runtime instructions and supporting files only
+registry/skills.json     Maintenance index: sources and upstream revision tracking
+evaluations/            Manual evaluation cases, one file per skill
+reviews/                Upstream update decisions and reasoning
+notices/                Retained upstream license records
 scripts/                Portable maintenance utilities and their tests
-templates/skill/        Starting files for a new or adapted skill
-docs/adapting-skills.md  Adaptation and maintenance workflow
-docs/portability.md      Boundaries between shared and project-specific behavior
-AGENTS.md               Instructions for agents working on this repository
+templates/              Runtime and maintenance templates
+docs/                   Adaptation, registry, and portability conventions
+AGENTS.md               Instructions for agents maintaining this repository
 ```
 
 ## Check the harness
@@ -28,7 +31,11 @@ Run these from the repository root. The checker also works from another director
 
 ## Add the first skill
 
-Follow [the adaptation workflow](docs/adapting-skills.md). Each skill contains instructions, a provenance record, and concrete evaluation cases. Templates are inactive until you create a skill directory and customize them.
+Follow [the adaptation workflow](docs/adapting-skills.md). Each skill has runtime instructions, a separate registry entry, and separate evaluation cases. Templates are inactive until you customize and place them in their intended locations.
+
+## Track upstream sources
+
+[The maintenance index](registry/skills.json) records both adaptations and inspirations, with multiple sources supported per skill. Each source tracks its baseline, last reviewed commit, and last incorporated commit. [Registry conventions](docs/registry.md) describe these fields and the update review process. The index starts empty; automated monitoring is not implemented yet.
 
 ## Portability
 
