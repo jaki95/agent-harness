@@ -4,8 +4,8 @@
 - Never import or install existing skills unless the user requests that specific adaptation.
 - Treat public skills as references. Customize instructions deliberately and record sources, pinned revisions, and the changes made.
 - Begin upstream imports with a faithful baseline and only the user's explicitly requested edits. Present proposed instruction or behavior changes separately and apply them only after agreement.
-- Keep skills narrowly scoped, with clear triggers, explicit tool assumptions, and representative evaluation cases.
-- Keep runtime content in `skills/`. Store provenance and upstream revision tracking in `registry/skills.json`, manual cases in `evaluations/`, and update decisions in `reviews/`. Do not copy maintenance records into runtime skill packages.
+- Keep skills narrowly scoped, with clear triggers and explicit tool assumptions.
+- Keep runtime content in `skills/`. Store provenance, customizations, and upstream revision tracking in `registry/skills.json`. Use optional `reviews/` records for consequential upstream adoption decisions; use Git and PRs for ordinary change history. Do not copy maintenance records into runtime skill packages.
 - Keep employer-specific material, credentials, project paths, and private data out of shared assets. Store project-specific instructions with the project.
 - Use Python's standard library for maintenance scripts unless a dependency provides a concrete benefit.
 - Resolve filesystem paths relative to the repository or explicit arguments, never a particular user's home directory.

@@ -17,7 +17,7 @@ class ReleaseTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for folder in ("skills", "registry", "evaluations"):
+        for folder in ("skills", "registry"):
             (self.root / folder).mkdir()
         self.write_index({})
 
@@ -48,7 +48,6 @@ class ReleaseTests(unittest.TestCase):
         (skill / "SKILL.md").write_text(
             '---\nname: example\ndescription: "A fixture skill."\n---\nDo the fixture task.\n',
             encoding="utf-8")
-        (self.root / "evaluations/example.md").write_text("Manual evaluation cases.\n", encoding="utf-8")
         self.write_index({"example": {
             "maintenance_notes": "Independent fixture.",
             "reviewed_on": date.today().isoformat(), "sources": [],

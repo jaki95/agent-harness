@@ -5,7 +5,7 @@
 Version the harness as one collection. Skill directories stay stable; do not add a separate runtime version field to each `SKILL.md`. The CLI's lockfiles record per-skill source and content details.
 
 - `main` contains reviewed changes and is the personal update source.
-- Tags use `vMAJOR.MINOR.PATCH`, starting with `v0.1.0` after the first useful owned skill is added and evaluated.
+- Tags use `vMAJOR.MINOR.PATCH`, starting with `v0.1.0` after the first useful owned skill is added and validated.
 - Patch versions cover corrections that preserve intended behavior.
 - Minor versions add skills or backward-compatible capabilities.
 - Major versions cover removals, renames, prerequisite changes, or changes that break established workflows. Before 1.0, a minor release can contain these changes if its notes identify them clearly.
@@ -16,7 +16,7 @@ Tags identify reviewed repository snapshots. Upstream author revisions remain in
 
 ## Publish a release
 
-1. Incorporate the chosen changes, run the relevant manual evaluation cases, and update their records and the changelog.
+1. Incorporate the chosen changes, verify affected behavior, and update the changelog. Record actual evidence and limitations in the PR; automated release checks cover structure and packaging.
 2. Commit and push to `main`.
 3. Open [Release harness](https://github.com/jaki95/agent-harness/actions/workflows/release.yml), select `main`, and enter the new version.
 

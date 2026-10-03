@@ -17,7 +17,7 @@ class CheckTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for directory in ("skills", "registry", "evaluations", "reviews"):
+        for directory in ("skills", "registry", "reviews"):
             (self.root / directory).mkdir()
         self.index = {"schema_version": 1, "skills": {}}
         self.write_index()
@@ -48,9 +48,6 @@ class CheckTests(unittest.TestCase):
             '---\nname: example-skill\ndescription: "Use for an example task."\n---\n'
             "# Example\nPerform the task and verify the result.\n", encoding="utf-8",
         )
-        (self.root / "evaluations/example-skill.md").write_text(
-            "# Cases\nConcrete manual cases.\n", encoding="utf-8",
-        )
         self.index["skills"]["example-skill"] = {
             "maintenance_notes": "Customized for portable use.",
             "reviewed_on": date.today().isoformat(),
@@ -73,7 +70,7 @@ class CheckTests(unittest.TestCase):
         (self.root / "skills/.gitkeep").touch()
         self.assert_passes()
 
-    def test_original_skill_with_external_metadata_passes_from_another_directory(self):
+    def test_skill_without_evaluations_passes_from_another_directory(self):
         self.add_skill()
         self.assert_passes()
 
@@ -152,8 +149,7 @@ class CheckTests(unittest.TestCase):
 
     def test_runtime_maintenance_metadata_fails(self):
         skill = self.add_skill()
-        for filename in ("provenance.json", "evaluations.md"):
-            (skill / filename).write_text("Maintenance data", encoding="utf-8")
+        (skill / "provenance.json").write_text("Maintenance data", encoding="utf-8")
         self.assert_fails("belongs outside the runtime skill directory")
 
     def test_moving_ref_cannot_be_used_as_a_revision(self):
@@ -162,13 +158,11 @@ class CheckTests(unittest.TestCase):
         self.add_skill([source])
         self.assert_fails("last_reviewed_revision must be a full Git commit ID")
 
-    def test_missing_external_evaluations_and_mismatched_name_fail(self):
+    def test_mismatched_name_fails(self):
         skill = self.add_skill()
-        (self.root / "evaluations/example-skill.md").unlink()
         path = skill / "SKILL.md"
         path.write_text(path.read_text(encoding="utf-8").replace(
             "name: example-skill", "name: other-skill"), encoding="utf-8")
-        self.assert_fails("cannot read example-skill.md")
         self.assert_fails("name must match")
 
     def test_malformed_registry_fails_without_traceback(self):

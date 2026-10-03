@@ -28,7 +28,7 @@ def main():
     index = json.loads((root / "registry/skills.json").read_text(encoding="utf-8"))
     count = len(index["skills"])
     if not count:
-        print("FAIL: add and evaluate at least one owned skill before releasing", file=sys.stderr)
+        print("FAIL: add at least one owned skill before releasing", file=sys.stderr)
         return 1
     print(f"OK: {args.version} is ready for release with {count} skill(s)")
     return 0

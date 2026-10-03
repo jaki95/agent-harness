@@ -45,11 +45,9 @@ async function installedVersion(version) {
 try {
   await mkdir(join(source, 'skills', skill, 'scripts'), { recursive: true });
   await mkdir(join(source, 'registry'));
-  await mkdir(join(source, 'evaluations'));
   await mkdir(join(source, 'reviews'));
   await mkdir(project);
   await writeFile(join(source, 'registry/skills.json'), '{"maintenance-only":true}\n');
-  await writeFile(join(source, 'evaluations/case.md'), 'maintenance-only\n');
   await writeFile(join(source, 'reviews/decision.md'), 'maintenance-only\n');
   await writeFile(join(source, 'AGENTS.md'), 'Harness maintenance instructions only.\n');
   await writeFile(join(source, 'skills', skill, 'scripts/helper.txt'), 'runtime-resource\n');
@@ -72,7 +70,7 @@ try {
   run(process.execPath, [cli, 'add', `${sourceUrl}#v0.2.0`, ...options], project);
   await installedVersion(2);
   const projectFiles = await readdir(project);
-  for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
+  for (const excluded of ['registry', 'reviews', 'AGENTS.md']) {
     assert.ok(!projectFiles.includes(excluded), `${excluded} leaked into the project`);
   }
   console.log('OK: tagged install, pinned update, explicit upgrade, resources, and maintenance exclusion');
@@ -88,7 +86,7 @@ try {
     for (const name of owned) {
       assert.equal(await readFile(join(installedRoot, name, 'SKILL.md'), 'utf8'),
         await readFile(join(root, 'skills', name, 'SKILL.md'), 'utf8'));
-      for (const reserved of ['provenance.json', 'evaluations.md', 'registry', 'reviews']) {
+      for (const reserved of ['provenance.json', 'registry', 'reviews']) {
         assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
       }
     }
@@ -117,7 +115,7 @@ try {
         await access(target);
       }
     }
-    for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
+    for (const excluded of ['registry', 'reviews', 'AGENTS.md']) {
       assert.ok(!(await readdir(ownedProject)).includes(excluded));
     }
     console.log(`OK: ${owned.length} owned skill(s) install without maintenance records; standalone Harness includes its playbooks and policy without installing writing skills`);

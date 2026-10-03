@@ -64,7 +64,7 @@ To roll back, run the same command with the earlier tag and review the resulting
 
 ## Source and installation boundaries
 
-The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/`, `evaluations/`, or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
+The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/` or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
 
 The Harness writing skills preserve explicit-only upstream metadata. They also provide Codex's `agents/openai.yaml` invocation policy. Invoke Harness as `$harness` in Codex. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
 

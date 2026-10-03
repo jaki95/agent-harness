@@ -74,7 +74,7 @@ def check_skill(skill):
                 errors.append(f"unsupported frontmatter field: {key}")
         if not text[header.end():].strip():
             errors.append("SKILL.md must contain instructions after the frontmatter")
-    for reserved in ("provenance.json", "evaluations.md", "registry", "reviews"):
+    for reserved in ("provenance.json", "registry", "reviews"):
         if (skill / reserved).exists():
             errors.append(f"{reserved} belongs outside the runtime skill directory")
     return errors
@@ -175,8 +175,6 @@ def main():
             failures.extend(f"{entry.name}: {error}" for error in check_skill(entry))
             if entry.name not in index:
                 failures.append(f"{entry.name}: missing registry entry")
-            _, errors = check_text(root / "evaluations" / f"{entry.name}.md")
-            failures.extend(f"{entry.name}: {error}" for error in errors)
     for name, record in index.items():
         if not NAME.fullmatch(name):
             failures.append(f"registry key {name!r} must be lowercase kebab-case")

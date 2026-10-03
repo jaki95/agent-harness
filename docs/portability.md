@@ -19,7 +19,7 @@ If a future tool needs a custom adapter:
 - Support inspecting proposed changes before writing and preserve existing destination files.
 - Track what was installed so updates and removal affect only harness-managed files.
 - Keep tool-specific paths and configuration in the adapter, leaving skill content portable.
-- Package only `skills/<name>/`. Exclude `registry/`, `evaluations/`, `reviews/`, and the harness's own `AGENTS.md` from project installations.
+- Package only `skills/<name>/`. Exclude `registry/`, `reviews/`, and the harness's own `AGENTS.md` from project installations.
 - Verify the target tool's current discovery and instruction rules before implementing an adapter.
 
 Work on customized skills in this source repository. Installed copies are updated through the CLI and should not be treated as the source of truth.

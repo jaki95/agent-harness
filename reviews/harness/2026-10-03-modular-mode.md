@@ -33,15 +33,3 @@ Named skill references resolve through the host's available skill catalog.
 Relative paths reference playbooks bundled inside the Harness package.
 If a writing skill is unavailable, the mode reports its name and continues with Harness's own communication rules.
 The source-collection link identifies where the separate skills can be obtained. It is not an installed skill or authorization to fetch or install instructions.
-
-## Validation
-
-On 2026-10-03, pinned-source comparisons confirmed the mode's section order and unchanged reply and comment sections.
-The writing-skill instruction bodies match their pinned sources.
-`python3 scripts/check.py` validated all four owned skills.
-`python3 -m unittest discover -s scripts/tests` passed all 21 tests.
-`npm ci --ignore-scripts` and `npm run test:skills` passed.
-The CLI check covers installation of all four skills and a separate standalone Harness package.
-The standalone check verifies bundled playbooks, invocation policy, and package-local file references without the separate writing skills.
-These checks establish content and packaging properties.
-Native mode behavior and independent agent adherence are unverified.
