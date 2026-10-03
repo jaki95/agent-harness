@@ -76,6 +76,27 @@ try {
     assert.ok(!projectFiles.includes(excluded), `${excluded} leaked into the project`);
   }
   console.log('OK: tagged install, pinned update, explicit upgrade, resources, and maintenance exclusion');
+
+  const index = JSON.parse(await readFile(join(root, 'registry/skills.json'), 'utf8'));
+  const owned = Object.keys(index.skills);
+  if (owned.length) {
+    const ownedProject = join(temporary, 'owned-project');
+    await mkdir(ownedProject);
+    run(process.execPath, [cli, 'add', root, '--skill', '*', '--agent', 'codex', '--copy', '--yes'], ownedProject);
+    const installedRoot = join(ownedProject, '.agents/skills');
+    assert.deepEqual((await readdir(installedRoot)).sort(), owned.sort());
+    for (const name of owned) {
+      assert.equal(await readFile(join(installedRoot, name, 'SKILL.md'), 'utf8'),
+        await readFile(join(root, 'skills', name, 'SKILL.md'), 'utf8'));
+      for (const reserved of ['provenance.json', 'evaluations.md', 'registry', 'reviews']) {
+        assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
+      }
+    }
+    for (const excluded of ['registry', 'evaluations', 'reviews', 'AGENTS.md']) {
+      assert.ok(!(await readdir(ownedProject)).includes(excluded));
+    }
+    console.log(`OK: ${owned.length} owned skill(s) install without maintenance records`);
+  }
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

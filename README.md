@@ -2,7 +2,7 @@
 
 A portable home for skills, scripts, and conventions that I own and maintain across projects.
 
-Skills start empty. Public skills are reference material for deliberate adaptation, with sources and revisions tracked separately. This repository is the source of truth; project-specific instructions stay in their projects.
+Public skills are reference material for deliberate adaptation, with sources and revisions tracked separately. This repository is the source of truth; project-specific instructions stay in their projects.
 
 ## Layout
 
@@ -38,13 +38,19 @@ npm run test:skills
 
 The pinned CLI test creates temporary Git tags and project-local installations. It verifies release pinning, explicit upgrades, runtime resources, and exclusion of maintenance records. It does not import public skills or install globally.
 
-## Add the first skill
+## Available skills
+
+| Skill | Purpose |
+| --- | --- |
+| [grill-me](skills/grill-me/SKILL.md) | Stress-test a plan, decision, or idea in rounds of questions |
+
+## Add a skill
 
 Follow [the adaptation workflow](docs/adapting-skills.md). Each skill has runtime instructions, a separate registry entry, and separate evaluation cases. Templates are inactive until you customize and place them in their intended locations.
 
 ## Track upstream sources
 
-[The maintenance index](registry/skills.json) records both adaptations and inspirations, with multiple sources supported per skill. Each source tracks its baseline, last reviewed commit, and last incorporated commit. [Registry conventions](docs/registry.md) describe these fields and the update review process. The index starts empty; automated monitoring is not implemented yet.
+[The maintenance index](registry/skills.json) records both adaptations and inspirations, with multiple sources supported per skill. Each source tracks its baseline, last reviewed commit, and last incorporated commit. [Registry conventions](docs/registry.md) describe these fields and the update review process. Automated monitoring is not implemented yet.
 
 ## Installation and releases
 
@@ -54,6 +60,12 @@ Use the Skills CLI directly against this private repository; no separate skills.
 npx skills@1.7.0 add jaki95/agent-harness --list
 ```
 
-The collection is currently empty, so listing reports no skills. Follow [the release workflow](docs/versioning.md) to publish the first version after adding and evaluating an owned skill. Releases are manually triggered, validated, and tagged; the workflow rejects empty collections and existing tags.
+Install the available skill from approved changes on `main`, running inside your target project:
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex
+```
+
+Follow [the release workflow](docs/versioning.md) to publish the first version after behavioral evaluation. Releases are manually triggered, validated, and tagged; the workflow rejects empty collections and existing tags.
 
 Keep reusable behavior here and project context in project repositories. See [portability conventions](docs/portability.md) for the distribution boundary.

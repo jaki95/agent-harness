@@ -34,7 +34,7 @@ Run the read-only release preflight locally:
 python3 scripts/check_release.py v0.1.0
 ```
 
-It currently rejects this empty collection. It does not create tags, query the remote, or publish anything; existing-tag checks occur in the release workflow.
+It checks the current collection and rejects invalid versions or empty collections. It does not create tags, query the remote, or publish anything; existing-tag checks occur in the release workflow.
 
 The workflow pushes without force, so a conflicting tag push fails. If tag creation succeeds but GitHub release creation fails, preserve the tag and complete its release using `gh release create <version> --verify-tag --generate-notes`. Verify the tag's commit first; do not rerun the workflow with the same tag.
 

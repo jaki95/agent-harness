@@ -1,4 +1,21 @@
 {
   "schema_version": 1,
-  "skills": {}
+  "skills": {
+    "grill-me": {
+      "maintenance_notes": "Adapted Matt Pocock's current grilling workflow under the local name grill-me and UI title Grill Me. Preserved decision-tree rounds, recommendations, fact-finding, and confirmation before follow-on work. Rephrased the instructions for a portable standalone skill and made delegation conditional on availability and permission.",
+      "reviewed_on": "2026-10-03",
+      "sources": [
+        {
+          "id": "matt-pocock-grilling",
+          "relationship": "adapted",
+          "repository": "https://github.com/mattpocock/skills",
+          "ref": "main",
+          "paths": ["skills/productivity/grilling/"],
+          "baseline_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+          "last_reviewed_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60",
+          "last_incorporated_revision": "d81f3a183412e71a5b1e84ca21bc1a35eea03a60"
+        }
+      ]
+    }
+  }
 }
