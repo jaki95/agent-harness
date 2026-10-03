@@ -55,7 +55,7 @@ def check_skill(skill):
     return errors
 
 
-def check_source(source, root):
+def check_source(source):
     if not isinstance(source, dict):
         return ["source must be an object"]
     errors = []
@@ -82,27 +82,10 @@ def check_source(source, root):
             continue
         if not nonempty(revision) or not COMMIT.fullmatch(revision):
             errors.append(f"{field} must be a full Git commit ID")
-    if relationship == "adapted":
-        for field in ("license", "license_file"):
-            if not nonempty(source.get(field)):
-                errors.append(f"{field} is required for adaptations")
-    notice = source.get("license_file")
-    if notice is not None:
-        if not relative_path(notice):
-            errors.append("license_file must be repository-relative")
-        else:
-            try:
-                resolved = (root / notice).resolve()
-                if not resolved.is_relative_to(root):
-                    errors.append("license_file must stay inside the repository")
-                elif not resolved.is_file() or resolved.stat().st_size == 0:
-                    errors.append("license_file must point to a nonempty file")
-            except (OSError, RuntimeError) as exc:
-                errors.append(f"cannot resolve license_file: {exc}")
     return errors
 
 
-def check_record(record, root):
+def check_record(record):
     if not isinstance(record, dict):
         return ["registry entry must contain an object"]
     errors = []
@@ -121,7 +104,7 @@ def check_record(record, root):
         return errors + ["sources must be a list"]
     ids = set()
     for index, source in enumerate(sources, 1):
-        errors.extend(f"source {index}: {error}" for error in check_source(source, root))
+        errors.extend(f"source {index}: {error}" for error in check_source(source))
         if isinstance(source, dict) and nonempty(source.get("id")):
             if source["id"] in ids:
                 errors.append(f"source {index}: duplicate source id {source['id']}")
@@ -174,7 +157,7 @@ def main():
             failures.append(f"registry key {name!r} must be lowercase kebab-case")
         if name not in names:
             failures.append(f"{name}: registry entry has no runtime skill")
-        failures.extend(f"{name}: {error}" for error in check_record(record, root))
+        failures.extend(f"{name}: {error}" for error in check_record(record))
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)

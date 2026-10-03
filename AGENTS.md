@@ -2,7 +2,7 @@
 
 - Keep shared skills and scripts portable across personal and work projects.
 - Never import or install existing skills unless the user requests that specific adaptation.
-- Treat public skills as references. Customize instructions deliberately and record sources, pinned revisions, licenses, and the changes made.
+- Treat public skills as references. Customize instructions deliberately and record sources, pinned revisions, and the changes made.
 - Keep skills narrowly scoped, with clear triggers, explicit tool assumptions, and representative evaluation cases.
 - Keep runtime content in `skills/`. Store provenance and upstream revision tracking in `registry/skills.json`, manual cases in `evaluations/`, and update decisions in `reviews/`. Do not copy maintenance records into runtime skill packages.
 - Keep employer-specific material, credentials, project paths, and private data out of shared assets. Store project-specific instructions with the project.

@@ -17,7 +17,7 @@ The initial scaffold contains no installation adapter. When adding one:
 - Support inspecting proposed changes before writing and preserve existing destination files.
 - Track what was installed so updates and removal affect only harness-managed files.
 - Keep tool-specific paths and configuration in the adapter, leaving skill content portable.
-- Package only `skills/<name>/` and any required license notices. Exclude `registry/`, `evaluations/`, `reviews/`, and the harness's own `AGENTS.md` from project installations.
+- Package only `skills/<name>/`. Exclude `registry/`, `evaluations/`, `reviews/`, and the harness's own `AGENTS.md` from project installations.
 - Verify the target tool's current discovery and instruction rules before implementing an adapter.
 
 Until an adapter exists, the harness is maintained and validated here but is not automatically discovered by tools running in other projects.

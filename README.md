@@ -2,7 +2,7 @@
 
 A portable home for skills, scripts, and conventions that I own and maintain across projects.
 
-Skills start empty. Public skills are reference material for deliberate adaptation, with attribution and licensing preserved. This repository is the source of truth; project-specific instructions stay in their projects.
+Skills start empty. Public skills are reference material for deliberate adaptation, with sources and revisions tracked separately. This repository is the source of truth; project-specific instructions stay in their projects.
 
 ## Layout
 
@@ -11,7 +11,6 @@ skills/                 Runtime instructions and supporting files only
 registry/skills.json     Maintenance index: sources and upstream revision tracking
 evaluations/            Manual evaluation cases, one file per skill
 reviews/                Upstream update decisions and reasoning
-notices/                Retained upstream license records
 scripts/                Portable maintenance utilities and their tests
 templates/              Runtime and maintenance templates
 docs/                   Adaptation, registry, and portability conventions
@@ -40,7 +39,3 @@ Follow [the adaptation workflow](docs/adapting-skills.md). Each skill has runtim
 ## Portability
 
 Keep reusable behavior here and project context in project repositories. See [portability conventions](docs/portability.md) before connecting the harness to an agent tool. Tool-specific installation adapters will be added when there is a concrete target and scope.
-
-## Licensing
-
-No repository-wide license has been selected yet. Each adapted skill must record its upstream license and retain required notices. Customization does not remove upstream license obligations.

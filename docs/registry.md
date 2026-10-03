@@ -22,8 +22,6 @@ Each source contains:
 | `baseline_revision` | Full immutable Git commit identifying the original reference |
 | `last_reviewed_revision` | Full commit whose relevant changes have been considered, including rejected changes |
 | `last_incorporated_revision` | Full commit most recently used for incorporation; may be null for inspiration with no incorporated material |
-| `license` | Upstream license identifier or description, required for adaptations |
-| `license_file` | Repository-relative path to a nonempty retained notice, required for adaptations; may be absent or null for inspiration |
 
 For a new adaptation, initialize all three revisions to the source commit. For inspiration, initialize baseline and last reviewed to the reference commit and last incorporated to null. Use full 40- or 64-character hexadecimal Git object IDs, not moving branches or release names, in revision fields.
 
@@ -41,6 +39,6 @@ When relevant changes appear, produce a review proposal with an upstream diff an
 
 ## Context boundary
 
-Agents doing project work need `skills/<name>/SKILL.md` and runtime resources. Registry entries, evaluations, and review history are for agents maintaining the harness. Installers should package only runtime content and required notices, never the maintenance index or harness-level `AGENTS.md`.
+Agents doing project work need `skills/<name>/SKILL.md` and runtime resources. Registry entries, evaluations, and review history are for agents maintaining the harness. Installers should package only runtime content, never the maintenance index or harness-level `AGENTS.md`.
 
 Keeping a file next to a skill does not by itself prove it will be loaded into context; tools differ. This layout makes the intended distribution boundary explicit and independent of those discovery rules.

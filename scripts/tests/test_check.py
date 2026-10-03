@@ -17,7 +17,7 @@ class CheckTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for directory in ("skills", "registry", "evaluations", "notices", "reviews"):
+        for directory in ("skills", "registry", "evaluations", "reviews"):
             (self.root / directory).mkdir()
         self.index = {"schema_version": 1, "skills": {}}
         self.write_index()
@@ -60,8 +60,6 @@ class CheckTests(unittest.TestCase):
         return skill
 
     def source(self, relationship="adapted"):
-        notice = self.root / "notices/example-license"
-        notice.write_text("Example retained notice.\n", encoding="utf-8")
         return {
             "id": "example-source", "relationship": relationship,
             "repository": "https://example.com/skills.git", "ref": "main",
@@ -69,8 +67,6 @@ class CheckTests(unittest.TestCase):
             "baseline_revision": "a" * 40,
             "last_reviewed_revision": "b" * 40,
             "last_incorporated_revision": "a" * 40 if relationship == "adapted" else None,
-            "license": "MIT" if relationship == "adapted" else None,
-            "license_file": "notices/example-license" if relationship == "adapted" else None,
         }
 
     def test_empty_scaffold_passes(self):
@@ -115,18 +111,6 @@ class CheckTests(unittest.TestCase):
         for filename in ("provenance.json", "evaluations.md"):
             (skill / filename).write_text("Maintenance data", encoding="utf-8")
         self.assert_fails("belongs outside the runtime skill directory")
-
-    def test_license_cannot_escape_repository(self):
-        source = self.source()
-        source["license_file"] = "../outside-license"
-        self.add_skill([source])
-        self.assert_fails("license_file must be repository-relative")
-
-    def test_adapted_source_requires_license_record(self):
-        source = self.source()
-        source["license_file"] = None
-        self.add_skill([source])
-        self.assert_fails("license_file is required for adaptations")
 
     def test_moving_ref_cannot_be_used_as_a_revision(self):
         source = self.source()
