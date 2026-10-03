@@ -47,7 +47,7 @@ The pinned CLI test creates temporary Git tags and project-local installations. 
 | [unslop](skills/unslop/SKILL.md) | Remove AI writing patterns while preserving meaning |
 | [technical-writing](skills/technical-writing/SKILL.md) | Write docs, PR descriptions, and commit messages with the original writing guidance |
 
-Harness uses Poteto Mode's section layout and routes to separate skills and communication playbooks. The two writing skills preserve their pinned upstream instruction bodies. Invoke Harness with `/harness` on hosts that expose skills as slash commands, or `$harness` in Codex. Install `harness`, `unslop`, and `technical-writing` together so its writing routes resolve. The current stage covers communication; engineering, verification workflows, delegation, and autonomy will be designed separately.
+Harness uses Poteto Mode's section layout and routes to separate skills and communication playbooks. The two writing skills preserve their pinned upstream instruction bodies. Invoke Harness with `/harness` on hosts that expose skills as slash commands, or `$harness` in Codex. Install `harness`, `unslop`, and `technical-writing` together so its writing routes resolve. Harness covers communication. Execution and delegation follow the host and task rules.
 
 ## Add a skill
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "skills": {
     "grill-me": {
-      "maintenance_notes": "Matt Pocock's grilling skill at the recorded upstream commit, preserved verbatim except for name: grill-me and UI display_name: Grill Me. The initial unauthorized rewrites were removed; future instruction changes require explicit user agreement.",
+      "maintenance_notes": "Matt Pocock's grilling skill at the recorded upstream commit, preserved verbatim except for name: grill-me and UI display_name: Grill Me.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -20,7 +20,7 @@
       ]
     },
     "harness": {
-      "maintenance_notes": "Replaces the bundled agent-communication draft. Preserve Poteto mode section layout, mode metadata, exact reply and comment sections, separate writing skills, and numbered playbooks. Customize selective explanations and milestone updates. Only communication is implemented. Communication playbooks are original except the adapted authoring-a-skill playbook. No new engineering, verification, delegation, or autonomy policy is adopted.",
+      "maintenance_notes": "Communication mode with selective explanations, milestone updates, and Poteto Mode's section layout and metadata. Uses the unchanged upstream reply and comment sections, separate writing skills, and numbered communication playbooks. The authoring-a-skill playbook is adapted from upstream; the other communication playbooks are original. Execution and delegation follow host and task rules.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -39,7 +39,7 @@
       ]
     },
     "unslop": {
-      "maintenance_notes": "Restore the pinned upstream instruction body verbatim, including headings, stable rule identifiers, patterns, and examples. Normalize the description to a quoted scalar and retain explicit-only metadata. Add Codex explicit invocation policy. No rules are bundled into another skill.",
+      "maintenance_notes": "Uses the pinned upstream instruction body unchanged, including headings, stable rule identifiers, patterns, and examples. The description is a quoted scalar with the original value. Includes explicit-only metadata and Codex invocation policy.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -57,7 +57,7 @@
       ]
     },
     "technical-writing": {
-      "maintenance_notes": "Restore the pinned upstream instruction body verbatim, including named standards, document purposes, exact sentence guidance, amendment proposal, and worked example. Retain explicit-only metadata and add Codex invocation policy. Requires the separate Unslop skill.",
+      "maintenance_notes": "Uses the pinned upstream instruction body unchanged, including named standards, document purposes, sentence guidance, amendment proposals, and the worked example. Includes explicit-only metadata and Codex invocation policy. Depends on the separate Unslop skill.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {

@@ -1,13 +1,15 @@
-# Restore separate technical-writing skill
+# Technical-writing source adoption
 
+- Skill. `technical-writing`.
 - Source ID. `cursor-pstack`.
+- Review date. 2026-10-03.
 - Reviewed commit. `23e4138daa01c42d4969f7a5465f82704e64f798`.
 - Decision. Adopt the upstream instruction body unchanged.
 
-The user requested technical writing as a separate skill in its original format.
-Restore every upstream heading, named standard, exact rule, amendment-proposal instruction, and worked example.
-Retain `disable-model-invocation: true` and add Codex's explicit-only invocation policy.
-Unslop remains a separate dependency.
-Track provenance and evaluation cases outside the runtime package.
-Source-body parity and temporary installation checks validate content and packaging.
-Independent behavioral evaluation remains pending.
+The skill guides documentation, PR descriptions, and commit messages.
+Its headings, named standards, rules, amendment-proposal instruction, and worked example match the pinned upstream source.
+The skill includes `disable-model-invocation: true` and Codex's explicit-only invocation policy.
+It depends on the separate Unslop skill.
+Provenance and evaluation cases live outside the runtime package.
+Source-body comparisons and temporary installation checks validate content and packaging.
+Independent behavioral evaluation is pending.

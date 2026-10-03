@@ -1,6 +1,6 @@
 # Harness evaluation cases
 
-These manual cases exercise the selected communication behavior.
+These manual cases exercise the communication behavior.
 Install `harness`, `unslop`, and `technical-writing` into a disposable project.
 Invoke Harness with the host's supported skill mechanism.
 
@@ -25,5 +25,5 @@ Invoke Harness with the host's supported skill mechanism.
 ## Structural parity
 
 - Input and context. Compare the mode against pinned Poteto Mode and install the current collection into a temporary project.
-- Expected result. Preserve the upstream section order, explicit-only metadata, exact reply and comment sections, separate writing skills, and routed numbered playbooks. Preserve selective explanations and milestone updates as the two custom choices.
+- Expected result. Preserve the upstream section order, explicit-only metadata, exact reply and comment sections, separate writing skills, and routed numbered playbooks. Preserve selective explanations and milestone updates as mode behavior.
 - Observed outcome. Source parity and route checks are recorded in the adaptation review. CLI compatibility is checked with `npm run test:skills`. These checks do not prove an agent follows the instructions.

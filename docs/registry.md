@@ -27,6 +27,8 @@ For a new adaptation, initialize all three revisions to the source commit. For i
 
 ## Review decisions
 
+Maintenance notes and reviews describe final behavior, source differences, reasons, and validation. Use Git history for editing chronology.
+
 Keep decisions in `reviews/<skill-name>/` as dated Markdown records, with the source ID, previous and reviewed commits, decision (`adopt`, `partial`, or `keep`), relevant changes, reasoning, and evaluation results. Source IDs let one skill track several independent references.
 
 After review, update the index and record together in one Git change. Keeping a customization still advances `last_reviewed_revision`; otherwise a monitor would repeatedly report the same rejected changes. `last_incorporated_revision` is provenance, not a claim that the local skill equals upstream. The checker validates registry records; it does not yet validate or reconcile review-history files.

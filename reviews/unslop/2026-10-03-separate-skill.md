@@ -1,13 +1,15 @@
-# Restore separate Unslop skill
+# Unslop source adoption
 
+- Skill. `unslop`.
 - Source ID. `cursor-pstack`.
+- Review date. 2026-10-03.
 - Reviewed commit. `23e4138daa01c42d4969f7a5465f82704e64f798`.
 - Decision. Adopt the upstream instruction body unchanged.
 
-The user requested Unslop as a separate skill in its original format.
-Restore every upstream heading, rule identifier, pattern, and example.
-Normalize the description to a quoted scalar without changing its value.
-Retain `disable-model-invocation: true` and add Codex's explicit-only invocation policy.
-Track provenance and evaluation cases outside the runtime package.
-Source-body parity and temporary installation checks validate content and packaging.
-Independent behavioral evaluation remains pending.
+Unslop edits prose to remove AI writing patterns while preserving meaning and tone.
+Its headings, stable rule identifiers, patterns, and examples match the pinned upstream source.
+The quoted description has the original value.
+The skill includes `disable-model-invocation: true` and Codex's explicit-only invocation policy.
+Provenance and evaluation cases live outside the runtime package.
+Source-body comparisons and temporary installation checks validate content and packaging.
+Independent behavioral evaluation is pending.
