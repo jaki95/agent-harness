@@ -2,12 +2,12 @@
 
 **You own the plan, not the code. The plan is a checklist an owner runs box by box and the operator audits from the evidence.** The plan is the deliverable. Do not implement.
 
-Use available host filesystem, Git, execution, delegation, and matching verification tools within task authorization and host permissions. Resolve named skills through Harness's catalog rules and bundled resources from its installed package. Report unavailable tools, records, controls, or access without claiming an affected step completed. The bundled plan checker requires Node 22.20+ and no third-party dependencies; it validates structure, not evidence or execution. Missing delegation or checker access is reported without a completed-check claim.
+Use available host filesystem, Git, execution, delegation, and matching verification tools within task authorization and host permissions. Resolve named skills through Harness's catalog rules and bundled resources from its installed package. Report unavailable tools, records, controls, or access without claiming an affected step completed. The bundled plan checker requires Node 22.20+ and no third-party dependencies; the Markdown command validates structure. Its acceptance commands declare scenarios, capture project gates, and check current-head evidence per `../references/acceptance-record.md`. Missing delegation or checker access is reported without a completed-check claim.
 
 1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions by prototype before you write. Run `prototype.md` for each. Keep the branch, the SHA, and the screenshots for Appendix A. Ask the operator only about a product or preference call that no run can settle. Give options (the **principle-never-block-on-the-human** principle skill).
 3. Explore through supported host delegation, with configured role models or parent inheritance and host concurrency limits, per Harness's Subagents section (the **principle-guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, write the file under `docs/` in an authorized task or project location. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **principle-sequence-verifiable-units** principle skill). Name the execution playbook in **How to read this**. Pick between `autopilot-full.md` and `autopilot-stack.md` per the rule at the end of `autopilot-stack.md`. A standing program takes `orchestrate.md`.
+4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, write the file under `docs/` in an authorized task or project location. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **principle-sequence-verifiable-units** principle skill). Each PR names one committed acceptance manifest. Its owner declares every scoped outcome, scenario, pass predicate, project gate, required environment, and concrete nonapplicability before implementation or measurement. Put project-specific size and canonical-source rules in that manifest. Name the execution playbook in **How to read this**. Pick between `autopilot-full.md` and `autopilot-stack.md` per the rule at the end of `autopilot-stack.md`. A standing program takes `orchestrate.md`.
 5. Read and apply **technical-writing** in full, then **unslop**. The body is one Diátaxis mode, how-to. Appendices hold explanation and reference. Each heading states the task or the finding. No long dashes. No mid-sentence colons.
 6. Run `node <Harness-package>/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the **principle-encode-lessons-in-structure** principle skill).
 7. Hand back. Post the plan path and the script's output, then stop. Execution starts on the operator's explicit go, under the execution playbook the plan names.
@@ -57,13 +57,18 @@ Tests alone are not sufficient verification. A PR is verified only when its appl
 
 - [ ] Use `gh` for every PR operation. Do not require Origin or Graphite.
 - [ ] Open the PR ready, never draft, per **Opening a PR**. Use `gh pr create --base <base-branch>` and register or attach its URL through host tracking when supported or required. A stack child targets its parent branch.
+- [ ] Before implementation or measurement, commit each PR's acceptance manifest and run `node <Harness-package>/scripts/check-plan.mjs acceptance declare <manifest.json>` per `references/acceptance-record.md` in the installed Harness package.
 - [ ] Run the repo's required pre-review checks for the touched paths before the PR-facing push, including lint and typecheck when provided. Push with hooks on.
+- [ ] Before each code-ready report, run `acceptance run <manifest.json>` at the clean committed head. Return its head, run ID, and receipt store.
 - [ ] Read and apply **deslop** before each commit and **no-comments** before review.
 - [ ] Triage every Bugbot and security-reviewer comment per the Bugbot triage reference in the installed Harness package (`../references/bugbot-triage.md`).
 - [ ] Rebase onto current trunk before the code-ready report and babysit. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
 
 ### Verdict and merge, for every PR
 
+- [ ] Root runs `acceptance check <manifest.json>` at actual code-ready HEAD in the same store before the full independent round. Missing scenarios, failed or absent gates, stale evidence, and contradictory measurement setup block dispatch.
+- [ ] After review findings, append the consolidated record and preserve each failed head, premise, repro run, and investigation. Declare amendments before the next fix or measurement. Require current-head focused and every known affected-case check. Two failed fixes sharing a premise and gate require Attack the Premise evidence before another ready report.
+- [ ] Keep the independent verdict, applicable live proof, and current-head CI at merge. Passing owner preflight replaces none of them.
 - [ ] At the code-ready head SHA and at each later push that changes the patch, run the **swarm** skill. One gates lane. The declared live lanes from the PR's **Verify, live** block and the perf lane from its **Verify, perf** block when applicable. Honor concrete nonapplicability reasons; missing capability is still incomplete. Two or more audit lanes, each with its own focus, that read the diff and the receipts and distrust the PR body. The root audits the receipts in the merge-ready report before the verdict.
 - [ ] Clean only when every lane is `PASS`. Findings go back to the owner, including a defect that a lane filed as a note. A new head gets a fresh swarm and a fresh verdict, except for results that stay valid under the patch-id rule in `shipping.md`.
 - [ ] <The merge or append rule from the execution playbook, with the patch-id rule from `shipping.md`.>
@@ -89,6 +94,7 @@ Each live lane runs in an isolated supported host execution environment at the e
 
 **Build.**
 
+- [ ] Commit `<manifest.json>` with the scoped outcomes, scenarios, concrete predicates, project commands, required environment, and justified nonapplicability. Declare it before implementation or measurement.
 - [ ] <One change. Name the symbol and the file.>
 
 **You see.**
