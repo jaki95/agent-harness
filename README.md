@@ -50,6 +50,7 @@ Use these guides for maintenance:
 
 - [Adapt a skill](docs/adapting-skills.md).
 - [Track upstream sources](docs/registry.md).
+- [Monitor external skill updates](docs/monitoring-upstream.md).
 - [Keep shared assets portable](docs/portability.md).
 - [Version and release the collection](docs/versioning.md).
 - [Agent maintenance instructions](AGENTS.md).
