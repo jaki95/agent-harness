@@ -35,11 +35,13 @@ Use optional `reviews/<skill-name>/` records for consequential upstream adoption
 
 After review, update the index and any decision record together in one Git change. Keeping a customization still advances `last_reviewed_revision`; otherwise a monitor would repeatedly report the same rejected changes. `last_incorporated_revision` is provenance, not a claim that the local skill equals upstream. The checker validates registry records; it does not yet validate or reconcile review-history files.
 
-## Future monitoring contract
+## Monitoring contract
 
-A monitor should read this index, resolve each source ref, and compare only its watched paths since `last_reviewed_revision`. It should include additions, modifications, deletions, and moved files. A change outside watched paths need not create a review. A missing path, unavailable repository, or rewritten history should be reported for investigation.
+The upstream monitor reads this index, resolves each source ref, and compares its watched paths since `last_reviewed_revision`. It includes additions, modifications, deletions, mode changes, and moved files. A change outside watched paths does not create a review. A missing path, unavailable repository, or rewritten history requires investigation.
 
-When relevant changes appear, produce a review proposal with an upstream diff and a comparison against the customized skill. Detection alone must not advance review revisions or modify skills. A human and an agent choose what to incorporate and record their decision. No monitor, schedule, or remote access is configured by this scaffold.
+When relevant changes appear, the monitor produces a report with an upstream diff, maintenance notes, and a local entrypoint comparison when the mapping is unambiguous. Supporting-file mappings require maintainer judgment. Detection does not advance review revisions or modify skills. A human and an agent choose what to incorporate and record their decision.
+
+[The monitoring guide](monitoring-upstream.md) covers local detection and the weekly issue digest. Merging the workflow to `main` activates its schedule. Explicit `--issue-repo OWNER/REPO` enables publication for local runs. Subscribe to the maintained issue for notifications.
 
 ## Context boundary
 

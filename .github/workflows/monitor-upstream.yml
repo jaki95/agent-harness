@@ -1,0 +1,46 @@
+name: Monitor upstream skills
+
+on:
+  schedule:
+    - cron: '17 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-skill-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - name: Detect changes and maintain the issue digest
+        id: monitor
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/monitor_upstream.py --output-dir work/upstream-report --issue-repo "$GITHUB_REPOSITORY"
+      - name: Preserve the review report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-skill-report
+          path: work/upstream-report/
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Fail when detection or publication failed
+        if: always() && steps.monitor.outcome == 'failure'
+        run: exit 1
