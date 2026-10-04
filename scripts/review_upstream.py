@@ -255,7 +255,8 @@ def validate_trace(trace):
             raise monitor.MonitorError("invalid-trace", "Codex execution has an unsupported or failed event")
         item = event.get("item")
         if item is not None and (not isinstance(item, dict) or item.get("type") not in allowed_items):
-            raise monitor.MonitorError("tool-use-rejected", "Codex attempted a tool or unsupported execution item")
+            kind = item.get("type") if isinstance(item, dict) else "non-object"
+            raise monitor.MonitorError("tool-use-rejected", f"Codex attempted a tool or unsupported execution item: {kind}")
     if not any(event.get("type") == "turn.completed" for event in events):
         raise monitor.MonitorError("invalid-trace", "Codex execution trace has no completed turn")
 

@@ -165,6 +165,16 @@ class ValidationTests(unittest.TestCase):
             with self.assertRaises(monitor.MonitorError):
                 review.validate_trace(trace)
 
+    def test_disabled_code_mode_startup_notice_allows_completed_analysis(self):
+        notice = {"type": "item.completed", "item": {"id": "item_0", "type": "error",
+            "message": "Code Mode is unavailable because code-mode host is disabled. "
+                       "Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."}}
+        trace = json.dumps(notice).encode() + b'\n{"type":"turn.completed"}'
+        review.validate_trace(trace)
+        notice["item"]["message"] = "A different error occurred"
+        with self.assertRaises(monitor.MonitorError):
+            review.validate_trace(json.dumps(notice).encode() + b'\n{"type":"turn.completed"}')
+
     def test_codex_flags_schema_and_stdin_are_enforced(self):
         with tempfile.TemporaryDirectory() as temp:
             def fake_run(args, **kwargs):
