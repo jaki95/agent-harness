@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add executable acceptance declaration, captured project gates, current-head readiness checks, and preserved review-finding history before Autopilot review rounds.
 - Registry validation rejects duplicate JSON object keys before parsing can discard provenance records.
 - Add multi-phase planning, session pickup, explicit pause, and scoped cleanup, with an adaptive plan checker and portable read-only worktree audit.
 

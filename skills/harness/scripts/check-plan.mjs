@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import process from "node:process";
+import { acceptanceCLI } from "./acceptance.mjs";
+
+if (process.argv[2] === "acceptance") {
+	process.exit(acceptanceCLI(process.argv.slice(3)));
+}
 
 const RULE =
 	"Tests alone are not sufficient verification. A PR is verified only when its applicable unit, live, and perf checks have evidence, with a reason for each nonapplicable check.";
