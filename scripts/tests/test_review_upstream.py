@@ -27,7 +27,8 @@ def issue(generation=1, head=HEAD):
 
 def evidence():
     return review.Evidence(MAIN, ({"key": SOURCE.key, "observed_revision": HEAD,
-        "changed_files": [monitor.asdict(CHANGE)], "local_files": {"skills/sample/SKILL.md": "local"}},))
+        "changed_files": [monitor.asdict(CHANGE)], "maintenance_notes": "Keep customization",
+        "local_files": {"skills/sample/SKILL.md": "local"}},))
 
 
 def advice():
@@ -151,6 +152,63 @@ class ValidationTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(monitor.MonitorError):
                 review.validate_advice(value, evidence())
 
+    def test_supplied_registry_notes_are_valid_evidence(self):
+        value = advice()
+        value["findings"][0]["evidence_paths"] = ["registry/skills.json"]
+        self.assertEqual(value, review.validate_advice(value, evidence()))
+
+    def test_schema_binds_each_source_to_its_evidence_and_declares_bounds(self):
+        first = evidence().sources[0]
+        second = {**first, "key": "other/source", "local_files": {"skills/other/SKILL.md": "other"},
+                  "changed_files": [{**monitor.asdict(CHANGE), "old_path": "other/SKILL.md",
+                                     "new_path": "other/SKILL.md"}]}
+        proof = review.Evidence(MAIN, (first, second))
+        schema = review.output_schema(proof)
+        self.assertEqual("object", schema["type"])
+        findings = schema["properties"]["findings"]
+        self.assertEqual((2, 2), (findings["minItems"], findings["maxItems"]))
+        variants = findings["items"]["anyOf"]
+        self.assertEqual(2, len(variants))
+        for variant, key, paths in zip(variants, ("sample/source", "other/source"), (
+                ["registry/skills.json", "skills/sample/SKILL.md", "watched/SKILL.md"],
+                ["other/SKILL.md", "registry/skills.json", "skills/other/SKILL.md"])):
+            with self.subTest(key=key):
+                self.assertFalse(variant["additionalProperties"])
+                self.assertEqual(["key", "summary", "local_impact", "recommendation", "next_actions", "limits", "evidence_paths"],
+                                 variant["required"])
+                properties = variant["properties"]
+                self.assertEqual({"type": "string", "enum": [key]}, properties["key"])
+                self.assertEqual({"type": "array", "minItems": 1, "maxItems": 30,
+                                  "items": {"type": "string", "enum": paths}}, properties["evidence_paths"])
+                self.assertEqual({"type": "array", "minItems": 1, "maxItems": 8,
+                                  "items": {"type": "string", "minLength": 1, "maxLength": 1500,
+                                            "pattern": r"\S"}}, properties["next_actions"])
+                for field in ("summary", "local_impact", "limits"):
+                    self.assertEqual({"type": "string", "minLength": 1, "maxLength": 4000,
+                                      "pattern": r"\S"}, properties[field])
+        value = advice()
+        value["findings"][0]["evidence_paths"] = ["skills/other/SKILL.md"]
+        with self.assertRaisesRegex(monitor.MonitorError, r"sample/source\.evidence_paths\[0\]"):
+            review.validate_advice(value, proof)
+
+    def test_invalid_evidence_diagnostic_does_not_echo_model_path(self):
+        value = advice()
+        value["findings"][0]["evidence_paths"] = ["model-private-content:42"]
+        with self.assertRaises(monitor.MonitorError) as failure:
+            review.validate_advice(value, evidence())
+        self.assertEqual("Codex sample/source.evidence_paths[0] is not a supplied evidence path", str(failure.exception))
+        self.assertNotIn("model-private-content", str(failure.exception))
+
+    def test_advice_bounds_and_whitespace_are_rejected_with_field_diagnostics(self):
+        cases = (("summary", " " * 2), ("local_impact", "x" * 4001),
+                 ("next_actions", [" " ]), ("next_actions", ["x" * 1501]),
+                 ("next_actions", ["action"] * 9), ("evidence_paths", ["watched/SKILL.md"] * 31))
+        for field, invalid in cases:
+            value = advice()
+            value["findings"][0][field] = invalid
+            with self.subTest(field=field), self.assertRaisesRegex(monitor.MonitorError, "sample/source." + field):
+                review.validate_advice(value, evidence())
+
     def test_legacy_github_link_pins_exact_revision(self):
         item = monitor.parse_snapshot(issue()["body"])["sources"][0]
         item.pop("observed_revision")
@@ -184,6 +242,8 @@ class ValidationTests(unittest.TestCase):
                 self.assertIn("read-only", args)
                 self.assertEqual("-", args[-1])
                 self.assertIn(b"UNTRUSTED DATA", kwargs["input"])
+                self.assertIn(b"without line numbers or fragments", kwargs["input"])
+                self.assertIn(b"Registry maintenance_notes are excerpts from registry/skills.json", kwargs["input"])
                 self.assertEqual(600, kwargs["timeout"])
                 Path(args[args.index("--output-last-message") + 1]).write_text(json.dumps(advice()))
                 return b'{"type":"turn.completed"}'

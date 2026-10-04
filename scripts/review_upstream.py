@@ -199,19 +199,29 @@ def validate_evidence(proof, queue):
 
 
 def evidence_paths(source):
-    return set(source["local_files"]) | {p for c in source["changed_files"]
+    paths = set(source["local_files"]) | {p for c in source["changed_files"]
                                            for p in (c["old_path"], c["new_path"]) if p is not None}
+    if "maintenance_notes" in source:
+        paths.add("registry/skills.json")
+    return paths
 
 
 def output_schema(evidence):
-    return {"type": "object", "additionalProperties": False, "required": ["findings"], "properties": {
-        "findings": {"type": "array", "items": {"type": "object", "additionalProperties": False,
+    variants = []
+    for source in evidence.sources:
+        variants.append({"type": "object", "additionalProperties": False,
             "required": ["key", "summary", "local_impact", "recommendation", "next_actions", "limits", "evidence_paths"],
-            "properties": {"key": {"type": "string", "enum": [s["key"] for s in evidence.sources]},
-                **{k: {"type": "string"} for k in ("summary", "local_impact", "limits")},
+            "properties": {"key": {"type": "string", "enum": [source["key"]]},
+                **{k: {"type": "string", "minLength": 1, "maxLength": 4000, "pattern": r"\S"}
+                   for k in ("summary", "local_impact", "limits")},
                 "recommendation": {"type": "string", "enum": list(RECOMMENDATIONS)},
-                "next_actions": {"type": "array", "items": {"type": "string"}},
-                "evidence_paths": {"type": "array", "items": {"type": "string"}}}}}}}
+                "next_actions": {"type": "array", "minItems": 1, "maxItems": 8,
+                    "items": {"type": "string", "minLength": 1, "maxLength": 1500, "pattern": r"\S"}},
+                "evidence_paths": {"type": "array", "minItems": 1, "maxItems": 30,
+                    "items": {"type": "string", "enum": sorted(evidence_paths(source))}}}})
+    return {"type": "object", "additionalProperties": False, "required": ["findings"], "properties": {
+        "findings": {"type": "array", "minItems": len(variants), "maxItems": len(variants),
+                     "items": {"anyOf": variants}}}}
 
 
 def validate_advice(value, evidence):
@@ -220,22 +230,31 @@ def validate_advice(value, evidence):
     expected = {s["key"]: s for s in evidence.sources}
     seen = set()
     required = {"key", "summary", "local_impact", "recommendation", "next_actions", "limits", "evidence_paths"}
-    for finding in value["findings"]:
-        if (not isinstance(finding, dict) or set(finding) != required
-                or not isinstance(finding["key"], str) or finding["key"] not in expected or finding["key"] in seen
-                or finding["recommendation"] not in RECOMMENDATIONS):
-            raise monitor.MonitorError("invalid-analysis", "Codex source coverage or recommendation is invalid")
+    for index, finding in enumerate(value["findings"]):
+        if not isinstance(finding, dict) or set(finding) != required:
+            raise monitor.MonitorError("invalid-analysis", f"Codex findings[{index}] has invalid fields")
+        key = finding["key"]
+        if not isinstance(key, str) or key not in expected or key in seen:
+            raise monitor.MonitorError("invalid-analysis", f"Codex findings[{index}].key is unknown or duplicated")
+        if finding["recommendation"] not in RECOMMENDATIONS:
+            raise monitor.MonitorError("invalid-analysis", f"Codex {key}.recommendation is invalid")
         for field in ("summary", "local_impact", "limits"):
             if not isinstance(finding[field], str) or not finding[field].strip() or len(finding[field]) > 4000:
-                raise monitor.MonitorError("invalid-analysis", f"Codex {field} must be bounded nonempty text")
+                raise monitor.MonitorError("invalid-analysis", f"Codex {key}.{field} must be 1 to 4000 characters of nonempty text")
         actions = finding["next_actions"]
+        if not isinstance(actions, list) or not 1 <= len(actions) <= 8:
+            raise monitor.MonitorError("invalid-analysis", f"Codex {key}.next_actions must contain 1 to 8 actions")
+        for action_index, action in enumerate(actions):
+            if not isinstance(action, str) or not action.strip() or len(action) > 1500:
+                raise monitor.MonitorError("invalid-analysis", f"Codex {key}.next_actions[{action_index}] must be 1 to 1500 characters of nonempty text")
         paths = finding["evidence_paths"]
-        if (not isinstance(actions, list) or not 1 <= len(actions) <= 8
-                or not all(isinstance(a, str) and a.strip() and len(a) <= 1500 for a in actions)
-                or not isinstance(paths, list) or not 1 <= len(paths) <= 30
-                or not all(isinstance(p, str) and p in evidence_paths(expected[finding["key"]]) for p in paths)):
-            raise monitor.MonitorError("invalid-analysis", "Codex actions or evidence references are invalid")
-        seen.add(finding["key"])
+        if not isinstance(paths, list) or not 1 <= len(paths) <= 30:
+            raise monitor.MonitorError("invalid-analysis", f"Codex {key}.evidence_paths must contain 1 to 30 paths")
+        allowed_paths = evidence_paths(expected[key])
+        for path_index, path in enumerate(paths):
+            if not isinstance(path, str) or path not in allowed_paths:
+                raise monitor.MonitorError("invalid-analysis", f"Codex {key}.evidence_paths[{path_index}] is not a supplied evidence path")
+        seen.add(key)
     if seen != set(expected):
         raise monitor.MonitorError("invalid-analysis", "Codex must review every pending source exactly once")
     return value
@@ -276,7 +295,10 @@ def codex_review(evidence, scratch, *, codex="codex", model=None, effort="high")
         "Compare exact upstream changes with the current pinned local customization. Explain summary, local impact, "
         "recommendation, concrete next actions, evidence paths, and limits. Supporting-file equivalence is uncertain "
         "unless evidence proves it. Recommendations are proposals requiring a separate user decision. "
-        "Return precisely one finding per provided source, in the required JSON schema.\n\n" + json.dumps(asdict(evidence)))
+        "Registry maintenance_notes are excerpts from registry/skills.json, which may be cited as evidence. "
+        "Cite only exact paths allowed by the schema for that source, without line numbers or fragments. "
+        "Return precisely one finding per provided source, with 1 to 8 next actions and 1 to 30 evidence paths, "
+        "in the required JSON schema.\n\n" + json.dumps(asdict(evidence)))
     empty = scratch / "empty"
     empty.mkdir()
     args = [codex, "exec", "--json", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--sandbox", "read-only",
