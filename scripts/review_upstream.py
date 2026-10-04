@@ -254,6 +254,10 @@ def validate_trace(trace):
         if event.get("type") not in allowed_events:
             raise monitor.MonitorError("invalid-trace", "Codex execution has an unsupported or failed event")
         item = event.get("item")
+        if (event["type"] == "item.completed" and isinstance(item, dict) and item.get("type") == "error"
+                and item.get("message") == "Code Mode is unavailable because code-mode host is disabled. "
+                "Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."):
+            continue
         if item is not None and (not isinstance(item, dict) or item.get("type") not in allowed_items):
             kind = item.get("type") if isinstance(item, dict) else "non-object"
             raise monitor.MonitorError("tool-use-rejected", f"Codex attempted a tool or unsupported execution item: {kind}")
