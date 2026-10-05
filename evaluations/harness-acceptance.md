@@ -19,3 +19,15 @@ The broader suite exercises configurable changed-file limits, canonical requirem
 For a review-fix evaluation, retain a failing run, append its actual head and repro run ID to one finding, and declare again. Record a second failed fix under the same premise and gate. A changed current premise must not avoid Attack the Premise. Removed history must fail declaration. Append an investigation and preserve passing current-head focused and affected-case gates before the next full review round.
 
 The checker cannot discover undeclared cases or authenticate a misleading project probe. Independent reviewers must inspect those claims.
+
+## Verify hourly audit receipts
+
+Run the disposable registration lifecycle against the actual CLI.
+
+```sh
+python3 -m unittest scripts.tests.test_audit
+```
+
+The fixture registers twice without a duplicate, loses a creation response, suspends the host registration, misses a nominal hourly occurrence, picks up the frozen authorization and current gates, captures a completed audit, and cancels only its owned registration. It verifies bounded adapter failures, changed ownership, unconfirmed cancellation, immutable delivery replay, quiet unchanged state, retained inbox batches, and checkpoints larger than a single adapter response. The queue and gate bytes remain unchanged.
+
+The process-group liveness check runs on Linux. Windows descendant cleanup is outside the standard-library adapter guarantee. The bundled fixture proves the helper's protocol lifecycle. It does not prove real host scheduling or delivered coordinator wakeups. No supported live host adapter is bundled, so live registration readback and delivery remain unverified. Unsupported setup records a complete manual recovery packet and its unattended continuation limitation.
