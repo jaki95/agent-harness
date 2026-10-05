@@ -137,6 +137,29 @@ try {
         await access(target);
       }
     }
+    const laneRoot = join(temporary, 'installed-lanes');
+    await mkdir(laneRoot);
+    const sourceHead = run('git', ['rev-parse', 'HEAD'], source).trim();
+    const laneProcess = spawnSync('python3', [join(mode, 'scripts/run_lane.py'),
+      '--checkout', source, '--head', sourceHead, '--temp-root', laneRoot,
+      '--deadline', '15', '--', 'python', '-c', 'import sys; print(sys.prefix)'],
+    { cwd: standaloneProject, env: environment, encoding: 'utf8', timeout: 30000 });
+    const laneResult = JSON.parse(laneProcess.stdout);
+    const laneReceipt = JSON.parse(await readFile(laneResult.receipt, 'utf8'));
+    if (process.platform === 'linux') {
+      assert.equal(laneProcess.status, 0, `${laneProcess.stdout}\n${laneProcess.stderr}`);
+      assert.equal(laneResult.outcome, 'passed');
+      assert.equal(laneResult.cleanup, 'complete');
+      assert.equal(laneReceipt.source.source_after, sourceHead);
+      assert.equal((await readFile(join(laneReceipt.run_directory, 'execution.stdout'), 'utf8')).trim(),
+        laneReceipt.environment_paths.VIRTUAL_ENV);
+      assert.equal(laneReceipt.command[0], join(laneReceipt.environment_paths.VIRTUAL_ENV, 'bin/python'));
+    } else {
+      assert.notEqual(laneProcess.status, 0);
+      assert.equal(laneResult.outcome, 'unsupported');
+      assert.equal(laneResult.cleanup, 'not_started');
+    }
+
     const store = join(temporary, 'installed-orchestration-store');
     const helper = join(mode, 'scripts/orch.py');
     run('python3', [helper, '--store', store, 'init'], standaloneProject);
