@@ -54,6 +54,8 @@ Every declared gate is required, even when no scenario references it. Gates cont
 
 `artifacts` lists file paths relative to `repoRoot` or absolute paths. `{run}` expands to the current receipt directory in command arguments and artifact paths. The runner also exposes `HARNESS_ACCEPTANCE_RUN_DIR` and `HARNESS_ACCEPTANCE_REPO_ROOT` to each command. Gate outputs belong in the receipt directory or project-ignored proof paths. Untracked source files and tracked changes fail readiness.
 
+For private environment state and owned process deadlines, use the opt-in [isolated lane launcher](isolated-lanes.md) as a gate command and capture its lifecycle receipt as an artifact.
+
 ## Environment and project rules
 
 A gate's optional `environment` contains `probeArgv` and a nonempty `required` JSON object. The probe must exit with code `0` and emit a JSON object. Every required property compares literally. The probe runs before the gate. A contradictory setup prevents the gate from starting.
