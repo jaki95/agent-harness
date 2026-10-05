@@ -165,6 +165,18 @@ try {
     run('python3', [helper, '--store', store, 'init'], standaloneProject);
     const inbox = JSON.parse(run('python3', [helper, '--store', store, 'inbox', 'drain', '--json'], standaloneProject));
     assert.deepEqual(inbox, { batch: null, pointers: [] });
+    const checkpoint = join(temporary, 'audit-checkpoint.json');
+    await writeFile(checkpoint, JSON.stringify({ schema_version: 1, program: 'installed-fixture', repo: standaloneProject,
+      authorization: 'Run the disposable local fixture.', resume: 'Read the saved queue and gates.',
+      units: [], owners: [], published_heads: [], findings: [], evidence: [], next_actions: [], unresolved_gates: [] }));
+    const registrationHelper = join(mode, 'scripts/audit.py');
+    const unsupported = JSON.parse(run('python3', [registrationHelper, '--store', store,
+      'ensure', '--checkpoint', checkpoint], standaloneProject));
+    assert.equal(unsupported.registration_status, 'unavailable');
+    assert.equal(unsupported.checkpoint.metadata.authorization, 'Run the disposable local fixture.');
+    const registration = JSON.parse(run('python3', [registrationHelper, '--store', store, 'status'], standaloneProject));
+    assert.equal(registration.registration_id, null);
+    await access(join(mode, 'references/audit-registration.md'));
     const audit = JSON.parse(run('python3', [join(mode, 'scripts/worktree-audit.py'), '--repo', source, '--base', 'main'], standaloneProject));
     assert.equal(audit.worktrees.length, 1);
     assert.ok(audit.worktrees[0].reasons.includes('primary-worktree'));
