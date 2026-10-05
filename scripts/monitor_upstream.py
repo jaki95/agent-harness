@@ -84,10 +84,13 @@ class MonitorError(Exception):
         super().__init__(detail)
 
 
-def run(args, *, env=None, limit=LIMIT, timeout=TIMEOUT):
-    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
+def run(args, *, env=None, limit=LIMIT, timeout=TIMEOUT, input=None):
+    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err, tempfile.TemporaryFile() as incoming:
+        if input is not None:
+            incoming.write(input)
+            incoming.seek(0)
         try:
-            proc = subprocess.Popen(args, stdout=out, stderr=err, env=env, start_new_session=os.name == "posix")
+            proc = subprocess.Popen(args, stdout=out, stderr=err, stdin=incoming if input is not None else subprocess.DEVNULL, env=env, start_new_session=os.name == "posix")
         except OSError as exc:
             raise MonitorError("command-unavailable", str(exc)) from exc
         try:
@@ -302,9 +305,14 @@ def compact(report, previous):
                 "reviewed": source.reviewed, "status": result.status, "error": result.error,
                 "missing_paths": list(result.missing_paths), "changes": [asdict(c) for c in result.changes]}
         prior = old.get(source.key)
+        if result.head:
+            item["observed_revision"] = result.head
         if result.status == "unknown" and not result.changes and prior and all(
                 prior.get(k) == item[k] for k in ("repository", "ref", "paths", "reviewed")):
             item["changes"] = prior.get("changes", [])
+            item.pop("observed_revision", None)
+            if prior.get("observed_revision"):
+                item["observed_revision"] = prior["observed_revision"]
             if prior.get("link"):
                 item["link"] = prior["link"]
         elif result.changes:
@@ -314,7 +322,7 @@ def compact(report, previous):
 
 
 def fingerprint(snapshot):
-    identity = {"sources": [{k: v for k, v in item.items() if k != "link"} for item in snapshot["sources"]],
+    identity = {"sources": [{k: v for k, v in item.items() if k not in ("link", "observed_revision")} for item in snapshot["sources"]],
                 "errors": snapshot["errors"]}
     return hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
 
@@ -322,7 +330,8 @@ def fingerprint(snapshot):
 def issue_body(snapshot, digest, generation):
     metadata = dict(snapshot, fingerprint=digest, generation=generation)
     lines = [MARKER, "# External skill updates", "", "This body is maintained by the upstream monitor. Add human notes in comments.",
-             "Subscribe to this issue for update notifications. Review the report before adopting changes.", ""]
+             "Subscribe to this issue for update notifications. Review the report before adopting changes.",
+             "The configured Codex reviewer posts analysis and suggested next actions in comments for each new queue generation.", ""]
     for item in snapshot["sources"]:
         if item["status"] == "unchanged":
             continue
@@ -331,6 +340,9 @@ def issue_body(snapshot, digest, generation):
             label = f"[{label}]({item['link']})"
         lines.append(f"- {label}. {item['status']}. {len(item['changes'])} changed file(s)." +
                      (f" Investigation required. {item['error']}." if item["error"] else ""))
+        for change in item["changes"]:
+            paths = [p for p in (change["old_path"], change["new_path"]) if p is not None]
+            lines.append("  - " + change["kind"] + ". " + " → ".join(dict.fromkeys(json.dumps(p) for p in paths)))
         if item["status"] == "unknown" and item["changes"]:
             lines.append("  Previous pending changes remain unresolved.")
     lines.extend(f"- Registry error. {error}" for error in snapshot["errors"])
@@ -419,6 +431,8 @@ def parse_snapshot(body):
                                for k in ("paths", "missing_paths"))
                     or not isinstance(item.get("changes"), list)
                     or ("link" in item and not isinstance(item["link"], str))
+                    or ("observed_revision" in item and (not isinstance(item["observed_revision"], str)
+                        or not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", item["observed_revision"])))
                     or item["key"] in keys):
                 raise ValueError
             keys.add(item["key"])
