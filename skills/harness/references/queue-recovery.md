@@ -116,6 +116,10 @@ work even when its owner's host is inaccessible.
 An inaccessible forge cannot certify a saved head or old verdict.
 A changed published head invalidates affected verification under the existing
 exact-head ledger rules. Keep historical evidence for the replacement owner.
+For an open PR, a completed unit or action receipt cannot replace a passing
+current-head verdict. Failed verification needs a fix. Blocked verification
+holds for the environment. Missing or type-check-only evidence needs behavioral
+verification. Pickup preserves completed receipts while reporting that work.
 
 For a confirmed active owner, continue observation instead of dispatching a
 second writer. For a confirmed stopped writer, the coordinator may reuse its

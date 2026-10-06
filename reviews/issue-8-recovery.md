@@ -52,3 +52,8 @@ They do not prove delivery from an external agent host.
 The project-local Skills CLI check invokes the installed checkpoint and pickup
 commands from an unrelated directory. It compares the installed resources with
 the runtime package and confirms maintenance records are excluded.
+
+Independent review reproduced a completion decision that bypassed failed,
+blocked, and type-check-only verdicts on both unchanged and changed heads.
+Regression scenarios now require a fix, an environment hold, or behavioral
+verification. Completed external receipts and merged results remain preserved.

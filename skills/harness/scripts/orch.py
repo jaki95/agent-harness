@@ -892,22 +892,27 @@ def pickup(args, store):
             action = "hold; reconcile pending action receipts before repeating any action"
         elif unit_completions:
             action = "reconcile retained completion pointers and current durable updates before dispatch"
-        elif complete and not (changed_head and verification == "NOT-VERIFIED"):
-            action = "complete; preserve completed work and receipts and do not dispatch"
         elif live is None:
             action = "hold; unit disappeared from current durable queue"
         elif number and (observed is None or observed["state"] == "UNKNOWN"):
             action = "hold; published PR state is unknown"
         elif observed and observed["state"] == "CLOSED":
             action = "hold; reconcile PR closed without merge"
+        elif complete and (not number or verification in ("unit-test-verified", "live-ui-verified")):
+            action = "complete; preserve completed work and receipts and do not dispatch"
+        elif number and verification == "verifier-blocked":
+            action = "hold; current-head verification is blocked, reconcile the environment before retrying"
         elif classification == "active":
             action = "observe existing owner; do not duplicate dispatch"
         elif overlapping:
             action = "hold or isolate a new writable scope; overlapping owners are not confirmed stopped"
         elif not stopped:
             action = "hold or isolate a new writable scope; previous writer is not confirmed stopped"
-        elif changed_head and verification == "NOT-VERIFIED":
-            action = "create fresh owner in confirmed stopped scope; verify the current published head"
+        elif number and verification == "verifier-failed":
+            action = "create fresh owner in confirmed stopped scope; fix or reconcile the current-head verification failure with the consolidated packet"
+            replacement_allowed = True
+        elif number and verification in ("NOT-VERIFIED", "type-check-only"):
+            action = "create fresh owner in confirmed stopped scope; verify the current published head with fresh behavioral evidence"
             replacement_allowed = True
         else:
             action = "create fresh owner in confirmed stopped scope with the consolidated packet"

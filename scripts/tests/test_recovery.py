@@ -233,8 +233,9 @@ print(json.dumps({'owners': owners, 'error': error,
     def test_completed_and_merged_units_are_preserved_without_dispatch(self):
         self.call("unit", "set", "u1", "--state", "done")
         unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
-        self.assertIn("preserve completed work", unit["next_safe_action"])
-        self.assertFalse(unit["same_scope_replacement_allowed"])
+        self.assertIn("verify the current published head", unit["next_safe_action"])
+        self.assertTrue(unit["same_scope_replacement_allowed"])
+        self.assertEqual(unit["replacement_packet"]["current_unit"]["state"], "done")
         self.call("unit", "set", "u1", "--state", "merged")
         self.save_checkpoint()
         self.forge_file.write_text("{}")
@@ -244,6 +245,100 @@ print(json.dumps({'owners': owners, 'error': error,
         self.call("unit", "set", "u1", "--state", "building", "--pr", "11", "--sha", "b" * 40)
         unit = self.call("pickup")["units"][0]
         self.assertFalse(unit["merged"])
+
+    def test_done_open_pr_requires_current_head_behavioral_verification(self):
+        self.call("unit", "set", "u1", "--state", "done")
+        self.call("ledger", "record", "10", "a" * 40, "unit-test-verified", "--evidence", "old-pass")
+        self.save_checkpoint()
+        cases = (("verifier-failed", "fix or reconcile", True),
+                 ("verifier-blocked", "verification is blocked", False),
+                 ("type-check-only", "fresh behavioral evidence", True),
+                 ("unit-test-verified", "preserve completed work", False),
+                 ("live-ui-verified", "preserve completed work", False))
+        for head in ("a" * 40, "b" * 40):
+            self.forge["10"]["headRefOid"] = head
+            self.forge_file.write_text(json.dumps(self.forge))
+            for verdict, expected_action, replacement_allowed in cases:
+                with self.subTest(head=head, verdict=verdict):
+                    self.call("ledger", "record", "10", head, verdict, "--evidence", "current-verdict")
+                    before = self.inventory()
+                    unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+                    self.assertEqual(unit["verification"], verdict)
+                    self.assertEqual(unit["head_changed"], head == "b" * 40)
+                    self.assertIn(expected_action, unit["next_safe_action"])
+                    self.assertEqual(unit["same_scope_replacement_allowed"], replacement_allowed)
+                    self.assertEqual(unit["replacement_packet"]["current_unit"]["state"], "done")
+                    self.assertEqual(unit["replacement_packet"]["current_head_ledger"]["evidence"], "current-verdict")
+                    self.assertEqual(before, self.inventory())
+
+    def test_done_changed_head_missing_verdict_and_unknown_forge_hold_completion(self):
+        self.call("unit", "set", "u1", "--state", "done")
+        self.call("ledger", "record", "10", "a" * 40, "unit-test-verified", "--evidence", "old-pass")
+        self.save_checkpoint()
+        self.forge["10"]["headRefOid"] = "b" * 40
+        self.forge_file.write_text(json.dumps(self.forge))
+        before = self.inventory()
+        unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+        self.assertEqual(unit["verification"], "NOT-VERIFIED")
+        self.assertIn("fresh behavioral evidence", unit["next_safe_action"])
+        self.assertTrue(unit["same_scope_replacement_allowed"])
+        self.assertEqual(unit["replacement_packet"]["evidence_status"], "stale")
+        self.forge_file.write_text("{}")
+        unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+        self.assertEqual(unit["next_safe_action"], "hold; published PR state is unknown")
+        self.assertFalse(unit["same_scope_replacement_allowed"])
+        self.assertEqual(unit["replacement_packet"]["current_unit"]["state"], "done")
+        self.assertEqual(before, self.inventory())
+
+    def test_completed_external_receipt_cannot_override_nonpassing_open_pr(self):
+        actions = self.metadata["units"][0]["next_actions"]
+        actions[0].update(status="completed", receipt="local-receipt")
+        actions.append({"id": "external-publish", "kind": "external", "status": "completed", "receipt": "receipt-1"})
+        self.save_checkpoint()
+        cases = (("verifier-failed", "fix or reconcile", True),
+                 ("verifier-blocked", "verification is blocked", False),
+                 ("type-check-only", "fresh behavioral evidence", True),
+                 (None, "fresh behavioral evidence", True))
+        for verdict, expected_action, replacement_allowed in cases:
+            with self.subTest(verdict=verdict):
+                head = "b" * 40 if verdict is None else "a" * 40
+                self.forge["10"]["headRefOid"] = head
+                self.forge_file.write_text(json.dumps(self.forge))
+                if verdict:
+                    self.call("ledger", "record", "10", head, verdict, "--evidence", "nonpass")
+                before = self.inventory()
+                unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+                self.assertIn(expected_action, unit["next_safe_action"])
+                self.assertEqual(unit["same_scope_replacement_allowed"], replacement_allowed)
+                self.assertEqual(unit["replacement_packet"]["completed_action_receipts"], actions)
+                self.assertEqual(before, self.inventory())
+
+    def test_failed_done_unit_still_requires_safe_writer_ownership(self):
+        self.call("unit", "set", "u1", "--state", "done")
+        self.call("ledger", "record", "10", "a" * 40, "verifier-failed", "--evidence", "failure")
+        self.save_checkpoint()
+        for state, stopped, expected in (("running", False, "observe existing owner"),
+                                         ("unknown", False, "previous writer is not confirmed stopped"),
+                                         ("failed", False, "previous writer is not confirmed stopped")):
+            with self.subTest(state=state):
+                before = self.inventory()
+                unit = self.call("pickup", "--host-state", self.host_state(state, stopped))["units"][0]
+                self.assertFalse(unit["same_scope_replacement_allowed"])
+                self.assertIn(expected, unit["next_safe_action"])
+                self.assertEqual(unit["verification"], "verifier-failed")
+                self.assertEqual(before, self.inventory())
+
+    def test_done_local_unit_without_pr_preserves_historical_completion(self):
+        self.call("unit", "add", "local-unit", "--track", "build")
+        self.call("unit", "set", "local-unit", "--state", "done")
+        self.metadata["units"].append(self.unit("local-unit", "local-owner", "local-scope"))
+        self.save_checkpoint()
+        before = self.inventory()
+        unit = self.call("pickup")["units"][1]
+        self.assertIn("preserve completed work", unit["next_safe_action"])
+        self.assertFalse(unit["same_scope_replacement_allowed"])
+        self.assertEqual(unit["replacement_packet"]["current_unit"]["state"], "done")
+        self.assertEqual(before, self.inventory())
 
     def test_action_receipts_cannot_regress_or_disappear_and_findings_are_retained(self):
         action = self.metadata["units"][0]["next_actions"][0]
