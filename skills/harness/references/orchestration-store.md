@@ -23,9 +23,14 @@ The helper maintains these readable files:
 | `gates.md` | Open and explicitly resolved human gates, including questions, options, defaults, and answers. |
 | `inbox/` | One completion pointer per file: timestamp, agent, unit, status, report path. |
 | `inbox-claimed/` | Unacknowledged drained batches, retained for recovery. |
+| `checkpoint.json` | Optional versioned queue declaration with authorization, owners, scopes, findings, action receipts, and a snapshot of the existing records. |
 | `status.md` | Derived unit, ledger, frontier, and gate tables; regenerate instead of editing. |
 
 `overview.md`, briefs, evidence reports, and the Show Me Your Work trail are maintained by their designated owners. Initialization preserves existing records. TSV cells flatten tabs and newlines and escape leading spreadsheet formulas. Invalid headers, row widths, duplicate keys, verdicts, or frontier data fail visibly.
+
+For interrupted Autopilot or Orchestrate queues, use `orch checkpoint --input <json>`
+and read-only `orch pickup`. Read the queue recovery contract (`queue-recovery.md`)
+before recording owner metadata or reconciling replacement work.
 
 ## Unit and verification commands
 
