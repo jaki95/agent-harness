@@ -7,11 +7,14 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import queue
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from uuid import uuid4
 
 
@@ -511,6 +514,437 @@ def pr_list(value):
     return parts
 
 
+RECOVERY_FIELDS = {"schema_version", "program", "repository", "authorization", "units"}
+RECOVERY_UNIT_FIELDS = {"id", "owner_id", "work_scope", "brief", "findings", "evidence", "next_actions"}
+TERMINAL_OWNERS = {"completed", "failed", "cancelled", "stopped"}
+ACTIVE_OWNERS = {"running", "waiting", "needs-input"}
+
+
+def shape(value, fields, label):
+    if not isinstance(value, dict) or set(value) != set(fields):
+        raise StoreError(f"{label} requires exactly {', '.join(sorted(fields))}")
+
+
+def text_value(value, label):
+    if not isinstance(value, str) or not value.strip():
+        raise StoreError(f"{label} must be a nonempty string")
+
+
+def string_list(value, label, nonempty=False):
+    if not isinstance(value, list) or (nonempty and not value):
+        raise StoreError(f"{label} must be {'a nonempty' if nonempty else 'a'} string list")
+    for item in value:
+        text_value(item, label)
+
+
+def recovery_metadata(value):
+    shape(value, RECOVERY_FIELDS, "checkpoint input")
+    if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        raise StoreError("checkpoint schema_version must be 1")
+    for field in ("program", "authorization"):
+        text_value(value[field], field)
+    shape(value["repository"], {"name", "path"}, "repository")
+    for field in ("name", "path"):
+        text_value(value["repository"][field], f"repository.{field}")
+    if not re.fullmatch(r"[^/\s]+/[^/\s]+", value["repository"]["name"]):
+        raise StoreError("repository.name must be owner/repository")
+    if not Path(value["repository"]["path"]).is_absolute():
+        raise StoreError("repository.path must be an absolute directory path")
+    if not isinstance(value["units"], list):
+        raise StoreError("units must be a list")
+    seen = set()
+    for unit in value["units"]:
+        shape(unit, RECOVERY_UNIT_FIELDS | ({"resolved_findings"} if isinstance(unit, dict) and "resolved_findings" in unit else set()), "recovery unit")
+        unit.setdefault("resolved_findings", [])
+        for field in ("id", "owner_id", "brief"):
+            text_value(unit[field], f"unit.{field}")
+        if unit["id"] in seen:
+            raise StoreError("checkpoint has duplicate unit IDs")
+        seen.add(unit["id"])
+        for field in ("work_scope", "findings", "evidence"):
+            string_list(unit[field], f"unit.{field}", nonempty=field == "work_scope")
+        string_list(unit["resolved_findings"], "unit.resolved_findings")
+        if set(unit["findings"]) & set(unit["resolved_findings"]):
+            raise StoreError("unit findings cannot also be explicitly resolved")
+        if not isinstance(unit["next_actions"], list):
+            raise StoreError("unit.next_actions must be a list")
+        action_ids = set()
+        for action in unit["next_actions"]:
+            shape(action, {"id", "kind", "status", "receipt"}, "next action")
+            text_value(action["id"], "action.id")
+            if action["id"] in action_ids:
+                raise StoreError("unit has duplicate action IDs")
+            action_ids.add(action["id"])
+            if action["kind"] not in ("local", "dispatch", "external"):
+                raise StoreError("action.kind must be local, dispatch, or external")
+            if action["status"] not in ("planned", "pending", "completed"):
+                raise StoreError("action.status must be planned, pending, or completed")
+            if action["receipt"] is not None:
+                text_value(action["receipt"], "action.receipt")
+            if action["status"] == "completed" and action["receipt"] is None:
+                raise StoreError("completed action requires a durable receipt")
+    return value
+
+
+def recovery_snapshot(store):
+    inbox = {}
+    for name in ("inbox", "inbox-claimed"):
+        directory = store / name
+        if directory.exists() and not directory.is_dir():
+            raise StoreError(f"{name} must be a directory")
+        inbox[name] = {"present": directory.is_dir(), "pointers": [], "batches": []}
+        if name == "inbox":
+            directories = [(None, directory)] if directory.is_dir() else []
+        else:
+            directories = []
+            for batch in sorted(directory.iterdir()) if directory.is_dir() else []:
+                if not batch.is_dir() or not re.fullmatch(r"[0-9a-f]{32}", batch.name):
+                    raise StoreError("inbox-claimed contains an invalid batch directory")
+                directories.append((batch.name, batch))
+                inbox[name]["batches"].append(batch.name)
+        for batch, target in directories:
+            for path, pointer in zip(sorted(target.glob("*.tsv")), pointers(target)):
+                inbox[name]["pointers"].append({"filename": path.name, "batch": batch, **pointer})
+    return {"units": read_table(store / "units.tsv", UNIT_FIELDS),
+            "ledger": read_table(store / "ledger.tsv", LEDGER_FIELDS), "frontier": frontier(store),
+            "gates": read_gates(store), "standing": standing(store), "inbox": inbox}
+
+
+def stable_snapshot(store):
+    snapshot = recovery_snapshot(store)
+    if recovery_snapshot(store) != snapshot:
+        raise StoreError("store changed during recovery read; retry after writers settle")
+    return snapshot
+
+
+def validate_saved_snapshot(value):
+    shape(value, {"units", "ledger", "frontier", "gates", "standing", "inbox"}, "checkpoint snapshot")
+    for field, fields in (("units", UNIT_FIELDS), ("ledger", LEDGER_FIELDS)):
+        if not isinstance(value[field], list):
+            raise StoreError(f"checkpoint snapshot.{field} must be a list")
+        keys = []
+        for row in value[field]:
+            shape(row, fields, f"checkpoint snapshot.{field} row")
+            if any(not isinstance(item, str) for item in row.values()):
+                raise StoreError(f"checkpoint snapshot.{field} row must contain strings")
+            if field == "ledger" and row["verdict"] not in VERDICTS:
+                raise StoreError("checkpoint snapshot has an invalid ledger verdict")
+            if field == "units" and row["pr"] and not re.fullmatch(r"[1-9]\d*", row["pr"]):
+                raise StoreError("checkpoint snapshot has an invalid unit PR")
+            keys.append(row["id"] if field == "units" else (row["pr"], row["sha"]))
+        if len(set(keys)) != len(keys):
+            raise StoreError(f"checkpoint snapshot.{field} has duplicate keys")
+    current_frontier = value["frontier"]
+    if (not isinstance(current_frontier, dict) or not isinstance(current_frontier.get("prs"), list)
+            or type(current_frontier.get("generation")) is not int or current_frontier["generation"] < 0):
+        raise StoreError("checkpoint snapshot has an invalid frontier")
+    numbers = []
+    for row in current_frontier["prs"]:
+        if (not isinstance(row, dict) or type(row.get("pr")) is not int or row["pr"] < 1
+                or row.get("state") not in ("OPEN", "MERGED", "CLOSED")
+                or not isinstance(row.get("sha"), str)):
+            raise StoreError("checkpoint snapshot has an invalid frontier PR")
+        numbers.append(row["pr"])
+    if len(set(numbers)) != len(numbers):
+        raise StoreError("checkpoint snapshot frontier has duplicate PRs")
+    for field in ("gates", "standing"):
+        if not isinstance(value[field], list) or any(not isinstance(row, dict) for row in value[field]):
+            raise StoreError(f"checkpoint snapshot.{field} must be an object list")
+    shape(value["inbox"], {"inbox", "inbox-claimed"}, "checkpoint snapshot.inbox")
+    for bucket in value["inbox"].values():
+        shape(bucket, {"present", "pointers", "batches"}, "checkpoint inbox bucket")
+        if type(bucket["present"]) is not bool or not isinstance(bucket["pointers"], list):
+            raise StoreError("checkpoint inbox bucket has invalid presence or pointers")
+        string_list(bucket["batches"], "checkpoint inbox batches")
+        for pointer in bucket["pointers"]:
+            shape(pointer, {*POINTER_FIELDS, "filename", "batch"}, "checkpoint inbox pointer")
+            if any(not isinstance(pointer[field], str) for field in (*POINTER_FIELDS, "filename")):
+                raise StoreError("checkpoint inbox pointer fields must be strings")
+            if pointer["batch"] is not None and not isinstance(pointer["batch"], str):
+                raise StoreError("checkpoint inbox pointer batch must be string or null")
+
+
+def checkpoint(args, store):
+    metadata = recovery_metadata(read_json(Path(args.input)))
+    snapshot = stable_snapshot(store)
+    if {row["id"] for row in snapshot["units"]} != {row["id"] for row in metadata["units"]}:
+        raise StoreError("checkpoint units must match every current units.tsv ID")
+    if snapshot["frontier"].get("repository", metadata["repository"]["name"]) != metadata["repository"]["name"]:
+        raise StoreError("checkpoint repository differs from the saved frontier")
+    previous_path = store / "checkpoint.json"
+    if previous_path.exists():
+        previous = read_json(previous_path)
+        previous_metadata = recovery_metadata({field: previous.get(field) for field in RECOVERY_FIELDS})
+        if previous_metadata["repository"] != metadata["repository"] or previous_metadata["program"] != metadata["program"]:
+            raise StoreError("checkpoint cannot replace a different program or repository identity")
+        old_units = {row["id"]: row for row in previous_metadata["units"]}
+        for unit in metadata["units"]:
+            old = old_units.get(unit["id"])
+            if not old:
+                continue
+            for field in ("findings", "evidence", "resolved_findings"):
+                unit[field] = list(dict.fromkeys(old[field] + unit[field]))
+            unit["findings"] = [finding for finding in unit["findings"] if finding not in unit["resolved_findings"]]
+            new_actions = {row["id"]: row for row in unit["next_actions"]}
+            for action in old["next_actions"]:
+                new = new_actions.get(action["id"])
+                if new is None:
+                    unit["next_actions"].append(action)
+                elif new["kind"] != action["kind"] or (action["status"] == "completed" and new != action):
+                    raise StoreError("checkpoint cannot change action identity or regress a completed receipt")
+                elif action["status"] == "pending" and new["status"] == "planned":
+                    raise StoreError("checkpoint cannot regress a pending action; reconcile its receipt")
+    value = {**metadata, "captured_at": now(), "snapshot": snapshot}
+    atomic_write(store / "checkpoint.json", json.dumps(value, indent=2) + "\n")
+    return value
+
+
+HOST_ADAPTER_TIMEOUT = 10
+
+
+def read_host_adapter(argv, request, repo):
+    deadline = time.monotonic() + HOST_ADAPTER_TIMEOUT
+    process = subprocess.Popen(argv, cwd=repo, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL)
+    response = queue.Queue()
+    sent = queue.Queue()
+
+    def write_request():
+        try:
+            data = memoryview(json.dumps(request).encode("utf-8"))
+            while data:
+                data = data[os.write(process.stdin.fileno(), data):]
+            process.stdin.close()
+            sent.put(None)
+        except (OSError, ValueError) as exc:
+            sent.put(exc)
+
+    def read_output():
+        output = bytearray()
+        try:
+            while True:
+                chunk = os.read(process.stdout.fileno(), 65536)
+                if not chunk:
+                    response.put(bytes(output))
+                    return
+                output.extend(chunk)
+                if len(output) > 1024 * 1024:
+                    response.put(StoreError("host adapter response exceeds 1 MiB"))
+                    return
+        except (OSError, ValueError) as exc:
+            response.put(exc)
+
+    writer = threading.Thread(target=write_request, daemon=True)
+    reader = threading.Thread(target=read_output, daemon=True)
+    try:
+        reader.start()
+        writer.start()
+        try:
+            error = sent.get(timeout=max(0, deadline - time.monotonic()))
+            if error is not None:
+                raise error
+            output = response.get(timeout=max(0, deadline - time.monotonic()))
+        except queue.Empty as exc:
+            raise StoreError(f"host adapter exceeded {HOST_ADAPTER_TIMEOUT:g} second deadline") from exc
+        if isinstance(output, Exception):
+            raise output
+        try:
+            code = process.wait(timeout=max(0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired as exc:
+            raise StoreError(f"host adapter exceeded {HOST_ADAPTER_TIMEOUT:g} second deadline") from exc
+        if code:
+            raise StoreError(f"host adapter failed with exit {code}")
+        return json.loads(output)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        process.stdout.close()
+        if not process.stdin.closed:
+            process.stdin.close()
+        for worker in (writer, reader):
+            if worker.ident is not None:
+                worker.join(timeout=1)
+
+
+def host_observation(args, owner_ids, repo):
+    if not args.host_state and not args.host_command:
+        return {}, "no host adapter or fresh observation supplied"
+    try:
+        if args.host_state:
+            value = read_json(Path(args.host_state))
+        else:
+            command = read_json(Path(args.host_command))
+            shape(command, {"read_only", "argv"}, "host adapter declaration")
+            if command["read_only"] is not True:
+                raise StoreError("host adapter must declare read_only true")
+            string_list(command["argv"], "host adapter argv", nonempty=True)
+            request = {"schema_version": 1, "owner_ids": sorted(owner_ids)}
+            value = read_host_adapter(command["argv"], request, repo)
+        shape(value, {"schema_version", "observed_at", "owners"}, "host observation")
+        if type(value["schema_version"]) is not int or value["schema_version"] != 1:
+            raise StoreError("host schema_version must be 1")
+        observed = datetime.fromisoformat(value["observed_at"].replace("Z", "+00:00"))
+        if observed.utcoffset() is None or not 0 <= time.time() - observed.timestamp() <= 300:
+            raise StoreError("host observation must be fresh within 300 seconds")
+        if not isinstance(value["owners"], list):
+            raise StoreError("host owners must be a list")
+        owners = {}
+        for owner in value["owners"]:
+            shape(owner, {"id", "state", "writer_stopped"}, "host owner")
+            text_value(owner["id"], "host owner.id")
+            if owner["id"] not in owner_ids or owner["id"] in owners:
+                raise StoreError("host observation contains duplicate or out-of-scope owner")
+            if owner["state"] not in TERMINAL_OWNERS | ACTIVE_OWNERS | {"pending-init", "unknown"}:
+                raise StoreError("host owner has invalid state")
+            if type(owner["writer_stopped"]) is not bool:
+                raise StoreError("host owner.writer_stopped must be a boolean")
+            owners[owner["id"]] = owner
+        return owners, None
+    except (StoreError, OSError, ValueError, TypeError, AttributeError, subprocess.TimeoutExpired) as exc:
+        return {}, f"host observation unavailable: {exc}"
+
+
+def recovery_prs(metadata, snapshot, repo, historical):
+    numbers = set()
+    for unit in snapshot["units"] + historical["units"]:
+        if unit["pr"]:
+            if not re.fullmatch(r"[1-9]\d*", unit["pr"]):
+                raise StoreError("unit PR must be a positive integer for pickup")
+            numbers.add(int(unit["pr"]))
+    numbers.update(row["pr"] for row in snapshot["frontier"]["prs"])
+    numbers.update(row["pr"] for row in historical["frontier"]["prs"])
+    result = {}
+    for number in sorted(numbers):
+        try:
+            row = gh_json(["pr", "view", str(number), "--repo", metadata["repository"]["name"],
+                           "--json", "number,headRefOid,state,isCrossRepository"], repo)
+            if (not isinstance(row, dict) or type(row.get("number")) is not int or row["number"] != number
+                    or row.get("state") not in ("OPEN", "MERGED", "CLOSED")
+                    or not isinstance(row.get("headRefOid"), str)
+                    or not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", row["headRefOid"])
+                    or row.get("isCrossRepository") is not False):
+                raise StoreError("invalid or cross-repository PR observation")
+            again = gh_json(["pr", "view", str(number), "--repo", metadata["repository"]["name"],
+                             "--json", "number,headRefOid,state,isCrossRepository"], repo)
+            if again != row:
+                raise StoreError("published PR changed during pickup; retry with fresh evidence")
+            result[number] = {"pr": number, "state": row["state"], "sha": row["headRefOid"], "error": None}
+        except StoreError as exc:
+            result[number] = {"pr": number, "state": "UNKNOWN", "sha": None, "error": str(exc)}
+    return result
+
+
+def pickup(args, store):
+    saved = read_json(store / "checkpoint.json")
+    shape(saved, RECOVERY_FIELDS | {"captured_at", "snapshot"}, "saved checkpoint")
+    metadata = recovery_metadata({field: saved[field] for field in RECOVERY_FIELDS})
+    text_value(saved["captured_at"], "checkpoint captured_at")
+    validate_saved_snapshot(saved["snapshot"])
+    if {row["id"] for row in saved["snapshot"]["units"]} != {row["id"] for row in metadata["units"]}:
+        raise StoreError("saved checkpoint unit metadata differs from its queue snapshot")
+    current = stable_snapshot(store)
+    if current["frontier"].get("repository", metadata["repository"]["name"]) != metadata["repository"]["name"]:
+        raise StoreError("checkpoint repository differs from current durable frontier")
+    repo = Path(metadata["repository"]["path"])
+    owners, host_error = host_observation(args, {row["owner_id"] for row in metadata["units"]}, repo)
+    prs = recovery_prs(metadata, current, repo, saved["snapshot"])
+    old_prs = {row["pr"]: row for row in saved["snapshot"]["frontier"]["prs"]}
+    old_units = {row["id"]: row for row in saved["snapshot"]["units"]}
+    live_units = {row["id"]: row for row in current["units"]}
+    retained = [row for bucket in current["inbox"].values() for row in bucket["pointers"]]
+    historical = [row for bucket in saved["snapshot"]["inbox"].values() for row in bucket["pointers"]]
+    units = []
+    for unit in metadata["units"]:
+        live = live_units.get(unit["id"])
+        old = old_units.get(unit["id"])
+        owner = owners.get(unit["owner_id"])
+        classification = ("terminal" if owner and owner["state"] in TERMINAL_OWNERS else
+                          "active" if owner and owner["state"] in ACTIVE_OWNERS else "unknown")
+        stopped = classification == "terminal" and owner["writer_stopped"]
+        overlapping = []
+        for other in metadata["units"]:
+            if other["owner_id"] == unit["owner_id"] or not set(other["work_scope"]) & set(unit["work_scope"]):
+                continue
+            writer = owners.get(other["owner_id"])
+            if not writer or writer["state"] not in TERMINAL_OWNERS or not writer["writer_stopped"]:
+                overlapping.append(other["owner_id"])
+        number = int(live["pr"]) if live and live["pr"] else None
+        observed = prs.get(number)
+        same_pr = bool(old and live and old["pr"] == live["pr"])
+        saved_merged = same_pr and ((old and old["state"] == "merged") or (
+            number in old_prs and old_prs[number]["state"] == "MERGED"))
+        merged = saved_merged or (observed and observed["state"] == "MERGED")
+        old_sha = (old["sha"] if old else None) or old_prs.get(number, {}).get("sha")
+        ledger = next((row for row in current["ledger"] if observed and observed["sha"]
+                       and row["pr"] == str(number) and row["sha"] == observed["sha"]), None)
+        verification = ledger["verdict"] if ledger else "NOT-VERIFIED"
+        changed_head = bool(observed and observed["sha"] and old_sha and observed["sha"] != old_sha)
+        pending = [action for action in unit["next_actions"] if action["status"] == "pending"]
+        completed = [action for action in unit["next_actions"] if action["status"] == "completed"]
+        unit_completions = [row for row in retained if row["unit"] == unit["id"]]
+        complete = bool(live and live["state"] in ("done", "merged", "completed", "landed")) or (
+            bool(unit["next_actions"]) and len(completed) == len(unit["next_actions"]))
+        replacement_allowed = False
+        if merged:
+            action = "complete; preserve merged result and do not dispatch"
+        elif pending:
+            action = "hold; reconcile pending action receipts before repeating any action"
+        elif unit_completions:
+            action = "reconcile retained completion pointers and current durable updates before dispatch"
+        elif live is None:
+            action = "hold; unit disappeared from current durable queue"
+        elif number and (observed is None or observed["state"] == "UNKNOWN"):
+            action = "hold; published PR state is unknown"
+        elif observed and observed["state"] == "CLOSED":
+            action = "hold; reconcile PR closed without merge"
+        elif complete and (not number or verification in ("unit-test-verified", "live-ui-verified")):
+            action = "complete; preserve completed work and receipts and do not dispatch"
+        elif number and verification == "verifier-blocked":
+            action = "hold; current-head verification is blocked, reconcile the environment before retrying"
+        elif classification == "active":
+            action = "observe existing owner; do not duplicate dispatch"
+        elif overlapping:
+            action = "hold or isolate a new writable scope; overlapping owners are not confirmed stopped"
+        elif not stopped:
+            action = "hold or isolate a new writable scope; previous writer is not confirmed stopped"
+        elif number and verification == "verifier-failed":
+            action = "create fresh owner in confirmed stopped scope; fix or reconcile the current-head verification failure with the consolidated packet"
+            replacement_allowed = True
+        elif number and verification in ("NOT-VERIFIED", "type-check-only"):
+            action = "create fresh owner in confirmed stopped scope; verify the current published head with fresh behavioral evidence"
+            replacement_allowed = True
+        else:
+            action = "create fresh owner in confirmed stopped scope with the consolidated packet"
+            replacement_allowed = True
+        packet = {**unit, "program": metadata["program"], "authorization": metadata["authorization"], "repository": metadata["repository"],
+                  "current_unit": live, "previous_unit": old,
+                  "retained_completions": unit_completions,
+                  "checkpoint_completions": [row for row in historical if row["unit"] == unit["id"]],
+                  "published_pr": observed, "verification": verification,
+                  "current_head_ledger": ledger,
+                  "evidence_status": "unknown" if number and (not observed or observed["state"] == "UNKNOWN") else
+                                     "stale" if changed_head and not ledger else "current" if ledger else "unverified",
+                  "completed_action_receipts": completed}
+        units.append({"id": unit["id"], "owner_id": unit["owner_id"], "owner_classification": classification,
+                      "owner_observation": owner, "same_scope_replacement_allowed": replacement_allowed,
+                      "overlapping_unconfirmed_owners": sorted(set(overlapping)),
+                      "head_changed": changed_head, "verification": verification, "merged": bool(merged),
+                      "next_safe_action": action, "replacement_packet": packet})
+    if stable_snapshot(store) != current or read_json(store / "checkpoint.json") != saved:
+        raise StoreError("store changed during pickup; retry after writers settle")
+    return {"schema_version": 1, "program": metadata["program"], "authorization": metadata["authorization"],
+            "checkpoint_at": saved["captured_at"], "host_error": host_error, "units": units,
+            "uncheckpointed_units": [{"current_unit": row, "owner_classification": "unknown",
+                                      "same_scope_replacement_allowed": False,
+                                      "next_safe_action": "hold; reconcile ownership and scope before assignment"}
+                                     for row in current["units"] if row["id"] not in old_units],
+            "changes_since_checkpoint": {field: {"checkpoint": saved["snapshot"][field], "current": value}
+                                         for field, value in current.items() if saved["snapshot"][field] != value},
+            "current_snapshot": current, "published_prs": list(prs.values()),
+            "effects": "read-only; no dispatch, acknowledgment, merge, or store writes"}
+
+
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--store", default=os.environ.get("ORCH_STORE"))
@@ -518,6 +952,12 @@ def parser():
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("init")
     commands.add_parser("status")
+    recovery = commands.add_parser("checkpoint")
+    recovery.add_argument("--input", required=True)
+    recovery = commands.add_parser("pickup")
+    host = recovery.add_mutually_exclusive_group()
+    host.add_argument("--host-state")
+    host.add_argument("--host-command")
     for command, actions in (("unit", ("add", "set", "get", "list", "counts")),
                              ("ledger", ("record", "check", "summary")),
                              ("inbox", ("push", "drain", "count", "peek", "ack")),
@@ -605,8 +1045,11 @@ def main(argv=None):
         store = Path(args.store).resolve()
         if args.command != "init" and not store.is_dir():
             raise StoreError(f"store is not initialized at {store}; run orch init")
-        with locked(store):
-            value = operate(args, store)
+        if args.command == "pickup":
+            value = pickup(args, store)
+        else:
+            with locked(store):
+                value = checkpoint(args, store) if args.command == "checkpoint" else operate(args, store)
         print(json.dumps(value, indent=2) if args.json else compact(value))
         return 2 if isinstance(value, dict) and value.get("verdict") == "NOT-VERIFIED" else 0
     except Missing as exc:

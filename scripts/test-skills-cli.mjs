@@ -165,6 +165,31 @@ try {
     run('python3', [helper, '--store', store, 'init'], standaloneProject);
     const inbox = JSON.parse(run('python3', [helper, '--store', store, 'inbox', 'drain', '--json'], standaloneProject));
     assert.deepEqual(inbox, { batch: null, pointers: [] });
+    run('python3', [helper, '--store', store, 'unit', 'add', 'installed-recovery', '--track', 'build'], standaloneProject);
+    const queueInput = join(temporary, 'queue-checkpoint-input.json');
+    await writeFile(queueInput, JSON.stringify({ schema_version: 1, program: 'installed-recovery',
+      repository: { name: 'fixture/repo', path: standaloneProject }, authorization: 'Run the disposable fixture.',
+      units: [{ id: 'installed-recovery', owner_id: 'fixture-owner', work_scope: ['fixture-checkout'],
+        brief: 'Continue the disposable fixture.', findings: ['Retain the original report.'], evidence: [],
+        next_actions: [{ id: 'verify', kind: 'local', status: 'planned', receipt: null }] }] }));
+    const queueCheckpoint = JSON.parse(run('python3', [helper, '--store', store, 'checkpoint',
+      '--input', queueInput, '--json'], standaloneProject));
+    assert.equal(queueCheckpoint.units[0].owner_id, 'fixture-owner');
+    const hostState = join(temporary, 'queue-host-state.json');
+    await writeFile(hostState, JSON.stringify({ schema_version: 1, observed_at: new Date().toISOString(),
+      owners: [{ id: 'fixture-owner', state: 'stopped', writer_stopped: true }] }));
+    const storeBefore = await Promise.all((await skillFiles(store)).map(async file =>
+      [file, await readFile(join(store, file))]));
+    const pickupArgs = [helper, '--store', store, 'pickup', '--host-state', hostState, '--json'];
+    const recovered = JSON.parse(run('python3', pickupArgs, standaloneProject));
+    assert.equal(recovered.units[0].same_scope_replacement_allowed, true);
+    assert.equal(recovered.units[0].replacement_packet.authorization, 'Run the disposable fixture.');
+    assert.deepEqual(JSON.parse(run('python3', pickupArgs, standaloneProject)), recovered);
+    const unavailableHost = JSON.parse(run('python3', [helper, '--store', store, 'pickup', '--json'], standaloneProject));
+    assert.equal(unavailableHost.units[0].owner_classification, 'unknown');
+    assert.equal(unavailableHost.units[0].same_scope_replacement_allowed, false);
+    assert.deepEqual(await skillFiles(store), storeBefore.map(([file]) => file));
+    for (const [file, content] of storeBefore) assert.deepEqual(await readFile(join(store, file)), content);
     const checkpoint = join(temporary, 'audit-checkpoint.json');
     await writeFile(checkpoint, JSON.stringify({ schema_version: 1, program: 'installed-fixture', repo: standaloneProject,
       authorization: 'Run the disposable local fixture.', resume: 'Read the saved queue and gates.',
