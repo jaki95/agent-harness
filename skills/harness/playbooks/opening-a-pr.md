@@ -27,6 +27,8 @@ After these sections, attach videos or screenshots when they prove a claim. Do n
 
 **Host PR tracking.** Use `gh` for all PR operations. After creating a PR, register or attach its URL with the host when the host provides or requires PR tracking. For a task that reviews or updates an existing PR, attach that PR when the host requires it.
 
+Verify the GitHub URL with `gh pr view` before attachment. Make the required host call with a supported deadline when available. Retry at most once after a returned recoverable failure. A timeout, failed call, or missing confirmation leaves attachment `unknown`. Record the failed attempt and keep the verified URL in the handoff. A host without the tool is `unavailable`. Only the host's successful response proves attachment. Follow any host gate that requires confirmation, and report it without an unbounded retry loop. Attachment status does not change GitHub review or verification evidence.
+
 **Size and stacks.** Prefer five narrow PRs to one large PR. A stack is a base-branch chain. The root PR targets trunk. Each child branch rebases onto its parent's exact tip and its PR targets the parent branch. Create a child with `gh pr create --base <parent-branch>`, and retarget an existing child with `gh pr edit <pr> --base <parent-branch>`. Branch from trunk only for independent work. Rebase on trunk before substantial stack work.
 
 **Readiness.** Open every PR ready, never as a draft. With `gh`, omit `--draft`. If a PR still opens as a draft, run `gh pr ready <number>`. Run `gh pr view <number>` before you refer to PR status.
