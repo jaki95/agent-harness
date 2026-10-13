@@ -6,9 +6,7 @@ disable-model-invocation: true
 
 # Never Block on the Human
 
-The human supervises asynchronously. Agents must stay unblocked. Make reasonable decisions, proceed, and let the human course-correct after the fact.
-
-**Why:** Every permission pause stalls the pipeline and makes the human the bottleneck. Since code changes are reversible and reviewable, a wrong decision usually costs less than blocking.
+The human supervises asynchronously. Make reasonable decisions, proceed, and let the human course-correct after the fact. Since code changes are reversible and reviewable, a wrong decision usually costs less than blocking.
 
 Proceed within the user's current task authorization and the host's permission rules. This principle grants no new permissions and does not expand the task. Already-granted authorization persists; ask only when required authorization is missing or the host requires confirmation.
 

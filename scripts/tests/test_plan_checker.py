@@ -126,6 +126,43 @@ class PlanCheckerTests(unittest.TestCase):
         result = self.check(PLAN, 0)
         self.assertIn("1 PR sections, 0 problems", result.stdout)
 
+    def test_accepts_fenced_examples_without_counting_their_structure(self):
+        for opening, closing in (("```text", "```"), ("~~~text", "~~~"),
+                                 ("  ```text", " ```   "), ("   ~~~text", "  ~~~\t"),
+                                 ("````text", "`````"), ("~~~lang `code`", "~~~~")):
+            with self.subTest(opening=opening, closing=closing):
+                example = f"{opening}\n## Example heading\n- [ ] Example: “literal value”\n{closing}\n\n"
+                plan = PLAN.replace("A temporary store confirmed", example + "A temporary store confirmed")
+                self.assertIn("1 PR sections, 0 problems", self.check(plan, 0).stdout)
+
+    def test_fences_require_matching_markers_length_and_plain_closing_lines(self):
+        for opening, false_close, closing in (("````text", "```", "````"),
+                                              ("~~~text", "```", "~~~"),
+                                              ("```text", "```not-a-close", "```"),
+                                              ("```text", "    ```", "```"),
+                                              ("~~~text", "~~~not-a-close", "~~~")):
+            with self.subTest(opening=opening, false_close=false_close):
+                example = f"{opening}\n{false_close}\nExample: literal value\n{closing}\n\n"
+                plan = PLAN.replace("A temporary store confirmed", example + "A temporary store confirmed")
+                self.assertIn("1 PR sections, 0 problems", self.check(plan, 0).stdout)
+
+    def test_prose_after_a_matching_fence_still_gets_checked(self):
+        for opening, closing in (("```text", "```"), ("~~~text", "~~~"),
+                                 ("  ````text", " `````")):
+            with self.subTest(opening=opening, closing=closing):
+                example = f"{opening}\nExample: literal value\n{closing}\nOutside: invalid prose\n\n"
+                plan = PLAN.replace("A temporary store confirmed", example + "A temporary store confirmed")
+                result = self.check(plan, 1)
+                self.assertIn("mid-sentence colon", result.stderr)
+                self.assertIn("1 PR sections, 1 problems", result.stdout)
+
+    def test_backticks_in_an_opening_info_string_do_not_start_a_fence(self):
+        example = "```lang `inline`\nOutside: invalid prose\n\n"
+        plan = PLAN.replace("A temporary store confirmed", example + "A temporary store confirmed")
+        result = self.check(plan, 1)
+        self.assertIn("mid-sentence colon", result.stderr)
+        self.assertIn("1 PR sections, 1 problems", result.stdout)
+
     def test_accepts_each_explicit_nonapplicable_block_with_reason(self):
         for block, following in (("Verify, unit.", "Verify, live."),
                                  ("Verify, live.", "Verify, perf."),
