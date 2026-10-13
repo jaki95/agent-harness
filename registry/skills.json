@@ -554,7 +554,7 @@
       ]
     },
     "create-verification-skill": {
-      "maintenance_notes": "Adapts the pinned pstack generator to create Codex project skills in .agents/skills/verify-<slug>/. Generated names use one Codex-valid slug for the directory and frontmatter. Generated verifiers include agents/openai.yaml with implicit invocation enabled for matching app-verification tasks. Replaces the unavailable maintenance command with in-place feature-map updates. The search example restores its query before capturing proof; the other examples and license follow upstream.",
+      "maintenance_notes": "Adapts the pinned pstack generator to create Codex project skills in .agents/skills/verify-<slug>/. Generated names use one Codex-valid slug for the directory and frontmatter. Generated verifiers include agents/openai.yaml with implicit invocation enabled for matching app-verification tasks. Replaces the unavailable maintenance command with in-place feature-map updates. The search example documents Escape and page focus before keyboard search, reopens search before the empty-state query, and restores its query before capturing proof; the other examples and license follow upstream.",
       "reviewed_on": "2026-10-13",
       "sources": [
         {
