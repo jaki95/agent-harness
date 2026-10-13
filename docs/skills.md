@@ -16,6 +16,7 @@ Each link opens the skill's instructions. For installation and host requirements
 | [no-comments](../skills/no-comments/SKILL.md) | Review scoped comments and suppressions, preserve unresolved rationale, and fix accepted findings |
 | [control-ui](../skills/control-ui/SKILL.md) | Drive and inspect browser or Electron UIs with local automation and captured evidence |
 | [control-cli](../skills/control-cli/SKILL.md) | Exercise interactive CLIs and TUIs with repeatable terminal input and transcripts |
+| [create-verification-skill](../skills/create-verification-skill/SKILL.md) | Generate a Codex project skill for app verification, with a maintained feature map in `.agents/skills/verify-<app>/` |
 | [how](../skills/how/SKILL.md) | Explain architecture and runtime flow through delegated exploration and explanation |
 | [why](../skills/why/SKILL.md) | Investigate historical rationale across available evidence sources with calibrated confidence |
 | [architect](../skills/architect/SKILL.md) | Ground, compare, and synthesize designs before implementation, with an opt-in checkpoint |

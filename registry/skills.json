@@ -553,6 +553,28 @@
         }
       ]
     },
+    "create-verification-skill": {
+      "maintenance_notes": "Adapts the pinned pstack generator to create Codex project skills in .agents/skills/verify-<app>/. Generated verifiers include agents/openai.yaml with Codex implicit invocation enabled for matching verification tasks. Replaces the unavailable companion maintenance command with instructions to update the bundled feature map in place. Feature-map examples and license remain unchanged.",
+      "reviewed_on": "2026-10-13",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/create-verification-skill/SKILL.md",
+            "pstack/skills/create-verification-skill/references/feature-map-example/README.md",
+            "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md",
+            "pstack/skills/create-verification-skill/references/feature-map-example/search.md",
+            "pstack/LICENSE"
+          ],
+          "baseline_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
+          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
+          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+        }
+      ]
+    },
     "show-me-your-work": {
       "maintenance_notes": "Preserves the pinned section layout, invocation metadata, canonical TSV format and examples, logging threshold, run-boundary markers, local-by-default locations, conditional commit policy, append-only history, evidence rules, audit scope and superseding corrections, trail-reading guidance, and name-based composition. The bundled decision-log template and Bash helper are byte-identical to the source, with executable mode retained. Uses the full installed Encode Lessons in Structure skill name. Replaces Cursor transcript paths with host-provided current-run access, prohibits scanning unrelated chats, and reports missing transcript access without claiming an audit ran. Retains separate review of the trail and transcript before handoff and all source flag categories. Uses another model family when available; otherwise uses an available separate reviewer and reports missing diversity without claiming cross-family review. Self-review is not a substitute. Missing delegation or transcript access is an incomplete review. Attention names the actual reviewer, points flags to rows or moments, allows No flags only after completed review, and reports incomplete review without inventing a model. Declares filesystem, Bash-helper, transcript, and delegation requirements; named skills resolve through the host catalog, with unavailable dependencies reported. Codex allows implicit invocation for named routing. Runtime installation does not provide host tools, transcripts, or models.",
       "reviewed_on": "2026-10-03",
