@@ -23,6 +23,8 @@ Put each section under a `##` heading, not a bold lead-in, so the sections stand
 
 After these sections, attach videos or screenshots when they prove a claim. Do not paste full SHAs, swarm or arena lane recitals, lever-correction essays, file-by-file checklists, or "CLEAN" verdicts. Put these details in a linked artifact. A commit body does not restate its subject.
 
+**Update an existing PR.** Read its current head with the [PR receipt](../references/pr-receipt.md), then use the [publication command](../references/pr-publication.md). GitHub supplies the head repository and branch. Do not derive a push target from the PR number or the local branch name. Initial branch creation for a new PR remains a separate Git operation.
+
 **Forge.** Use GitHub CLI (`gh`) for forge operations. Keep that choice for create, edit, view, watch, and merge.
 
 **Host PR tracking.** Use `gh` for all PR operations. After creating a PR, register or attach its URL with the host when the host provides or requires PR tracking. For a task that reviews or updates an existing PR, attach that PR when the host requires it.
