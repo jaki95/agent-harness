@@ -19,7 +19,8 @@ MAX_TOTAL_BYTES = 16 * 1024 * 1024
 PAGE_INFO = "totalCount pageInfo { hasNextPage endCursor }"
 SNAPSHOT_QUERY = """query Snapshot($owner:String!,$name:String!,$number:Int!) {
   repository(owner:$owner,name:$name) { nameWithOwner pullRequest(number:$number) {
-    id number url headRefOid baseRefOid baseRefName state isDraft
+    id number url headRefOid headRefName headRepository { nameWithOwner url sshUrl }
+    baseRefOid baseRefName state isDraft
     mergeable mergeStateStatus reviewDecision mergedAt autoMergeRequest { enabledAt }
   } }
 }"""
@@ -81,6 +82,10 @@ class Snapshot:
     number: int
     url: str
     head_sha: str
+    head_ref: str
+    head_repository: str | None
+    head_url: str | None
+    head_ssh_url: str | None
     base_sha: str
     base_ref: str
     state: str
@@ -197,9 +202,14 @@ class Collector:
 
     def snapshot(self):
         value = self.pr(self.query(SNAPSHOT_QUERY, self.variables))
+        head_repository = field(value, "headRepository", dict, True)
         snapshot = Snapshot(
             field(value, "id", str), self.repo, field(value, "number", int), field(value, "url", str),
-            field(value, "headRefOid", str), field(value, "baseRefOid", str),
+            field(value, "headRefOid", str), field(value, "headRefName", str),
+            field(head_repository, "nameWithOwner", str) if head_repository is not None else None,
+            field(head_repository, "url", str) if head_repository is not None else None,
+            field(head_repository, "sshUrl", str) if head_repository is not None else None,
+            field(value, "baseRefOid", str),
             field(value, "baseRefName", str), field(value, "state", str),
             field(value, "isDraft", bool), field(value, "mergeable", str),
             field(value, "mergeStateStatus", str), field(value, "reviewDecision", str, True),
@@ -335,8 +345,10 @@ class Collector:
             except ReadError as exc:
                 failures.append(f"final snapshot unavailable: {exc}")
         changed = before and after and (
-            before.id, before.number, before.url, before.head_sha, before.base_sha, before.base_ref, before.state
-        ) != (after.id, after.number, after.url, after.head_sha, after.base_sha, after.base_ref, after.state)
+            before.id, before.number, before.url, before.head_sha, before.base_sha, before.base_ref, before.state,
+            before.head_ref, before.head_repository, before.head_url, before.head_ssh_url
+        ) != (after.id, after.number, after.url, after.head_sha, after.base_sha, after.base_ref, after.state,
+              after.head_ref, after.head_repository, after.head_url, after.head_ssh_url)
         if changed:
             failures.append("PR identity or published refs changed during capture")
         self.receipt["capture_status"] = "changed" if changed else "incomplete" if failures else "complete"
@@ -370,6 +382,7 @@ def summarize(receipt):
                             for check in receipt["current_checks"])
     lines = [f"PR {receipt['repository']}#{receipt['number']}",
              f"Capture {receipt['capture_status']}", f"Head {before.get('head_sha', 'unknown')}",
+             f"Head target {before.get('head_repository') or 'unavailable'}:{before.get('head_ref', 'unknown')}",
              f"Base {before.get('base_sha', 'unknown')}",
              f"Merge state {before.get('merge_state', 'unknown')}; review {before.get('review_decision') or 'unknown'}",
              f"Required observed {receipt['required_checks']['observed_state']}; policy unknown",

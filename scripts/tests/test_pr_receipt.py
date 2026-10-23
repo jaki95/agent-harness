@@ -30,7 +30,10 @@ def node(value):
 
 def snapshot(**changes):
     value = {"id": "PR_fixture", "number": 12, "url": "https://github.com/fixture/project/pull/12",
-             "headRefOid": HEAD, "baseRefOid": BASE, "baseRefName": "main", "state": "OPEN",
+             "headRefOid": HEAD, "headRefName": "actual-topic", "headRepository": {
+                 "nameWithOwner": "contributor/fork", "url": "https://github.com/contributor/fork",
+                 "sshUrl": "git@github.com:contributor/fork.git"},
+             "baseRefOid": BASE, "baseRefName": "main", "state": "OPEN",
              "isDraft": False, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN",
              "reviewDecision": "APPROVED", "mergedAt": None, "autoMergeRequest": None}
     value.update(changes)
@@ -98,6 +101,8 @@ class PrReceiptTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(receipt["capture_status"], "complete")
         self.assertEqual(receipt["before"]["head_sha"], HEAD)
+        self.assertEqual(receipt["before"]["head_ref"], "actual-topic")
+        self.assertEqual(receipt["before"]["head_repository"], "contributor/fork")
         self.assertEqual(receipt["after"]["base_sha"], BASE)
         self.assertEqual(receipt["required_checks"]["observed_state"], "pass")
         self.assertEqual(receipt["required_checks"]["policy_state"], "unknown")
@@ -154,7 +159,8 @@ class PrReceiptTests(unittest.TestCase):
         self.assertEqual(receipt["required_checks"]["items"][0]["head_sha"], HEAD)
 
     def test_head_base_or_base_ref_movement_rejects_snapshot(self):
-        for field, changed in (("headRefOid", OLD), ("baseRefOid", OLD), ("baseRefName", "release")):
+        for field, changed in (("headRefOid", OLD), ("baseRefOid", OLD), ("baseRefName", "release"),
+                               ("headRefName", "renamed-topic"), ("headRepository", None)):
             with self.subTest(field=field):
                 value = scenario()
                 value["Snapshot:1"] = snapshot(**{field: changed})

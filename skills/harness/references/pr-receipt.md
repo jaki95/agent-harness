@@ -17,7 +17,8 @@ Inspect the JSON before choosing the next action.
 ## Read the receipt
 
 The receipt records repository identity, PR number, collection times, CLI capabilities, and snapshots before and after collection.
-Each snapshot includes the published head and base, review decision, and merge state.
+Each snapshot includes the published head and base, head repository and branch, repository Git URLs, review decision, and merge state.
+A deleted head repository is recorded as null; it cannot be a publication target.
 A changed head, base, or identity invalidates the capture.
 A failed final read cannot establish stability.
 
@@ -57,6 +58,7 @@ Shipping still requires an independent passing verdict and the recorded head, ba
 Unknown requirements need further evidence before landing.
 Collection never grants merge authorization.
 The helper does not edit PRs, reply to findings, resolve threads, retrigger CI, attach artifacts, or merge.
+Use the separate [publication command](pr-publication.md) for an authorized push to an existing PR or a guarded merge.
 
 Host attachment follows [Opening a PR](../playbooks/opening-a-pr.md).
 A required attachment attempt still runs.
