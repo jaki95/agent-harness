@@ -37,6 +37,9 @@ async function installedVersion(version) {
   assert.match(await readFile(join(installed, 'SKILL.md'), 'utf8'), new RegExp(`fixture version ${version}\\.`));
   assert.deepEqual((await readdir(installed)).sort(), ['SKILL.md', 'scripts']);
   assert.equal(await readFile(join(installed, 'scripts/helper.txt'), 'utf8'), 'runtime-resource\n');
+  assert.deepEqual(await skillFiles(installed), ['SKILL.md', join('scripts', 'helper.txt')]);
+  assert.deepEqual(await skillFiles(installed), await sourceFiles(join(source, 'skills', skill)),
+    'source bytecode caches are not expected runtime resources');
   const lock = JSON.parse(await readFile(join(project, 'skills-lock.json'), 'utf8'));
   assert.equal(lock.skills[skill].ref, `v0.${version}.0`);
   assert.equal(lock.skills[skill].skillPath, `skills/${skill}/SKILL.md`);
@@ -55,8 +58,14 @@ async function skillFiles(directory) {
   return files.sort();
 }
 
+async function sourceFiles(directory) {
+  // The CLI excludes Python bytecode directories created by maintenance tests.
+  return (await skillFiles(directory))
+    .filter(file => !file.split(sep).slice(0, -1).includes('__pycache__'));
+}
+
 try {
-  await mkdir(join(source, 'skills', skill, 'scripts'), { recursive: true });
+  await mkdir(join(source, 'skills', skill, 'scripts', '__pycache__'), { recursive: true });
   await mkdir(join(source, 'registry'));
   await mkdir(join(source, 'reviews'));
   await mkdir(project);
@@ -64,6 +73,7 @@ try {
   await writeFile(join(source, 'reviews/decision.md'), 'maintenance-only\n');
   await writeFile(join(source, 'AGENTS.md'), 'Harness maintenance instructions only.\n');
   await writeFile(join(source, 'skills', skill, 'scripts/helper.txt'), 'runtime-resource\n');
+  await writeFile(join(source, 'skills', skill, 'scripts', '__pycache__', 'helper.cpython-310.pyc'), 'generated-bytecode\n');
   await writeSkill(1);
   run('git', ['init', '-b', 'main'], source);
   run('git', ['add', '.'], source);
@@ -99,7 +109,7 @@ try {
     for (const name of owned) {
       const runtime = join(root, 'skills', name);
       const installed = join(installedRoot, name);
-      const files = await skillFiles(runtime);
+      const files = await sourceFiles(runtime);
       assert.deepEqual(await skillFiles(installed), files, `${name} includes every runtime resource`);
       for (const file of files) {
         assert.deepEqual(await readFile(join(installed, file)),

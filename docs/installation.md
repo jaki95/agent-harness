@@ -4,7 +4,7 @@
 
 Use Node 22.20 or newer, npm/npx, Git, and access to the private `jaki95/agent-harness` GitHub repository. The tested Skills CLI version is `1.7.0`; commands below pin the installer independently of the harness version. Existing Git credentials, an authenticated GitHub CLI, or SSH can provide repository access. No public directory listing is required.
 
-The collection includes `grill-me`, `harness`, `unslop`, `technical-writing`, `deslop`, `no-comments`, `interrogate`, `show-me-your-work`, `figure-it-out`, `benchmark-checklist`, `how`, `why`, `architect`, `arena`, `swarm`, `control-ui`, `control-cli`, `create-verification-skill`, `principle-laziness-protocol`, `principle-foundational-thinking`, `principle-redesign-from-first-principles`, `principle-attack-the-premise`, `principle-subtract-before-you-add`, `principle-minimize-reader-load`, `principle-outcome-oriented-execution`, `principle-experience-first`, `principle-exhaust-the-design-space`, `principle-build-the-lever`, `principle-model-the-domain`, `principle-boundary-discipline`, `principle-type-system-discipline`, `principle-make-operations-idempotent`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-separate-before-serializing-shared-state`, `principle-prove-it-works`, `principle-fix-root-causes`, `principle-sequence-verifiable-units`, `principle-test-behavior-not-implementation`, `principle-explain-the-number`, `principle-guard-the-context-window`, `principle-never-block-on-the-human`, and `principle-encode-lessons-in-structure`. The following command lists skills at the remote revision, so unmerged local changes are not available through `main` yet:
+The collection includes `grill-me`, `wayfinder`, `harness`, `unslop`, `technical-writing`, `deslop`, `no-comments`, `interrogate`, `show-me-your-work`, `figure-it-out`, `benchmark-checklist`, `how`, `why`, `architect`, `arena`, `swarm`, `control-ui`, `control-cli`, `create-verification-skill`, `principle-laziness-protocol`, `principle-foundational-thinking`, `principle-redesign-from-first-principles`, `principle-attack-the-premise`, `principle-subtract-before-you-add`, `principle-minimize-reader-load`, `principle-outcome-oriented-execution`, `principle-experience-first`, `principle-exhaust-the-design-space`, `principle-build-the-lever`, `principle-model-the-domain`, `principle-boundary-discipline`, `principle-type-system-discipline`, `principle-make-operations-idempotent`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-separate-before-serializing-shared-state`, `principle-prove-it-works`, `principle-fix-root-causes`, `principle-sequence-verifiable-units`, `principle-test-behavior-not-implementation`, `principle-explain-the-number`, `principle-guard-the-context-window`, `principle-never-block-on-the-human`, and `principle-encode-lessons-in-structure`. The following command lists skills at the remote revision, so unmerged local changes are not available through `main` yet:
 
 ```sh
 npx skills@1.7.0 add jaki95/agent-harness --list
@@ -135,6 +135,14 @@ For other supported tools, change `--agent`. For project-local installation, run
 
 Select skill names explicitly so you control what is installed or updated. Make edits in the harness source repository, then distribute them through the CLI. An update can replace installed files, including edits made directly to those files.
 
+## Wayfinder
+
+Invoke Wayfinder with `$wayfinder` in Codex or `/wayfinder` on hosts with skill slash commands. Its source instructions and explicit invocation policy are unchanged.
+
+Wayfinder expects a host `Skill` tool and the `grilling`, `domain-modeling`, `research`, and `prototype` skills. It refers to `/setup-matt-pocock-skills` and tracker documentation with a "Wayfinding operations" section. These dependencies are not bundled or installed automatically. Harness's `grill-me` skill and Prototype playbook are not automatic substitutes.
+
+The source uses issues, child relationships, labels, assignment, blocking dependencies, frontier queries, comments, and issue updates. It describes a local Markdown fallback when no tracker is configured, but does not bundle that tracker implementation. Research tickets also require subagents, Git branches, and push access. Installation checks verify packaging, not these runtime capabilities.
+
 ## Work projects: pin a release
 
 After a real `v0.1.0` release exists, run inside the consuming project:
@@ -164,6 +172,8 @@ Harness uses `policy.allow_implicit_invocation: false` in Codex. Invoke it as `$
 Imported `disable-model-invocation: true` frontmatter is retained where present. Deslop, Control UI, and Control CLI retain their upstream default invocation metadata. Other hosts that honor it may require explicitly invoking the routed skills alongside Harness. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
 
 Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks every installed runtime file against its source and verifies that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate routed skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
+
+Generated `__pycache__` directories are excluded from the expected source files. A disposable fixture verifies that these caches are not installed, including when the Python maintenance tests run before the CLI checks.
 
 ## References
 
