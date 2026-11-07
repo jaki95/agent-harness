@@ -80,7 +80,7 @@ A dependency is a context relay, not just ordering. Undeclared upstream context 
 
 - The frontier is a computed object, never narrative. Recompute it after every merge and stack mutation with `orch frontier set --repo <repo-dir> --prs <bottom-up-pr-list>` in the stack's store: ordered PR list, branch names, published head SHAs, a generation number, the lowest unmerged PR. gh reads the scoped PRs twice and rejects changed metadata, ambiguous ordering, or incomplete topology. A merged historical prefix remains in the frozen scope. Confirm actual merge state and recompute before acting; a saved snapshot does not authorize using a stale head.
 - Exactly one stacker per stack may mutate its topology through Git and gh, serialized within that stack. Record the holder in the standing orders. Choose a supported execution environment with enough resources; a host label is not evidence of capacity.
-- Workers never rebase or mutate stack topology. Babysitters follow `babysit.md`, one per stack, scoped to one immutable frontier generation. They report conflicts to the stacker rather than restacking.
+- Workers never merge, close, retarget, rebase, or mutate stack topology. Babysitters follow `babysit.md`, one per stack, scoped to one immutable frontier generation. They report conflicts to the stacker rather than restacking.
 - PR closes and retargets go through the stacker only. Closing a base PR orphans every chain above it. Merges and stack surgery are units with briefs like any other.
 - One retro watcher follows merged PRs for reverts, post-merge CI breaks, and orphaned follow-ups.
 

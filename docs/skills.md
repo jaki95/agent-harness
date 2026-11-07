@@ -10,7 +10,7 @@ Each link opens the skill's instructions. For installation and host requirements
 | [unslop](../skills/unslop/SKILL.md) | Remove AI writing patterns while preserving meaning |
 | [technical-writing](../skills/technical-writing/SKILL.md) | Write docs, PR descriptions, and commit messages with the original writing guidance |
 | [deslop](../skills/deslop/SKILL.md) | Remove unnecessary code patterns and match local style with minimal edits |
-| [interrogate](../skills/interrogate/SKILL.md) | Challenge changes with independent reviewers and a pragmatic lead verdict, without automatic edits |
+| [interrogate](../skills/interrogate/SKILL.md) | Challenge changes with independent reviewers, then verify executable repros or static defects without applying fixes |
 | [show-me-your-work](../skills/show-me-your-work/SKILL.md) | Keep and audit a decision trail with evidence, separate review, and explicit limitations |
 | [benchmark-checklist](../skills/benchmark-checklist/SKILL.md) | Vet performance measurements and report repeatable, correct, relevant results |
 | [figure-it-out](../skills/figure-it-out/SKILL.md) | Design and execute a task-specific workflow with measured experiments and a decision trail |

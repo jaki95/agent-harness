@@ -1,27 +1,20 @@
 ---
 name: principle-test-behavior-not-implementation
-description: "Apply when you write, change, or keep a test. Call the code the way its users do and assert the result they observe against a literal expected value. Ask whether a plausible defect could still pass the test; strengthen assertions that miss the behavior, or delete tests that observe none."
+description: "Apply when you write, change, or keep a test. Assert what the code's users can observe, so that the test fails when that behavior breaks and keeps passing when only the internals change."
 disable-model-invocation: true
 ---
 
 # Test Behavior, Not Implementation
 
-A test calls the code as its users do and asserts the result they observe against a literal expected value. Calls alone and restated constants do neither.
+A test is a claim about what the code does for its users: a caller, an end user, or another service. Behavior is what those users can observe through the interface they use. That includes return values, errors, state they can read back, and effects on systems outside the code, such as a request sent, a row written, or a message emitted. Implementation is what they cannot observe: private helpers, internal call order, intermediate data, and which internal collaborator did the work.
 
-Before keeping a test, ask whether a plausible defect could still pass. Name the defect it catches and the observable behavior it checks. Strengthen an assertion that misses that behavior, or delete a test that observes none.
+Judge each test against two imagined edits:
 
-A test that cannot fail for a defect costs CI time and review attention. A constant pin blocks edits to the constant or prompt it restates.
+- **Break the behavior.** Make the code return a wrong value, skip an effect, or do the effect twice. If the test still passes, it does not catch that defect. The usual causes are an assertion looser than the contract, an expected value computed by the code under test, a restated constant or prompt string that never runs the code that reads it, and an assertion on data that the test built itself.
+- **Change the internals.** Keep every observable result the same and restructure the code underneath. If the test now fails, it is pinned to the implementation. Rewrite it around the observable contract.
 
-**Five assertion patterns to scrutinize:**
+Keep a test that catches the first edit and survives the second. Strengthen a test that misses the behavior; delete it only when it observes no behavior and cannot be strengthened. To write a test that does both, drive the code through its users' interface with a concrete input. Derive the expected value from the requirement, not from a run of the code. Assert what the contract promises, no less and no more.
 
-These are warning signs, not automatic deletion rules. `toBeDefined()` fails for `undefined`, and an empty result can be correct behavior. Judge the complete test against a plausible defect.
+The contract decides, not the shape of the assertion. When "an empty cart never charges" is the promise, an assertion that the payment client got no call is behavior. Pair it with a case where the charge happens, so that the test shows it can see a call. The payload that a mocked external service receives is behavior, because that service observes it. A call to an internal helper is implementation, because no user can see it. An empty list is the exact answer when no record matches, and a hollow check when the test only needs some result. Assert an error type or exact wording when users depend on it; incidental text is not the contract.
 
-- **Weak or no assertion.** No `expect`, or only `toBeDefined`, `toBeTruthy`, `not.toThrow`, `toBeInstanceOf`, `toBeGreaterThan(0)`.
-- **Call or absence only.** Only `toHaveBeenCalled`, `not.toHaveBeenCalled`, `toBeUndefined`, `toEqual([])`, `toHaveLength(0)`, `not.toBe(wrongValue)`.
-- **Self-referential.** The expected value comes from the code under test: `expect(f(a)).toBe(f(a))`, `expect(parsed.url).toBe(buildUrl(...))`.
-- **Constant pin.** The assertion restates a hand-maintained constant, config default, table row, or prompt string: `expect(LIMITS.maxTools).toBe(8)`, `expect(PROMPT).toContain("You are")`.
-- **Fixture asserts fixture.** Asserts on test-built data or a `beforeEach` value without calling the subject in the body.
-
-**The fix:** call the subject in the test body with one concrete input and assert the literal output or observable effect, `expect(slugify("Hello, World!")).toBe("hello-world")`. If an absence-only assertion could miss a defect, also assert presence on the other input. For a constant, test the mechanism that reads it with one input. For a mock, assert its payload or the state after the call. Delete a test only when it observes no behavior and cannot be strengthened.
-
-Keep relation checks across table rows (a key in two tables, a parent that exists) and `*.test-d.ts` type checks.
+A test can pin an invariant instead of a call, such as a key that must exist in two tables or a compile-time type check. The invariant is the behavior.

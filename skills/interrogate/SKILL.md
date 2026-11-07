@@ -1,103 +1,36 @@
 ---
 name: interrogate
-description: "Use for \"interrogate\", \"adversarial review\", \"multi-model review\", \"challenge this\", \"stress test this code\", \"find blind spots\", or \"tear this apart\". Multiple LLM reviewers challenge changes from independent angles."
+description: "Use for \"interrogate\", \"adversarial review\", \"multi-model review\", \"challenge this\", \"stress test this code\", \"find blind spots\", or \"tear this apart\". Adversaries try to break a change or design and report findings supported by reproducible or static evidence."
 disable-model-invocation: true
 ---
 
 # Interrogate
 
-Spawn one reviewer per configured model to adversarially review code changes. Each model gets the same prompt and rubric. The adversarial signal comes from model diversity, not assigned personas.
+Adversaries try to break a change or design. Report proven findings. Do not apply fixes.
 
-The deliverable is a synthesized verdict. Do NOT auto-apply changes.
+## Frame
 
-## Step 1, Determine Scope
+The scope is what the user names. Otherwise it is the branch diff from its merge base with the base branch, through the working tree, including relevant untracked files. State the intent from the user's message, commits, and PR description. Ask when the intent is unclear.
 
-Identify what to review from context:
+## Fan out
 
-- If the user points at specific files or a diff, use that
-- If on a feature branch, run `git diff main...HEAD` (or the appropriate base branch) for the full changeset
-- If the user's message references recent work, gather the relevant files
+Use the host's configured Interrogate reviewer roster; otherwise launch three independent reviewers inheriting the parent model. `auto` and `inherit-parent` omit the model override. If a configured model is unavailable, inherit the parent model and disclose the substitution. Model diversity is optional; same-model reviewers are independent reviewers, not cross-model consensus. Use configured role settings for reasoning and speed where supported; otherwise inherit the host defaults.
 
-Package the diff (or file contents) plus any surrounding context files the reviewers need to understand the code.
+Give each adversary its own worktree or scratch checkout containing the exact scoped changes, including uncommitted work. Schedule through the host's delegation tools within its concurrency limits. Keep the target checkout and external services read-only; repros may write only in assigned isolated locations and within task permissions. Missing delegation or required execution access is a review gap, not a pass.
 
-## Step 2, State the Intent
+Give each adversary the same scope, intent, and brief:
 
-Before spawning reviewers, state the intent explicitly. Derive this from:
+> Break this change. Prove each finding against the real code with a failing test, repro script, or command output. Report the exact command, actual output, expected output, and affected location. For a design or plan, use a prototype or probe the current tree. Keep repros in your assigned workspace. When execution is unavailable, unsafe, or cannot establish the defect, a static finding needs exact code or contract references, a reachable input or state, and the traced violation. Distinguish static proof from an observed failure. Leave out style preferences, speculative future risks, and unsupported claims. No findings is valid.
 
-- The user's message
-- Commit messages
-- PR description if one exists
-- The code itself
+## Verify
 
-Write one clear paragraph. If you're unsure about the intent, ask the user before proceeding.
+Rerun executable findings in isolation. For static findings, independently trace the cited path or contract and check the claimed input is reachable. Retain proven correctness, security, or contract violations even when a runnable reproduction is unavailable. Report a reproduction gap explicitly; unsupported suspicions remain unverified.
 
-## Step 3, Spawn Reviewers
+Judge findings against the intent, surrounding code, and known project constraints. A successful run alone does not establish relevance; an unmet prerequisite or a deliberate, authorized tradeoff may refute a claim. Keep every established defect, including a lone reviewer's finding, and merge findings with the same root cause. Agreement does not substitute for evidence. Report findings and verification gaps without selecting a winning reviewer or applying fixes.
 
-Use the host's subagent tools. Delegation and repository read/search tools are required. Reviewers have read-only access; do not edit code or external resources. Report unavailable tools or denied access, and do not claim the affected steps ran.
+## Output
 
-Use the host's configured Interrogate reviewer roster, one reviewer per entry. Without a configured roster, launch three independent reviewers inheriting the parent model. Label them Reviewer A/B/C, extending or shrinking the labels to the configured entry count. Prefer different available configured models. Parent-model reviewers provide independent reviews, but not model diversity; report that limitation and do not describe their agreement as cross-model consensus.
-
-Launch reviewers in parallel within the host's concurrency limits. Give each the same read-only scope and filled prompt. For an `auto` or `inherit-parent` entry, omit the model override so that reviewer runs on the parent model.
-
-If the host rejects a configured model, use an available equivalent from the same family when possible, otherwise inherit the parent model. Report the rejected model, actual fallback, and any loss of model diversity. Do not block the review on an unsupported model, and do not open a maintenance PR to change model defaults. Alias entries are inheritance choices, not rejected models.
-
-Read `references/reviewer-prompt.md` and fill in the template with:
-1. The stated intent
-2. The diff or file contents
-3. The review rubric from `references/rubric.md`
-4. The code-quality lens from `references/code-quality-review.md`
-
-The same filled template goes to all reviewers, so every model applies the code-quality lens.
-
-## Step 4, Synthesize
-
-As results come back, build a unified picture:
-
-1. **Parse all findings** from the reviewers
-2. **Identify consensus**. Findings raised by 2+ models independently are highest signal.
-3. **Identify lone-model findings**. Still worth reading, but weight accordingly.
-4. **Deduplicate**. Different models may describe the same issue differently. Merge these and note which models raised it.
-5. **Note disagreements**. If one model flags something and another explicitly says the opposite, that's useful context for the verdict.
-
-## Step 5, Lead Judgment
-
-You are the lead reviewer, a pragmatic senior engineer, not a neutral aggregator.
-
-Read `references/lead-judgment.md` for the full framework.
-
-Categorize every finding using these buckets:
-
-- **Act on**. Real issues affecting correctness, security, or maintainability given the actual goals. These would block a real PR.
-- **Consider**. Legitimate points, but you're not sure they outweigh the cost of addressing them right now. Worth the user's attention.
-- **Noted**. Technically valid but not actionable. Context-dependent, premature optimization, or low-impact given the current stage.
-- **Dismissed**. Wrong, nitpicky, or missing context. Brief explanation why.
-
-For each finding, include:
-- Which model(s) raised it
-- The category (act on / consider / noted / dismissed)
-- A one-line rationale for the categorization
-
-## Output Format
-
-Present the verdict in this structure:
-
-### Intent
-> [The stated intent paragraph from Step 2]
-
-### Reviewers
-- Reviewer [label]: [model name], [N findings] (one bullet per reviewer)
-
-### Act On
-[Findings that should be addressed. For each: description, which models raised it, why it matters.]
-
-### Consider
-[Findings worth thinking about. For each: description, which models raised it, tradeoff involved.]
-
-### Noted
-[Valid but low-priority. Brief list.]
-
-### Dismissed
-[Rejected findings with brief rationale.]
-
-### Agreement Map
-[Where did models agree, where did they diverge, and what does the pattern of agreement/disagreement tell us?]
+- **Intent**: the restatement.
+- **Reviewers**: the actual models and any substitutions, dropouts, or access gaps.
+- **Findings**: severity, affected location, evidence, how the defect violates the intent or applicable contract, and the adversaries that found it. Include commands and outputs for executed proof, or the independently checked trace for static proof. Say "no verified findings" when none survive.
+- **Dropped or unverified**: counts and reasons per adversary, including any verification gaps. An incomplete review does not establish a clean result.
