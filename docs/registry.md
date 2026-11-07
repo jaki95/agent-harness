@@ -41,7 +41,7 @@ The upstream monitor reads this index, resolves each source ref, and compares it
 
 When relevant changes appear, the monitor produces a report with an upstream diff, maintenance notes, and a local entrypoint comparison when the mapping is unambiguous. Supporting-file mappings require maintainer judgment. Detection does not advance review revisions or modify skills. A human and an agent choose what to incorporate and record their decision.
 
-[The monitoring guide](monitoring-upstream.md) covers local detection and the weekly issue digest. Merging the workflow to `main` activates its schedule. Explicit `--issue-repo OWNER/REPO` enables publication for local runs. Subscribe to the maintained issue for notifications.
+[The monitoring guide](monitoring-upstream.md) covers local detection and the weekly issue digest. Merging the workflow to `main` activates its schedule. Explicit `--issue-repo OWNER/REPO` enables publication for local runs. Completed batches stay closed; future changes create a new issue. Subscribe to each new batch or enable repository issue notifications.
 
 ## Context boundary
 

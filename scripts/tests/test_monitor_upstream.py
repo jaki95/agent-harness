@@ -270,26 +270,28 @@ class FakeIssues:
         return copy.deepcopy(self.records)
 
     def comments(self, number):
-        return copy.deepcopy(self.notes)
+        return copy.deepcopy([note for note in self.notes if note["number"] == number])
 
     def create(self, body):
         self.calls.append("create")
-        self.records.append({"number": 1, "body": body, "state": "open"})
+        number = max((record["number"] for record in self.records), default=0) + 1
+        self.records.append({"number": number, "body": body, "state": "open"})
         self.after("create")
-        return self.records[0]
+        return self.records[-1]
 
     def edit(self, number, **fields):
         self.calls.append(tuple(fields))
-        self.records[0].update(fields)
+        record = next(record for record in self.records if record["number"] == number)
+        record.update(fields)
         self.after("body" if "body" in fields else "state")
-        return self.records[0]
+        return record
 
     def comment(self, number, body):
         if self.fail_comment:
             self.fail_comment = False
             raise monitor.MonitorError("command-failed", "Comment API failed")
         self.calls.append("comment")
-        self.notes.append({"body": body})
+        self.notes.append({"number": number, "body": body})
         self.after("comment")
         return self.notes[-1]
 
@@ -314,8 +316,11 @@ class PublisherTests(unittest.TestCase):
     def publish(self, report=None):
         return monitor.reconcile_issue(report or self.pending, "example/harness", issues=self.client)
 
-    def snapshot(self):
-        return json.loads(monitor.SNAPSHOT.search(self.client.records[0]["body"])[1])
+    def snapshot(self, index=0):
+        return json.loads(monitor.SNAPSHOT.search(self.client.records[index]["body"])[1])
+
+    def clean_report(self):
+        return monitor.Report((monitor.Result(self.source, "unchanged", "b" * 40),))
 
     def test_initial_creation_notifies_without_extra_comment(self):
         self.assertEqual("created", self.publish())
@@ -364,9 +369,7 @@ class PublisherTests(unittest.TestCase):
                     expected_generation = 2
                     expected_state = "closed"
                 if operation == "reopen":
-                    self.publish(monitor.Report((monitor.Result(self.source, "unchanged", "b" * 40),)))
-                    expected_generation = 3
-                    expected_notes = 1
+                    self.client.records[0]["state"] = "closed"
                 self.client.fail_after = "state" if operation in ("close", "reopen") else operation
                 with self.assertRaisesRegex(monitor.MonitorError, "Response lost"):
                     self.publish(target)
@@ -385,16 +388,79 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual("open", self.client.records[0]["state"])
         self.assertEqual([], self.client.notes)
 
-    def test_clean_closes_and_recurrence_reopens_with_notification(self):
+    def test_clean_closes_and_recurrence_creates_a_new_issue(self):
         self.publish()
-        clean = monitor.Report((monitor.Result(self.source, "unchanged", "b" * 40),))
-        self.publish(clean)
+        self.publish(self.report("3" * 40))
+        self.publish(self.clean_report())
         self.assertEqual("closed", self.client.records[0]["state"])
-        self.assertEqual([], self.client.notes)
+        historical = copy.deepcopy(self.client.records[0])
+        notes = copy.deepcopy(self.client.notes)
+        calls = list(self.client.calls)
+        self.publish(self.clean_report())
+        self.assertEqual(calls, self.client.calls)
+        self.assertEqual("created", self.publish())
+        self.assertEqual("quiet", self.publish())
+        self.assertEqual(historical, self.client.records[0])
+        self.assertEqual(notes, self.client.notes)
+        self.assertEqual([(1, "closed"), (2, "open")],
+                         [(record["number"], record["state"]) for record in self.client.records])
+        self.assertEqual(1, self.snapshot(1)["generation"])
+
+    def test_lost_create_and_close_responses_with_history_converge(self):
+        for operation in ("create", "close"):
+            with self.subTest(operation=operation):
+                self.setUp()
+                self.publish()
+                self.publish(self.clean_report())
+                historical = copy.deepcopy(self.client.records[0])
+                target = self.pending
+                if operation == "close":
+                    self.publish()
+                    target = self.clean_report()
+                self.client.fail_after = "state" if operation == "close" else "create"
+                with self.assertRaisesRegex(monitor.MonitorError, "Response lost"):
+                    self.publish(target)
+                self.publish(target)
+                self.assertEqual("quiet", self.publish(target))
+                self.assertEqual(historical, self.client.records[0])
+                self.assertEqual(2, len(self.client.records))
+                self.assertEqual(2, self.client.calls.count("create"))
+                self.assertEqual("closed" if operation == "close" else "open", self.client.records[1]["state"])
+                self.assertEqual(2 if operation == "close" else 1, self.snapshot(1)["generation"])
+
+    def test_clean_open_issue_is_closed_after_a_failed_close_request(self):
         self.publish()
-        self.assertEqual("open", self.client.records[0]["state"])
-        self.assertEqual(3, self.snapshot()["generation"])
-        self.assertEqual(1, len(self.client.notes))
+        self.publish(self.clean_report())
+        historical = copy.deepcopy(self.client.records[0])
+        self.publish()
+        edit = self.client.edit
+
+        def fail_close(number, **fields):
+            if fields.get("state") == "closed":
+                raise monitor.MonitorError("command-failed", "Close request failed")
+            return edit(number, **fields)
+
+        with patch.object(self.client, "edit", side_effect=fail_close):
+            with self.assertRaisesRegex(monitor.MonitorError, "Close request failed"):
+                self.publish(self.clean_report())
+        self.assertEqual("open", self.client.records[1]["state"])
+        self.assertEqual("unchanged", self.snapshot(1)["sources"][0]["status"])
+        self.assertEqual("closed", self.publish(self.clean_report()))
+        self.assertEqual("quiet", self.publish(self.clean_report()))
+        self.assertEqual(historical, self.client.records[0])
+        self.assertEqual(2, len(self.client.records))
+
+    def test_closed_unknown_and_error_issues_are_unfinished(self):
+        reports = [monitor.Report((monitor.Result(self.source, "unknown", error="timeout"),)),
+                   monitor.Report((), ("Registry unavailable",))]
+        for report in reports:
+            with self.subTest(report=report):
+                self.setUp()
+                self.publish(report)
+                self.client.records[0]["state"] = "closed"
+                self.assertEqual("reopened", self.publish(report))
+                self.assertEqual(1, len(self.client.records))
+                self.assertEqual("open", self.client.records[0]["state"])
 
     def test_outage_preserves_pending_and_repeat_is_quiet(self):
         self.publish()
@@ -442,8 +508,41 @@ class PublisherTests(unittest.TestCase):
     def test_duplicate_marked_issues_fail(self):
         self.publish()
         self.client.records.append(dict(self.client.records[0], number=2))
-        with self.assertRaisesRegex(monitor.MonitorError, "Multiple marked issues"):
+        with self.assertRaises(monitor.MonitorError) as raised:
             self.publish()
+        self.assertEqual("duplicate-issues", raised.exception.code)
+
+    def test_duplicate_unfinished_issues_fail_even_when_one_is_closed(self):
+        self.publish()
+        self.client.records.append(dict(self.client.records[0], number=2, state="closed"))
+        before = copy.deepcopy(self.client.records)
+        with self.assertRaises(monitor.MonitorError) as raised:
+            self.publish()
+        self.assertEqual("duplicate-issues", raised.exception.code)
+        self.assertEqual(before, self.client.records)
+
+    def test_multiple_completed_issues_do_not_block_publication(self):
+        self.publish()
+        self.publish(self.clean_report())
+        self.client.records.append(dict(self.client.records[0], number=2))
+        history = copy.deepcopy(self.client.records)
+        self.assertEqual("created", self.publish())
+        self.assertEqual(history, self.client.records[:2])
+        self.assertEqual((3, "open", 1),
+                         (self.client.records[2]["number"], self.client.records[2]["state"],
+                          self.snapshot(2)["generation"]))
+
+    def test_invalid_closed_history_fails_before_publication(self):
+        self.publish()
+        clean = monitor.compact(self.clean_report(), {})
+        calls = list(self.client.calls)
+        for body in (monitor.MARKER, monitor.issue_body(clean, "0" * 64, 1)):
+            with self.subTest(body=body):
+                self.client.records = [self.client.records[0], {"number": 2, "state": "closed", "body": body}]
+                with self.assertRaises(monitor.MonitorError) as raised:
+                    self.publish()
+                self.assertEqual("invalid-snapshot", raised.exception.code)
+                self.assertEqual(calls, self.client.calls)
 
     def test_invalid_snapshot_fails(self):
         self.client.records = [{"number": 1, "state": "open", "body": monitor.MARKER}]

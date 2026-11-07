@@ -34,7 +34,7 @@ Exit code `0` means every comparison completed, including comparisons with pendi
 1. Merge `.github/workflows/monitor-upstream.yml` to `main` to activate the schedule.
 2. Enable GitHub Actions and issue creation for the repository if its settings restrict them.
 3. Run **Monitor upstream skills** manually or wait for the Monday 08:17 UTC schedule.
-4. When the first actionable result creates **External skill updates**, subscribe to that issue.
+4. Each new batch creates an **External skill updates** issue. Subscribe to each new issue or enable repository issue notifications; subscriptions to completed batches do not carry over.
 5. Read changed-file details in the issue. Open the linked workflow run and download `upstream-skill-report` for complete patches.
 6. Configure the recurring Codex reviewer below to receive analysis and suggested next actions in comments.
 
@@ -42,11 +42,15 @@ The workflow runs only on `main`. A single concurrency group serializes publishe
 
 [GitHub scheduled workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) run on the default branch. Scheduling is best effort. Runs can be delayed or dropped under load. GitHub disables schedules in inactive public repositories after 60 days. Use the manual trigger when you need a current comparison.
 
-The issue body is machine-owned. Keep review discussion in comments. Its first creation delivers the initial notification. Later queue changes add one tagged notification comment per generation. Identical findings stay quiet, including runs with unrelated upstream heads or different transport error messages. Notification delivery follows your GitHub subscription settings.
+The issue body is machine-owned. Keep review discussion in comments. Each batch starts at generation 1, and issue creation delivers its initial notification. Later queue changes within that batch add one tagged notification comment per generation. Identical findings stay quiet, including runs with unrelated upstream heads or different transport error messages. Notification delivery follows your GitHub subscription settings.
 
 A source outage preserves its previous pending file identities when the repository, ref, watched paths, and reviewed revision still match. It reports the outage and keeps the issue open. A changed review revision or removed registry source drops its old proposal. Invalid registry data preserves the previous queue until the registry becomes readable again.
 
-Manually closing an unresolved issue does not acknowledge a review. The next run reopens it. The monitor closes the issue only when all configured comparisons are clean. It reopens the same issue for later changes. Multiple issues with the monitor marker require manual duplicate cleanup before publication can continue.
+Manually closing an unresolved issue does not acknowledge a review. The next run reopens it. The monitor closes the issue only when all configured comparisons are clean. A closed issue with a valid clean snapshot is a completed batch: later detections leave its body and comments unchanged and create a fresh issue for new changes or errors. Clean detections with only completed history stay quiet.
+
+An open issue with a clean snapshot remains the current batch until closure succeeds, so an interrupted close can be retried. Closed issues with pending changes or errors remain unfinished. Multiple unfinished marked issues require manual duplicate cleanup, while malformed snapshots require repair before detection or review can continue. Both the monitor and reviewer use these rules.
+
+Merging an adoption PR does not run detection. Run the workflow manually after merging or wait for its schedule. If fresh upstream changes are already pending at that detection, the current batch remains open until those changes are reviewed too.
 
 ## Publish a local report to the issue
 
@@ -98,9 +102,13 @@ systemctl --user list-timers agent-harness-upstream-review.timer
 
 The unit directory must be in the user's systemd search path. Check runs with `systemctl --user status agent-harness-upstream-review.service` and `journalctl --user -u agent-harness-upstream-review.service`. A model run has a ten-minute deadline; the service has a twenty-minute deadline. Failures post at most one comment per queue generation and error category, then retry after one hour. Restoring authentication or evidence availability needs no manual acknowledgement. Failed analyses never receive a completion marker.
 
-Completed output is atomically cached before delivery. A retry verifies evidence again and reuses the output if its evidence digest matches. The worker rereads the queue before posting and discards stale delivery. Tagged review comments are the delivery record, including recovery after GitHub accepted a comment but the connection failed. A nonblocking local lock prevents overlapping timer and manual runs. Actions owns the issue body; the reviewer owns its comments. Every review states its queue generation and evidence revisions, so historical reviews remain distinguishable when a queue changes.
+Completed output is atomically cached before delivery. A retry verifies evidence again and reuses the output if its evidence digest matches. The cache identity includes the issue number as well as its generation and fingerprint, so a new batch cannot reuse the previous batch's delivery record. The worker rereads the queue before posting and discards stale delivery, including a change to another issue. Tagged review comments are the delivery record, including recovery after GitHub accepted a comment but the connection failed. A nonblocking local lock prevents overlapping timer and manual runs. Actions owns the issue body; the reviewer owns its comments. Every review states its queue generation and evidence revisions, so historical reviews remain distinguishable when a queue changes.
 
-For an upgrade, stop the timer and active service, stage a new versioned bundle with the same state directory, reload systemd, prove a one-shot run, then enable the timer again. To disable recurring review:
+For an upgrade, stop the timer and active service, stage a new versioned bundle with the same state directory, reload systemd, prove a one-shot run, then enable the timer again. The installed scripts are copies: merging changes to `main` does not upgrade the worker. Upgrade both `monitor_upstream.py` and `review_upstream.py` in the bundle before the detector creates a second marked issue. Older workers reject multiple marked issues even when all but one are completed.
+
+For the batch-rotation rollout, retain the old bundle and units for rollback, then use the installer above with a new versioned runtime directory and the existing state and unit directories. After reloading systemd, inspect the service's `ExecStart` to confirm the new bundle. A quiet one-shot confirms discovery only; it does not prove fresh analysis or comment delivery. Re-enable the timer only after the check succeeds. Once multiple batches exist, rollbacks must retain support for completed issue history.
+
+To disable recurring review:
 
 ```sh
 systemctl --user disable --now agent-harness-upstream-review.timer

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect upstream skill changes and optionally reconcile one GitHub issue."""
+"""Detect upstream skill changes and optionally reconcile the current issue batch."""
 
 import argparse
 from dataclasses import asdict, dataclass
@@ -448,20 +448,37 @@ def parse_snapshot(body):
         raise MonitorError("invalid-snapshot", "Existing monitor issue has an invalid snapshot") from exc
 
 
+def is_actionable(snapshot):
+    return bool(snapshot["errors"] or any(i["status"] != "unchanged" for i in snapshot["sources"]))
+
+
+def select_issue(issues):
+    unfinished = []
+    for issue in issues:
+        if "pull_request" in issue or MARKER not in (issue.get("body") or ""):
+            continue
+        if (type(issue.get("number")) is not int or issue["number"] < 1
+                or issue.get("state") not in ("open", "closed")):
+            raise MonitorError("invalid-api-response", "Monitor issue is missing a valid number or state")
+        snapshot = parse_snapshot(issue.get("body") or "")
+        if fingerprint(snapshot) != snapshot["fingerprint"]:
+            raise MonitorError("invalid-snapshot", "Queue fingerprint does not match its source identities")
+        if issue["state"] != "closed" or is_actionable(snapshot):
+            unfinished.append(issue)
+    if len(unfinished) > 1:
+        raise MonitorError("duplicate-issues", "Multiple unfinished marked issues exist. Resolve the duplicate before continuing.")
+    return unfinished[0] if unfinished else None
+
+
 def reconcile_issue(report, repository, *, issues=None):
     client = issues or GitHub(repository)
-    matches = [i for i in client.issues() if "pull_request" not in i and MARKER in (i.get("body") or "")]
-    if len(matches) > 1:
-        raise MonitorError("duplicate-issues", "Multiple marked issues exist. Resolve the duplicate before publishing.")
-    issue = matches[0] if matches else None
-    if issue and (type(issue.get("number")) is not int or issue.get("state") not in ("open", "closed")):
-        raise MonitorError("invalid-api-response", "Monitor issue is missing a valid number or state")
+    issue = select_issue(client.issues())
     previous = {}
     if issue:
         previous = parse_snapshot(issue.get("body") or "")
     snapshot = compact(report, previous)
     digest = fingerprint(snapshot)
-    actionable = bool(snapshot["errors"] or any(i["status"] != "unchanged" for i in snapshot["sources"]))
+    actionable = is_actionable(snapshot)
     if not issue:
         if not actionable:
             return "quiet"

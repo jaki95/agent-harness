@@ -20,9 +20,10 @@ CHANGE = monitor.Change("M", "watched/SKILL.md", "watched/SKILL.md", "a" * 40, "
 SOURCE = monitor.Source("sample", "source", "https://github.com/fixture/upstream", "main", ("watched/",), OLD, OLD, "Keep customization")
 
 
-def issue(generation=1, head=HEAD):
-    snapshot = monitor.compact(monitor.Report((monitor.Result(SOURCE, "pending", head, (CHANGE,)),)), {})
-    return {"number": 6, "state": "open", "body": monitor.issue_body(snapshot, monitor.fingerprint(snapshot), generation)}
+def issue(generation=1, head=HEAD, *, number=6, state="open", status="pending"):
+    changes = (CHANGE,) if status == "pending" else ()
+    snapshot = monitor.compact(monitor.Report((monitor.Result(SOURCE, status, head, changes),)), {})
+    return {"number": number, "state": state, "body": monitor.issue_body(snapshot, monitor.fingerprint(snapshot), generation)}
 
 
 def evidence():
@@ -40,20 +41,21 @@ def advice():
 class FakeGitHub:
     def __init__(self):
         self.issue = issue()
+        self.history = []
         self.notes = []
         self.fail_after_delivery = False
         self.fail_before_delivery = False
 
     def issues(self):
-        return [copy.deepcopy(self.issue)]
+        return copy.deepcopy([*self.history, self.issue] if self.issue else self.history)
 
     def comments(self, number):
-        return self.notes.copy()
+        return [note.copy() for note in self.notes if note["number"] == number]
 
     def comment(self, number, body):
         if self.fail_before_delivery and review.ReviewKey(6, 1, "").marker.split(":")[0] in body:
             raise monitor.MonitorError("command-failed", "GitHub unavailable")
-        self.notes.append({"body": body})
+        self.notes.append({"number": number, "body": body})
         if self.fail_after_delivery and "upstream-codex-review:" in body:
             raise monitor.MonitorError("timeout", "Delivery response lost")
 
@@ -111,6 +113,30 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual("stale", self.run_review(analyze=stale).kind)
         self.assertEqual([], self.client.notes)
 
+    def test_rotation_during_analysis_discards_delivery_even_with_the_same_fingerprint(self):
+        def rotate(proof, scratch):
+            self.client.history = [issue(state="closed", status="unchanged")]
+            self.client.issue = issue(number=7)
+            return self.analyze(proof, scratch)
+
+        self.assertEqual("stale", self.run_review(analyze=rotate).kind)
+        self.assertEqual([], self.client.notes)
+        self.assertEqual("published", self.run_review().kind)
+        self.assertEqual(2, self.models)
+        self.assertEqual([7], [note["number"] for note in self.client.notes])
+
+    def test_rotated_issue_gets_its_own_analysis_and_completion_record(self):
+        self.assertEqual("published", self.run_review().kind)
+        previous_note = self.client.notes[0].copy()
+        self.client.history = [issue(state="closed", status="unchanged")]
+        self.client.issue = issue(number=7)
+        self.assertEqual("published", self.run_review().kind)
+        self.assertEqual("quiet", self.run_review().kind)
+        self.assertEqual((2, 2), (self.models, self.collections))
+        self.assertEqual([6, 7], [note["number"] for note in self.client.notes])
+        self.assertEqual(previous_note, self.client.notes[0])
+        self.assertEqual(["6", "7"], sorted(path.name.split("-")[0] for path in self.root.glob("*.json")))
+
     def test_new_generation_with_same_fingerprint_gets_new_analysis(self):
         self.run_review()
         self.client.issue = issue(generation=3)
@@ -140,6 +166,39 @@ class WorkerTests(unittest.TestCase):
         self.client.issue["state"] = "closed"
         self.assertEqual("quiet", self.run_review().kind)
         self.assertEqual(0, self.models)
+
+    def test_completed_history_without_an_active_issue_skips_analysis(self):
+        self.client.history = [issue(number=4, state="closed", status="unchanged"),
+                               issue(number=5, state="closed", status="unchanged")]
+        self.client.issue = None
+        self.assertEqual("quiet", self.run_review().kind)
+        self.assertEqual((0, 0, []), (self.models, self.collections, self.client.notes))
+
+    def test_clean_open_issue_waits_for_monitor_closure(self):
+        self.client.history = [issue(number=5, state="closed", status="unchanged")]
+        self.client.issue = issue(status="unchanged")
+        self.assertEqual("quiet", self.run_review().kind)
+        self.assertEqual((0, 0), (self.models, self.collections))
+
+    def test_duplicate_unfinished_issues_fail_before_analysis(self):
+        for state, status in (("open", "pending"), ("closed", "pending"),
+                              ("closed", "unknown"), ("open", "unchanged")):
+            with self.subTest(state=state, status=status):
+                self.client.history = [issue(number=5, state=state, status=status)]
+                with self.assertRaises(monitor.MonitorError) as raised:
+                    self.run_review()
+                self.assertEqual("duplicate-issues", raised.exception.code)
+        self.assertEqual((0, 0, []), (self.models, self.collections, self.client.notes))
+
+    def test_malformed_closed_history_fails_before_analysis(self):
+        clean = monitor.parse_snapshot(issue(status="unchanged")["body"])
+        for body in (monitor.MARKER, monitor.issue_body(clean, "0" * 64, 1)):
+            with self.subTest(body=body):
+                self.client.history = [{"number": 5, "state": "closed", "body": body}]
+                with self.assertRaises(monitor.MonitorError) as raised:
+                    self.run_review()
+                self.assertEqual("invalid-snapshot", raised.exception.code)
+        self.assertEqual((0, 0, []), (self.models, self.collections, self.client.notes))
 
 
 class ValidationTests(unittest.TestCase):
