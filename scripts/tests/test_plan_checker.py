@@ -163,6 +163,25 @@ class PlanCheckerTests(unittest.TestCase):
         self.assertIn("mid-sentence colon", result.stderr)
         self.assertIn("1 PR sections, 1 problems", result.stdout)
 
+    def test_inline_code_uses_matching_backtick_runs(self):
+        for literal in ("`key: “value”`", "``key `quoted`: “value”``",
+                        "```key ``quoted``: “value”```", "``key: `value``"):
+            with self.subTest(literal=literal):
+                plan = PLAN.replace("A temporary store confirmed", f"Read {literal}.\n\nA temporary store confirmed")
+                self.check(plan, 0)
+
+    def test_unmatched_inline_delimiters_do_not_hide_prose(self):
+        for literal in ("`key: value``", "``key: value`", "```key: value``"):
+            with self.subTest(literal=literal):
+                plan = PLAN.replace("A temporary store confirmed", f"Read {literal}.\n\nA temporary store confirmed")
+                self.assertIn("mid-sentence colon", self.check(plan, 1).stderr)
+
+    def test_prose_after_inline_code_still_gets_checked(self):
+        plan = PLAN.replace("A temporary store confirmed", "Read ``key `quoted`: value``. Outside: invalid prose.\n\nA temporary store confirmed")
+        result = self.check(plan, 1)
+        self.assertIn("mid-sentence colon", result.stderr)
+        self.assertIn("1 PR sections, 1 problems", result.stdout)
+
     def test_accepts_each_explicit_nonapplicable_block_with_reason(self):
         for block, following in (("Verify, unit.", "Verify, live."),
                                  ("Verify, live.", "Verify, perf."),

@@ -116,3 +116,5 @@ Review the upstream patch beside the customization comparison. Choose the change
 Update `last_reviewed_revision` after considering the relevant changes. Advance `last_incorporated_revision` only when incorporating upstream material. Update the maintenance notes and any consequential review record in the same Git change. Follow [registry conventions](registry.md#review-decisions).
 
 The monitor never adopts changes, updates registry revisions, installs skills, or creates an adoption PR.
+
+When a watched upstream file is intentionally deleted, review the deletion and its replacement before retiring that path from the registry. Keep the baseline revision and document any independently maintained local implementation. A retired path no longer causes `missing-path`; this acknowledges the source change without requiring deletion of the local implementation.

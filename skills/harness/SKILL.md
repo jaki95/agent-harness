@@ -18,6 +18,7 @@ Resolve routed skills by name through the host's available skill catalog and rea
 
 Remaining triggers:
 
+- Starting a task → state the user's goal and the smallest expected change without waiting for confirmation. Carry that goal into each delegate brief and PR's Why section. Lead the final report with the result against it.
 - Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**.
 - Docs, RFCs, readmes, PR titles, PR descriptions, or commit messages → the **technical-writing** skill.
 - A throwaway sketch or experiment to decide between designs or behaviors → the **Prototype** playbook (`playbooks/prototype.md`).
@@ -89,10 +90,10 @@ Read the leaf skill in full for each engineering principle you apply.
 **Verification**
 
 - **Prove It Works** (**principle-prove-it-works**). After a task, before declaring done. Verify against the real artifact, not a proxy or "it compiles".
-- **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace each symptom to its root cause, reproduce first, ask why until you reach it.
+- **Fix Root Causes** (**principle-fix-root-causes**). Debugging. Trace the symptom to the first incorrect decision or missing handling of a legitimate state. Distinguish a corrective boundary check from masking an earlier fault.
 - **Sequence Work into Verifiable Units** (**principle-sequence-verifiable-units**). Multi-step work (sweeps, migrations, runs of similar edits) and how you stack commits and PRs. Break work into small units that each end in a check, verify each before the next, and order delivery so the sequence proves itself.
-- **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, or keeping a test. Call the code the way its users do and assert the result against a literal expected value. Ask whether a plausible defect could still pass; strengthen assertions that miss behavior, or delete tests that observe none.
-- **Explain the Number** (**principle-explain-the-number**). Before you trust, report, or act on a number you measured (a speedup, a regression, a throughput, or a latency). Find what limits it, and rule out that it measured something other than the work you think.
+- **Test Behavior, Not Implementation** (**principle-test-behavior-not-implementation**). Writing, changing, or keeping a test. Assert observable behavior so the test fails when it breaks and keeps passing when only the internals change.
+- **Explain the Number** (**principle-explain-the-number**). Before measuring, state the decision the result will inform. Before trusting or reporting it, identify the limiter and verify that the measurement captures the intended work.
 
 **Delegation**
 
@@ -118,6 +119,8 @@ Read the leaf skill in full for each engineering principle you apply.
 Follow the host's delegation rules, permissions, and concurrency limits. Use its delegation tools rather than assuming Cursor agent types or Task flags. Give playbook delegates the Harness instructions and have them follow this mode. Routed workflow skills prescribe their own roles and reviewers; retain those workflows rather than overriding every delegate with a generic role.
 
 **Defaults for delegation.** Use background or asynchronous execution when the host supports it. Pass file and artifact pointers instead of copying large payloads into prompts. Give each role the tools its task needs within existing permissions, preserving read-only roles where prescribed. Read existing host model configuration by role. Configured role overrides take precedence; otherwise inherit the parent model. Use configured code models for code, judgment and prose models for those roles, the strongest configured judgment model for the hardest design, concurrency, or algorithm work even when its steps are precisely specified, and a configured fast code model for trivial mechanical edits. Feature, refactoring, bug-fix, performance, and hillclimb delegates use their configured task roles. Report unavailable models and actual fallbacks. If delegation is unavailable, report the missing capability and do not claim a prescribed delegate or reviewer ran.
+
+**Effort and speed.** Preserve configured role models, reasoning settings, and cost preferences. When the host supports separate effort or speed controls and configuration leaves them open, choose them for the task without changing the configured model family. An inherited role stays inherited. Use asynchronous steering and resumes when supported. After a rejected model or setting, follow the workflow's supported fallback and report it; do not keep retrying an unsupported choice or invent a model name.
 
 You own every subagent's work. Review its actual diff and artifacts and write your own summary instead of passing through its report. A second opinion uses the same prompt against a different model when available. Report unavailable model diversity; agreement does not replace direct verification. Apply the selected writing rules to delegated prose you review.
 
