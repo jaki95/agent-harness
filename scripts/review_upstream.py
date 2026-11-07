@@ -66,17 +66,14 @@ def queue_from_issue(issue):
     snapshot = monitor.parse_snapshot(issue.get("body") or "")
     if monitor.fingerprint(snapshot) != snapshot["fingerprint"]:
         raise monitor.MonitorError("invalid-snapshot", "Queue fingerprint does not match its source identities")
-    if issue["state"] == "closed" or not (snapshot["errors"] or any(
-            s["status"] != "unchanged" for s in snapshot["sources"])):
+    if issue["state"] == "closed" or not monitor.is_actionable(snapshot):
         return None
     return Queue(ReviewKey(issue["number"], snapshot["generation"], snapshot["fingerprint"]), snapshot)
 
 
 def find_queue(client):
-    matches = [i for i in client.issues() if "pull_request" not in i and monitor.MARKER in (i.get("body") or "")]
-    if len(matches) > 1:
-        raise monitor.MonitorError("duplicate-issues", "Multiple marked upstream issues exist")
-    return queue_from_issue(matches[0]) if matches else None
+    issue = monitor.select_issue(client.issues())
+    return queue_from_issue(issue) if issue else None
 
 
 def observed_revision(item):

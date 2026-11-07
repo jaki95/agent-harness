@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
-      - name: Detect changes and maintain the issue digest
+      - name: Detect changes and maintain the current issue batch
         id: monitor
         continue-on-error: true
         env:
