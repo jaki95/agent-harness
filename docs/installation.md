@@ -173,6 +173,8 @@ Imported `disable-model-invocation: true` frontmatter is retained where present.
 
 Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks every installed runtime file against its source and verifies that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate routed skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
 
+Generated `__pycache__` directories are excluded from the expected source files. A disposable fixture verifies that these caches are not installed, including when the Python maintenance tests run before the CLI checks.
+
 ## References
 
 - [Skills CLI v1.7.0 documentation](https://github.com/vercel-labs/skills/blob/v1.7.0/README.md)
