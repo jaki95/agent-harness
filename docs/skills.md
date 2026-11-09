@@ -7,6 +7,10 @@ Each link opens the skill's instructions. For installation and host requirements
 | [grill-me](../skills/grill-me/SKILL.md) | Stress-test a plan, decision, or idea in rounds of questions |
 | [wayfinder](../skills/wayfinder/SKILL.md) | Plan large efforts as linked decision tickets; requires companion skills and tracker setup described in the [installation notes](installation.md#wayfinder) |
 | [retro](../skills/retro/SKILL.md) | Review a coding session and propose environment improvements by severity; see the [host and dependency requirements](installation.md#retro) |
+| [statechart](../skills/statechart/SKILL.md) | Model and check state transitions, then draw a statechart |
+| [correct](../skills/correct/SKILL.md) | Turn recurring mistakes into enforceable checks |
+| [maintain-verification-skill](../skills/maintain-verification-skill/SKILL.md) | Check a project's verification skill against source and live behavior |
+| [blast-radius](../skills/blast-radius/SKILL.md) | Investigate downstream risks and prove key safety assumptions |
 | [harness](../skills/harness/SKILL.md) | Working mode with selective explanations, milestone updates, and routed principles and playbooks |
 | [unslop](../skills/unslop/SKILL.md) | Remove AI writing patterns while preserving meaning |
 | [technical-writing](../skills/technical-writing/SKILL.md) | Write docs, PR descriptions, and commit messages with the original writing guidance |

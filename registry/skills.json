@@ -825,6 +825,82 @@
           "last_incorporated_revision": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f"
         }
       ]
+    },
+    "correct": {
+      "maintenance_notes": "Preserves the pinned upstream runtime instructions unchanged, including its workflow for turning recurring mistakes into enforced checks. Requires access to project history, review evidence, code, and checks. It may propose and make code and commit changes as the source directs; existing user authorization and host permissions still apply. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
+      "reviewed_on": "2026-11-09",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/correct/",
+            "pstack/LICENSE"
+          ],
+          "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+        }
+      ]
+    },
+    "blast-radius": {
+      "maintenance_notes": "Preserves the pinned upstream runtime instructions unchanged, including evidence-driven analysis and executable proof of safety assumptions. References How, Why, Arena, and Unslop and requires project source and runnable checks; model and delegation availability depend on the host. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
+      "reviewed_on": "2026-11-09",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/blast-radius/",
+            "pstack/LICENSE"
+          ],
+          "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+        }
+      ]
+    },
+    "maintain-verification-skill": {
+      "maintenance_notes": "Preserves the pinned upstream runtime package unchanged. Requires an existing project verification skill and feature map, host subagents, access to source, and a working app or CLI control surface. The source names a Cursor-style discovery path; no local path substitution is made. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
+      "reviewed_on": "2026-11-09",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/maintain-verification-skill/",
+            "pstack/LICENSE"
+          ],
+          "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+        }
+      ]
+    },
+    "statechart": {
+      "maintenance_notes": "Preserves the pinned upstream runtime package unchanged, including scripts and fixtures. Requires a TypeScript-capable runtime, Java and TLC, and optionally Pele for rendering; upstream tooling may use mise and network downloads. Results are bounded to the model and require replay against real code. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
+      "reviewed_on": "2026-11-09",
+      "sources": [
+        {
+          "id": "cursor-pstack",
+          "relationship": "adapted",
+          "repository": "https://github.com/cursor/plugins",
+          "ref": "main",
+          "paths": [
+            "pstack/skills/statechart/",
+            "pstack/LICENSE"
+          ],
+          "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
+          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+        }
+      ]
     }
   }
 }
