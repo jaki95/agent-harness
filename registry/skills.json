@@ -807,6 +807,24 @@
           "last_incorporated_revision": "8295b8e10d4cdb6cce772a56dda7b7c37075074d"
         }
       ]
+    },
+    "retro": {
+      "maintenance_notes": "Preserves Matt Pocock's Retro SKILL.md and agents/openai.yaml byte-for-byte at the pinned revision, matching the installed source. Keeps explicit invocation, the current-session default, severity-ordered environment improvements, and the source guidance on automated checks and implementation/review responsibilities. Requires a host Skill tool, writing-for-agents, session evidence, and repository access; these are documented without bundling dependencies or substituting technical-writing. Imports only the canonical runtime files, without a standalone LICENSE, consistent with the requested packaging. No instruction or behavior changes.",
+      "reviewed_on": "2026-11-09",
+      "sources": [
+        {
+          "id": "matt-pocock-retro",
+          "relationship": "adapted",
+          "repository": "https://github.com/mattpocock/skills",
+          "ref": "main",
+          "paths": [
+            "skills/engineering/retro/"
+          ],
+          "baseline_revision": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
+          "last_reviewed_revision": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f",
+          "last_incorporated_revision": "a7d038f6bf7f01b516408e95e2fb56e0b338fa6f"
+        }
+      ]
     }
   }
 }
