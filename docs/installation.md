@@ -141,7 +141,7 @@ Invoke Wayfinder with `$wayfinder` in Codex or `/wayfinder` on hosts with skill 
 
 Wayfinder expects a host `Skill` tool and the `grilling`, `domain-modeling`, `research`, and `prototype` skills. It refers to `/setup-matt-pocock-skills` and tracker documentation with a "Wayfinding operations" section. These dependencies are not bundled or installed automatically. Harness's `grill-me` skill and Prototype playbook are not automatic substitutes.
 
-The source uses issues, child relationships, labels, assignment, blocking dependencies, frontier queries, comments, and issue updates. It describes a local Markdown fallback when no tracker is configured, but does not bundle that tracker implementation. Research tickets also require subagents, Git branches, and push access. Installation checks verify packaging, not these runtime capabilities.
+The source uses issues, child relationships, labels, assignment, blocking dependencies, frontier queries, comments, and issue updates. It describes a local Markdown fallback when no tracker is configured, but does not bundle that tracker implementation. Research tickets also require subagents with fresh context windows, Git branches, and push access. Installation checks verify packaging, not these runtime capabilities.
 
 ## Retro
 
