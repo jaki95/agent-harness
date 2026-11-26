@@ -3,14 +3,18 @@ name: Check Statechart
 on:
   workflow_call:
   push:
+    branches-ignore: [main]
+    tags: ['**']
     paths:
       - 'skills/statechart/**'
+      - 'tests/statechart/**'
       - 'scripts/test_statechart.py'
       - 'package.json'
       - '.github/workflows/statechart.yml'
   pull_request:
     paths:
       - 'skills/statechart/**'
+      - 'tests/statechart/**'
       - 'scripts/test_statechart.py'
       - 'package.json'
       - '.github/workflows/statechart.yml'

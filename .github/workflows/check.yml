@@ -2,6 +2,8 @@ name: Check harness
 
 on:
   push:
+    branches-ignore: [main]
+    tags: ['**']
   pull_request:
   workflow_call:
 

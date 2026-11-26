@@ -26,6 +26,8 @@ Tags identify reviewed repository snapshots. Upstream author revisions remain in
    Add `--notes-file PATH` to inspect the exact release text.
 3. Merge the change to `main`. The [Release harness workflow](https://github.com/jaki95/agent-harness/actions/workflows/release.yml) detects the new version, runs the collection, installation, and offline Statechart checks, then tags the tested commit and publishes the changelog section on GitHub.
 
+The release workflow owns the checks on each push to `main`. It runs the collection checks on every push and Statechart when its inputs change or a version is ready. Publication requires both checks to succeed on that commit.
+
 Pull requests targeting `main` get a read-only check when the changelog changes. Edits under Unreleased and changes to existing sections leave published releases alone. The publisher needs the workflow token to write repository contents and create the version tag under the repository's tag rules.
 
 ## Recover a failed release
