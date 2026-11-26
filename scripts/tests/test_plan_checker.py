@@ -50,6 +50,8 @@ The operator lands the verified stack.
 
 **Depends on.** None.
 
+**Acceptance manifest.** `plans/acceptance/inbox drain.json`
+
 **Files.**
 
 - [ ] Edit `skills/harness/scripts/orch.py`.
@@ -62,16 +64,16 @@ The operator lands the verified stack.
 
 - [ ] Repeated drain returns the same unacknowledged batch ID.
 
-**Verify, unit.** {RULE}
+**Verify, unit.**
 
 - [ ] Add the interrupted-drain case. Run `python3 -m unittest discover -s scripts/tests`.
 
-**Verify, live.** {RULE} 2 lanes on `inherit-parent` at the PR head. Cover replay and later arrivals.
+**Verify, live.** 2 lanes on `inherit-parent` at the PR head. Cover replay and later arrivals.
 
 - [ ] Lane 1. Regression lane against trunk. Run the drain command on trunk and head and record the changed persistence contract. Save `drain-comparison.txt`. Pass when the accepted contract holds on head and the trunk difference is recorded.
 - [ ] Lane 2. Push a later arrival before acknowledging the first batch. Save `later-arrival.txt`. Pass when the second pointer remains pending.
 
-**Verify, perf.** {RULE}
+**Verify, perf.**
 
 - [ ] Metric. Median completion-record latency at trunk and head.
 - [ ] Probe. Alternate ten identical batches on each side.
@@ -120,11 +122,23 @@ class PlanCheckerTests(unittest.TestCase):
     def nonapplicable(self, plan, block, next_block, reason):
         start = plan.index(f"**{block}**")
         end = plan.index(f"**{next_block}**", start)
-        return plan[:start] + f"**{block}** {RULE} N/A. {reason}\n\n" + plan[end:]
+        return plan[:start] + f"**{block}** N/A. {reason}\n\n" + plan[end:]
 
     def test_accepts_scenario_driven_lanes_and_nonvisual_artifacts(self):
         result = self.check(PLAN, 0)
         self.assertIn("1 PR sections, 0 problems", result.stdout)
+
+    def test_requires_one_concrete_manifest_path_in_each_pr(self):
+        heading = "**Acceptance manifest.** `plans/acceptance/inbox drain.json`"
+        first = PLAN[PLAN.index("## Retain drained reports"):PLAN.index("## Close the program")]
+        for candidate in ("", "`/absolute/file.json`", "`../outside.json`", "`C:/outside.json`",
+                          "`<manifest.json>`", "`one.json` and `two.json`"):
+            with self.subTest(candidate=candidate):
+                second = first.replace("Retain drained reports (PR 1)", "Review receipts (PR 2)").replace(
+                    heading, "**Acceptance manifest.** " + candidate if candidate else "")
+                result = self.check(PLAN.replace("## Close the program", second + "## Close the program"), 1)
+                self.assertIn("Review receipts (PR 2)", result.stderr)
+                self.assertIn("Acceptance manifest", result.stderr)
 
     def test_accepts_fenced_examples_without_counting_their_structure(self):
         for opening, closing in (("```text", "```"), ("~~~text", "~~~"),
@@ -198,7 +212,7 @@ class PlanCheckerTests(unittest.TestCase):
                 self.assertIn("concrete N/A reason", self.check(plan, 1).stderr)
 
     def test_nonapplicable_block_cannot_hide_unfinished_boxes(self):
-        plan = PLAN.replace(f"**Verify, perf.** {RULE}", f"**Verify, perf.** {RULE} N/A. This change has no performance impact.")
+        plan = PLAN.replace("**Verify, perf.**", "**Verify, perf.** N/A. This change has no performance impact.")
         self.assertIn("says N/A but has boxes", self.check(plan, 1).stderr)
 
     def test_rejects_wrong_count_duplicate_missing_and_reordered_lanes(self):
