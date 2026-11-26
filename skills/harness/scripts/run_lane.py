@@ -377,7 +377,7 @@ def run_lane(spec):
         environment["PATH"] = str(root / "venv" / "bin") + os.pathsep + os.defpath
         command = spec.argv[0]
         if os.path.dirname(command):
-            command = str(checkout / command)
+            command = os.path.join(checkout, command)
         executable = shutil.which(command, path=environment["PATH"])
         if executable is None:
             raise LaneFailure("command_unavailable")

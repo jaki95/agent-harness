@@ -105,7 +105,7 @@ class RunLaneTests(unittest.TestCase):
         run = subprocess.run(args, cwd=self.root, text=True, capture_output=True, timeout=15)
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
         receipt = json.loads(Path(json.loads(run.stdout)["receipt"]).read_text())
-        self.assertEqual(receipt["resolved_executable"], str(script))
+        self.assertEqual(Path(receipt["resolved_executable"]), script)
         self.assertEqual((Path(receipt["run_directory"]) / "execution.stdout").read_text(), "committed\n")
 
     def test_concurrent_interpreters_packages_and_caches_are_private(self):
