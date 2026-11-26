@@ -129,7 +129,8 @@ export function agrees(module: string, files: { [name: string]: string[] }, cfg:
       }
       const text = fs.readFileSync(path.join(out, file), "utf8");
       if (said) assert.equal(Number(said), stepsIn(text), rule);
-      if (/^Semantic processing of module ChartBound$/m.test(text)) bounded.add(rule);
+      const firstFile = text.match(/^Parsing file (.+\.tla)$/m)?.[1];
+      if (firstFile && path.basename(firstFile, ".tla") !== module) bounded.add(rule);
       breaks.set(rule, stepsIn(text));
     }
     const list = (title: string) =>

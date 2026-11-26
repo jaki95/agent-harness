@@ -53,6 +53,7 @@ const child = (node: XmlNode | undefined, tag: string) => node?.children.find((c
 const textOf = (node: XmlNode | undefined, tag: string) => child(node, tag)?.text ?? "";
 
 export type Sany = {
+  identifiers: string[];
   variables: string[];
   definitions: Map<string, XmlNode>;
 };
@@ -66,8 +67,12 @@ export function readSany(xml: string): Sany {
     symbols.set(textOf(entry, "UID"), entry.children[1]);
   const root = textOf(modules, "RootModule");
   let module: XmlNode | undefined;
-  for (const node of symbols.values())
-    if (node.tag === "ModuleNode" && textOf(node, "uniquename") === root) module = node;
+  const identifiers: string[] = [];
+  for (const node of symbols.values()) {
+    const name = textOf(node, "uniquename");
+    if (name) identifiers.push(name);
+    if (node.tag === "ModuleNode" && name === root) module = node;
+  }
   const definitions = new Map<string, XmlNode>();
   const variables: { uid: number; name: string }[] = [];
   for (const ref of module?.children ?? []) {
@@ -81,7 +86,7 @@ export function readSany(xml: string): Sany {
       variables.push({ uid: Number(uid), name });
   }
   variables.sort((a, b) => a.uid - b.uid);
-  return { variables: variables.map((v) => v.name), definitions };
+  return { identifiers, variables: variables.map((v) => v.name), definitions };
 }
 
 export function readSpec({

@@ -1,5 +1,3 @@
-"""Exercise the shipped PTY recipe against a real interactive child."""
-
 import os
 from pathlib import Path
 import subprocess
@@ -16,8 +14,8 @@ class PtyRecipeTests(unittest.TestCase):
         recipe = SKILL.read_text().split("```python\n", 1)[1].split("\n```", 1)[0]
         recipe = recipe.replace('["<command>", "<arg>"]', repr([sys.executable, "-uc", child]))
         recipe = recipe.replace("<ready text>", "READY").replace("<help response text>", "Available commands")
-        recipe = recipe.replace("+ 30", "+ 0.5")
-        return subprocess.run([sys.executable, "-c", recipe], capture_output=True, text=True, timeout=5)
+        recipe = recipe.replace("+ 30", "+ 2")
+        return subprocess.run([sys.executable, "-c", recipe], capture_output=True, text=True, timeout=8)
 
     def test_reads_response_after_sending_help(self):
         child = """print('Available commands at startup')

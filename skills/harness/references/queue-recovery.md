@@ -115,7 +115,14 @@ The report includes current store differences, retained completion batches,
 current forge observations, owner classifications, evidence applicability,
 and a consolidated replacement packet with the next safe action.
 Pickup treats a recorded branch as a shared resource alongside the declared
-writable scopes. If a unit was added or its branch changed since the checkpoint,
+writable scopes. A pending dispatch holds every replacement that shares any
+of its resources, even when the previous owner has stopped. Among eligible
+units, pickup recommends replacements in checkpoint order and skips any that
+overlap an earlier recommendation. Checkpoint each pending dispatch before
+assignment. Reconcile its receipt and current owner, then rerun pickup before
+assigning another unit on that scope.
+
+If a unit was added or its branch changed since the checkpoint,
 record the current owners and scopes in a fresh checkpoint before reusing a
 scope. Different branch names alone cannot establish separate worktrees or
 other writable resources.

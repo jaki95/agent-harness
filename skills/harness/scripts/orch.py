@@ -872,6 +872,9 @@ def pickup(args, store):
     for unit_id, old in old_units.items():
         if old["branch"]:
             scopes[unit_id].add(old["branch"])
+    dispatch_units = {unit["id"] for unit in metadata["units"]
+                      if any(action["kind"] == "dispatch" and action["status"] == "pending"
+                             for action in unit["next_actions"])}
     retained = [row for bucket in current["inbox"].values() for row in bucket["pointers"]]
     historical = [row for bucket in saved["snapshot"]["inbox"].values() for row in bucket["pointers"]]
     units = []
@@ -910,6 +913,8 @@ def pickup(args, store):
                           if gate.get("Unit") not in live_units or gate["Unit"] == unit["id"]]
         open_gates = [gate for gate in operator_gates if gate["Status"] == "open"]
         replacement_allowed = False
+        shared_dispatches = sorted(unit_id for unit_id in dispatch_units if unit_id != unit["id"]
+                                   and not scopes[unit_id].isdisjoint(scopes[unit["id"]]))
         if merged:
             action = "complete; preserve merged result and do not dispatch"
         elif merge_claim and observed_state in ("OPEN", "CLOSED"):
@@ -937,6 +942,8 @@ def pickup(args, store):
             action = "hold; checkpoint current owners and writable scopes for units: " + ", ".join(unreconciled_scopes)
         elif overlapping:
             action = "hold or isolate a new writable scope; overlapping owners are not confirmed stopped"
+        elif shared_dispatches:
+            action = "hold; reconcile dispatch for shared scope and rerun pickup: " + ", ".join(shared_dispatches)
         elif not stopped:
             action = "hold or isolate a new writable scope; previous writer is not confirmed stopped"
         elif number and verification == "verifier-failed":
@@ -948,8 +955,10 @@ def pickup(args, store):
         else:
             action = "create fresh owner in confirmed stopped scope with the consolidated packet"
             replacement_allowed = True
-        if replacement_allowed and operator_gates:
-            action = "only if the recorded operator answers permit reassignment: " + action
+        if replacement_allowed:
+            dispatch_units.add(unit["id"])
+            if operator_gates:
+                action = "only if the recorded operator answers permit reassignment: " + action
         packet = {**unit, "program": metadata["program"], "authorization": metadata["authorization"], "repository": metadata["repository"],
                   "current_unit": live, "previous_unit": old,
                   "operator_gates": operator_gates,

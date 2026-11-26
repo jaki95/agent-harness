@@ -329,6 +329,13 @@ export async function check(specFile: string, configFile: string): Promise<Check
     const sany = readSany(fs.readFileSync(xml.stdout, "utf8"));
     const module = path.basename(specFile, ".tla");
     const spec = { ...readSpec({ module, sany, checks }), folder };
+    let prefix = "Chart";
+    const identifiers = sany.identifiers.map((name) => name.toLowerCase());
+    for (let i = 1; identifiers.some((name) => name.startsWith(prefix.toLowerCase())); i++) {
+      prefix = `Chart${i}_`;
+    }
+    const boundModule = `${prefix}Bound`;
+    const drawModule = `${prefix}Run`;
     const rules = stateRules(spec);
     const all = [...rules];
     for (const name of spec.properties) all.push({ kind: "property", name });
@@ -354,13 +361,13 @@ export async function check(specFile: string, configFile: string): Promise<Check
         if (invariants.length) extra.push(`INVARIANT ${invariants.join(" ")}`);
         if (properties.length) extra.push(`PROPERTY ${properties.join(" ")}`);
         const bounded = first !== undefined && !states.complete;
-        if (bounded) extra.push("CONSTRAINT ChartBound");
+        if (bounded) extra.push(`CONSTRAINT ${boundModule}`);
         const r = await runJava(name, "tlc2.TLC", [
           "-tool",
           ...PINNED_FLAGS,
           ...(names(group, "deadlock").length ? [] : ["-deadlock"]),
           ...config(name, spec.written, extra),
-          bounded ? "ChartBound" : spec.module,
+          bounded ? boundModule : spec.module,
         ]);
         first ??= r;
         const { broke, distinct, initial } = readVerdict(messagesOf(r.output));
@@ -398,7 +405,7 @@ export async function check(specFile: string, configFile: string): Promise<Check
       for (const rule of all) if (!verdicts.has(ruleKey(rule))) decide(rule, "not checked");
       return { first: first!, stop, states };
     };
-    fs.writeFileSync(path.join(dir, "ChartBound.tla"), boundRun(spec.module));
+    fs.writeFileSync(path.join(dir, `${boundModule}.tla`), boundRun(spec.module, prefix));
     const judged = await judge();
     const exit = exitClass(judged.first.status);
     const failed = (r: FileResult) =>
@@ -430,16 +437,19 @@ export async function check(specFile: string, configFile: string): Promise<Check
     };
     if (judged.states.distinct <= CHART_STATES) {
       const tag = `chart-${randomBytes(16).toString("hex")}`;
-      fs.writeFileSync(path.join(dir, "ChartRun.tla"), chartRun(spec, tag));
+      fs.writeFileSync(path.join(dir, `${drawModule}.tla`), chartRun(spec, tag, prefix));
       const drawn = await runJava("ChartRun", "tlc2.TLC", [
         "-tool",
         ...PINNED_FLAGS,
         "-deadlock",
-        ...config("ChartRun", spec.written, ["INVARIANT ChartMark", "CONSTRAINT ChartBudget"]),
+        ...config("ChartRun", spec.written, [
+          `INVARIANT ${prefix}Mark`,
+          `CONSTRAINT ${prefix}Budget`,
+        ]),
         "-dump",
         "dot,actionlabels",
         path.join(dir, "graph"),
-        "ChartRun",
+        drawModule,
       ]);
       const file = path.join(dir, "graph.dot");
       if (!fs.existsSync(file)) throw failed(drawn);

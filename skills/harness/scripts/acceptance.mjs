@@ -189,10 +189,14 @@ function context(file, storeOption) {
 	return { root, manifestPath, relativeManifest, rawManifest, manifest, manifestSha256: hash(rawManifest), store };
 }
 
-function atomicJSON(file, value) {
+function atomicWrite(file, bytes) {
 	const temp = `${file}.${crypto.randomUUID()}.tmp`;
-	fs.writeFileSync(temp, JSON.stringify(value, null, "\t") + "\n", { flag: "wx" });
+	fs.writeFileSync(temp, bytes, { flag: "wx" });
 	fs.renameSync(temp, file);
+}
+
+function atomicJSON(file, value) {
+	atomicWrite(file, JSON.stringify(value, null, "\t") + "\n");
 }
 
 function locked(ctx, action) {
@@ -281,7 +285,9 @@ function declare(ctx) {
 	const bytes = JSON.stringify(value, null, "\t") + "\n";
 	const id = hash(bytes);
 	fs.mkdirSync(path.join(ctx.store, "declarations"), { recursive: true });
-	fs.writeFileSync(path.join(ctx.store, "declarations", `${id}.json`), bytes, { flag: "wx" });
+	const snapshot = path.join(ctx.store, "declarations", `${id}.json`);
+	if (fs.existsSync(snapshot)) requireInput(hash(fs.readFileSync(snapshot)) === id, "declaration hash mismatch");
+	else atomicWrite(snapshot, bytes);
 	atomicJSON(path.join(ctx.store, "declaration.json"), { id });
 	return { declared: true, head, declarationId: id, store: ctx.store };
 }

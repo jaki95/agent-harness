@@ -62,6 +62,7 @@ import os
 import pty
 import select
 import subprocess
+import sys
 import time
 
 master_fd, slave_fd = pty.openpty()
@@ -74,24 +75,35 @@ proc = subprocess.Popen(
 )
 os.close(slave_fd)
 
-deadline = time.time() + 30
-buffer = b""
-while time.time() < deadline:
-    ready, _, _ = select.select([master_fd], [], [], 0.25)
-    if not ready:
-        continue
-    chunk = os.read(master_fd, 4096)
-    buffer += chunk
-    if b"<ready text>" in buffer:
-        os.write(master_fd, b"help\n")
-        break
+def wait_for(marker):
+    deadline = time.monotonic() + 30
+    output = bytearray()
+    while marker not in output:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or not select.select([master_fd], [], [], remaining)[0]:
+            raise TimeoutError(f"timed out waiting for {marker!r}")
+        chunk = os.read(master_fd, 4096)
+        if not chunk:
+            raise EOFError(f"terminal closed before {marker!r}")
+        sys.stdout.buffer.write(chunk)
+        sys.stdout.buffer.flush()
+        output.extend(chunk)
 
-print(buffer.decode(errors="replace"))
-proc.terminate()
-os.close(master_fd)
+try:
+    wait_for(b"<ready text>")
+    os.write(master_fd, b"help\n")
+    wait_for(b"<help response text>")
+finally:
+    os.close(master_fd)
+    proc.terminate()
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
 ```
 
-If the CLI needs richer terminal control, use `pty.fork()` or an existing PTY library.
+Choose a help response marker that the command echo cannot match. If the CLI needs richer terminal control, use `pty.fork()` or an existing PTY library.
 
 ## Profiling Recipes
 
