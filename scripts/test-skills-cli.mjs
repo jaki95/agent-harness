@@ -163,6 +163,17 @@ try {
     }
     assert.deepEqual(harnessSkills.sort(), [...routedSkills].sort(),
       'Full install selection matches the skills named in Harness instructions');
+    const catalog = await readFile(join(root, 'docs/skills.md'), 'utf8');
+    assert.match(catalog, /^\| Skill \| Harness role \| Purpose \|$/m,
+      'Catalog labels the Harness role column');
+    const rows = [...catalog.matchAll(/^\| \[([\w-]+)\]\([^)]+\) \| ([^|]+?) \| /gm)];
+    assert.deepEqual(rows.map(([, name]) => name).sort(), owned,
+      'Catalog lists every registered skill once');
+    for (const [, name, role] of rows) {
+      const companionRole = routedSkills.has(name) ? 'Dependency' : 'Independent';
+      assert.equal(role, name === 'harness' ? 'Working mode' : companionRole,
+        `Incorrect Harness role for ${name}`);
+    }
     const laneRoot = join(temporary, 'installed-lanes');
     await mkdir(laneRoot);
     const sourceHead = run('git', ['rev-parse', 'HEAD'], source).trim();
