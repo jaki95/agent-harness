@@ -12,6 +12,7 @@ const RULE =
 const LANES = /([1-9]\d*) lanes on `[^`<>]+` at the PR head/;
 const SUB_BLOCKS = [
 	"Depends on.",
+	"Acceptance manifest.",
 	"Files.",
 	"Build.",
 	"You see.",
@@ -168,9 +169,12 @@ for (const pr of prSections) {
 		const b = block(name);
 		if (b && boxes(b.lines).length === 0) fail(b.n, `${pr.title}: ${name} has no box`);
 	}
-	for (const name of ["Verify, unit.", "Verify, live.", "Verify, perf."]) {
-		const b = block(name);
-		if (b && !b.rest.startsWith(RULE)) fail(b.n, `${pr.title}: ${name} does not open with the rule`);
+	const manifest = block("Acceptance manifest.");
+	if (manifest) {
+		const file = manifest.rest.match(/^`([^`<>:{}$*?\\]+\.json)`$/)?.[1];
+		if (!file || file.startsWith("~/") || file.split("/").some((part) => !part || part === "..")) {
+			fail(manifest.n, `${pr.title}: Acceptance manifest needs one concrete repository-relative JSON path in backticks`);
+		}
 	}
 	const unit = block("Verify, unit.");
 	if (unit && !nonapplicable(unit, pr.title) && boxes(unit.lines).length === 0) {
@@ -217,7 +221,7 @@ for (const pr of prSections) {
 	}
 
 	const total = boxes(pr.body).length;
-	const cells = SUB_BLOCKS.filter((s) => s !== "Depends on.").map((s) => `${s.replace(/[ ,.]+/g, "-").replace(/-$/, "").toLowerCase()}=${counts[s] ?? 0}`);
+	const cells = SUB_BLOCKS.filter((s) => s !== "Depends on." && s !== "Acceptance manifest.").map((s) => `${s.replace(/[ ,.]+/g, "-").replace(/-$/, "").toLowerCase()}=${counts[s] ?? 0}`);
 	report.push(`${pr.title}  boxes=${total}  ${cells.join(" ")}`);
 }
 

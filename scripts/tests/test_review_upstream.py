@@ -1,5 +1,8 @@
 import copy
 import json
+import os
+import shlex
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -85,7 +88,7 @@ class WorkerTests(unittest.TestCase):
             evidence=kwargs.pop("evidence", self.collect), analyze=kwargs.pop("analyze", self.analyze), **kwargs)
 
     def test_only_reviewers_own_footer_confirms_delivery(self):
-        marker = review.queue_from_issue(self.client.issue).key.marker
+        marker = review.find_queue(self.client, {monitor.ACTIONS_LOGIN}).key.marker
         body = "## Codex analysis and suggested next actions\n\nReview advice.\n\n" + marker
         self.client.notes.extend([
             {"number": 6, "body": body, "user": {"login": monitor.ACTIONS_LOGIN}},
@@ -115,7 +118,7 @@ class WorkerTests(unittest.TestCase):
 
         with patch.object(self.client, "comment", side_effect=lose_response):
             self.assertEqual("failed", self.run_review(analyze=analyze, now=0).kind)
-        self.assertFalse(any(review.queue_from_issue(self.client.issue).key.marker in note["body"]
+        self.assertFalse(any(review.find_queue(self.client, {monitor.ACTIONS_LOGIN}).key.marker in note["body"]
                              for note in self.client.notes))
         self.assertEqual("published", self.run_review(analyze=analyze, now=3601).kind)
         self.assertEqual("quiet", self.run_review(analyze=analyze, now=3602).kind)
@@ -448,6 +451,32 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("Persistent=true", timer)
         self.assertIn("OnCalendar=*:0/15", timer)
 
+    def test_staged_worker_runs_the_selected_gh_when_another_is_first_on_path(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            tools = root / "codex-bin"
+            tools.mkdir()
+            codex = tools / "codex"
+            decoy = tools / "gh"
+            selected = root / "selected gh wrapper"
+            codex.write_text("#!/bin/sh\nexit 25\n")
+            decoy.write_text("#!/bin/sh\nexit 26\n")
+            selected.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CALL_LOG"\necho "[]"\n')
+            for exe in (codex, decoy, selected):
+                exe.chmod(0o755)
+            installer.stage(root / "runtime", root / "state", root / "units", codex,
+                            Path(sys.executable), selected, repository="fixture/harness")
+            service = (root / "units" / (installer.UNIT + ".service")).read_text().splitlines()
+            command = shlex.split(next(line.removeprefix("ExecStart=") for line in service if line.startswith("ExecStart=")))
+            installed_path = shlex.split(next(line.removeprefix("Environment=") for line in service
+                                               if line.startswith('Environment="PATH=')))[0].removeprefix("PATH=")
+            log = root / "invocation"
+            result = subprocess.run(command, capture_output=True, text=True,
+                                    env={**os.environ, "PATH": installed_path, "CALL_LOG": str(log)})
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("No actionable queue", result.stdout)
+            self.assertIn("repos/fixture/harness/issues?", log.read_text())
+
     def test_staging_copies_only_maintenance_scripts_and_enables_nothing(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -458,7 +487,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(2, len(list((root / "units").iterdir())))
             self.assertTrue((root / "state/scratch").is_dir())
 
-from test_monitor_upstream import RepositoryFixture, git
+from test_monitor_upstream import FakeIssues, RepositoryFixture, git
 
 
 class EvidenceTests(RepositoryFixture):
@@ -493,6 +522,63 @@ class EvidenceTests(RepositoryFixture):
 
     def gather(self):
         return review.gather_evidence("fixture/harness", self.queue, self.scratch, git_factory=self.evidence_transport)
+
+    def test_large_queue_reaches_review_after_interrupted_upload_and_validates_the_parts(self):
+        for index in range(320):
+            self.write(f"watched/entry-{index:04}.md", f"Entry {index}\n")
+        head = self.commit()
+        report = self.collect()
+        client = FakeIssues()
+        publishers = {monitor.ACTIONS_LOGIN}
+        repository = "fixture/harness"
+        client.fail_after = "comment"
+        with self.assertRaisesRegex(monitor.MonitorError, "Response lost"):
+            monitor.reconcile_issue(report, repository, issues=client)
+        self.assertIsNone(review.find_queue(client, publishers))
+        monitor.reconcile_issue(report, repository, issues=client)
+        self.assertEqual(1, len(client.records))
+        self.assertGreater(len(client.notes), 1)
+        bodies = [note["body"] for note in client.notes]
+        self.assertEqual(len(bodies), len(set(bodies)))
+        self.assertTrue(all(len(body.encode()) <= monitor.ISSUE_LIMIT for body in [*bodies, client.records[0]["body"]]))
+        queue = review.find_queue(client, publishers)
+        self.assertEqual(head, queue.snapshot["sources"][0]["observed_revision"])
+        first = client.notes[0]
+        with patch.dict(first["user"], login="unrelated"):
+            with self.assertRaisesRegex(monitor.MonitorError, "Missing upstream snapshot parts"):
+                review.find_queue(client, publishers)
+        with patch.dict(first, body=first["body"].replace("entry-0000", "entry-1111")):
+            with self.assertRaisesRegex(monitor.MonitorError, "digest"):
+                review.find_queue(client, publishers)
+        client.viewer_login = lambda: "reviewer"
+        with patch.object(review, "codex_review", return_value=advice()) as analyze:
+            def run():
+                return review.review_queue(repository, self.root / "state", github=client,
+                    evidence=lambda repo, queue, path: review.gather_evidence(repo, queue, path, git_factory=self.evidence_transport))
+            self.assertEqual("published", run().kind)
+            self.assertEqual("quiet", run().kind)
+            self.assertEqual(1, analyze.call_count)
+            self.assertEqual(321, len(analyze.call_args.args[0].sources[0]["changed_files"]))
+
+    def test_relocated_test_and_split_package_manifest_are_selected_individually(self):
+        testdir = self.harness / "tests/sample"
+        (testdir / "test").mkdir(parents=True)
+        (testdir / "test/spec.ts").write_text("local test")
+        (testdir / "test/unrelated.json").write_text("unrelated")
+        (testdir / "package.json").write_text("maintainer dependencies")
+        scripts = self.harness / "skills/sample/scripts"
+        scripts.mkdir()
+        (scripts / "package.json").write_text("runtime manifest")
+        self.write("watched/scripts/test/spec.ts", "upstream test")
+        self.write("watched/scripts/package.json", "upstream manifest")
+        self.commit()
+        self.queue = review.Queue(self.queue.key, monitor.compact(self.collect(), {}))
+        self.commit_harness()
+        source = self.gather().sources[0]
+        self.assertEqual({"skills/sample/SKILL.md", "skills/sample/scripts/package.json",
+                          "tests/sample/test/spec.ts", "tests/sample/package.json"}, set(source["local_files"]))
+        self.assertEqual([], source["unmatched_upstream_paths"])
+        self.assertEqual(0, source["omitted_local_files"])
 
     def test_reconstructs_queued_sha_even_after_upstream_advances(self):
         self.write("watched/SKILL.md", "newer unqueued change\n")

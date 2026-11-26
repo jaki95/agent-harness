@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "statechart" / "scripts"
+SUITE = Path(__file__).resolve().parents[1] / "tests" / "statechart"
 TESTS = ("chart", "cli", "messages", "pipeline")
 
 
@@ -16,7 +16,7 @@ def main():
         return subprocess.run(
             [os.environ.get("npm_node_execpath") or "node", "--disable-warning=ExperimentalWarning",
              "--test", *(f"test/{name}.test.ts" for name in TESTS)],
-            cwd=SCRIPTS, env=env,
+            cwd=SUITE, env=env,
         ).returncode
 
 

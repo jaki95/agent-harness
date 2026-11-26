@@ -7,8 +7,8 @@ import path from "node:path";
 import { after, test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { plainText } from "../backends/plain-text.ts";
-import { readMessages } from "../frontends/messages.ts";
+import { plainText } from "../../../skills/statechart/scripts/backends/plain-text.ts";
+import { readMessages } from "../../../skills/statechart/scripts/frontends/messages.ts";
 import { drawn } from "./drawn.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -26,7 +26,7 @@ function run(
     args = [],
     view = path.join(dir, "view.mjs"),
     java = path.join(here, "java.ts"),
-    command = [process.execPath, path.join(here, "../statechart.ts")],
+    command = [process.execPath, path.join(here, "../../../skills/statechart/scripts/statechart.ts")],
     env = {},
   }: {
     args?: string[];
@@ -137,7 +137,7 @@ for (const name of fs.readdirSync(corpus)) {
   });
 }
 
-const launcher = path.join(here, "../statechart");
+const launcher = path.join(here, "../../../skills/statechart/scripts/statechart");
 
 const launcherTools = () => {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-bin-"));
@@ -201,7 +201,7 @@ test("the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node", () =>
   });
   assert.equal(r.stderr, "");
   assert.equal(r.status, 0);
-  assert.equal(r.stdout, `${path.join(here, "../statechart.ts")}\n`);
+  assert.equal(r.stdout, `${path.join(here, "../../../skills/statechart/scripts/statechart.ts")}\n`);
 });
 
 for (const [what, bin] of [
@@ -266,7 +266,7 @@ function startCommand(
   return spawn(
     process.execPath,
     [
-      path.join(here, "../statechart.ts"),
+      path.join(here, "../../../skills/statechart/scripts/statechart.ts"),
       path.join(dir, `${name}.tla`),
       ...(fs.existsSync(view) ? ["--view", view] : []),
       "--out",
@@ -737,7 +737,7 @@ syncBuiltinESMExports();
     command: [
       process.execPath,
       `--import=${pathToFileURL(noClose).href}`,
-      path.join(here, "../statechart.ts"),
+      path.join(here, "../../../skills/statechart/scripts/statechart.ts"),
     ],
   });
   assert.equal(r.stderr, `SANY could not read ${spec} (exit null):\nspawn ${java} ENOENT\n`);

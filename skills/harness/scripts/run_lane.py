@@ -361,9 +361,14 @@ def run_lane(spec):
             if Path(top).resolve() != checkout or head != spec.expected_head:
                 raise LaneFailure("source_identity_changed")
             data["source"][name] = head
-            code, changes = owner.run((git, "--no-optional-locks", "-C", str(checkout), "status", "--porcelain", "--untracked-files=normal"), checkout, name + "_status")
-            if code != 0 or changes:
-                raise LaneFailure("source_not_clean")
+            status = ("status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=none")
+            # Git does not propagate the submodule override to nested status checks.
+            nested_status = ("submodule", "foreach", "--quiet", "--recursive",
+                             "git --no-optional-locks " + " ".join(status))
+            for phase, args in (("_status", status), ("_submodules", nested_status)):
+                code, changes = owner.run((git, "--no-optional-locks", *args), checkout, name + phase)
+                if code != 0 or changes:
+                    raise LaneFailure("source_not_clean")
 
         source_check("source_before")
         code, _ = owner.run((sys.executable, "-m", "venv", "--without-pip", str(root / "venv")), checkout, "setup")

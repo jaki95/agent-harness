@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.changelog.outputs.version }}
+      statechart: ${{ steps.changelog.outputs.statechart }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -40,7 +41,14 @@ jobs:
           fi
           previous="$RUNNER_TEMP/previous-changelog.md"
           : > "$previous"
-          if [[ ! "$BEFORE" =~ ^0+$ ]]; then
+          if [[ "$BEFORE" =~ ^0+$ ]]; then
+            echo "statechart=true" >> "$GITHUB_OUTPUT"
+          else
+            changed=$(git diff --name-only --no-renames "$BEFORE" "$GITHUB_SHA" -- \
+              skills/statechart tests/statechart scripts/test_statechart.py package.json .github/workflows/statechart.yml)
+            if [[ -n "$changed" ]]; then
+              echo "statechart=true" >> "$GITHUB_OUTPUT"
+            fi
             entry=$(git ls-tree "$BEFORE" -- CHANGELOG.md)
             if [[ -n "$entry" ]]; then
               git show "$BEFORE:CHANGELOG.md" > "$previous"
@@ -50,18 +58,17 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
   check:
-    needs: select
-    if: github.ref == 'refs/heads/main' && needs.select.outputs.version != ''
+    if: github.ref == 'refs/heads/main' && github.event.deleted != true
     uses: ./.github/workflows/check.yml
 
   statechart:
     needs: select
-    if: github.ref == 'refs/heads/main' && needs.select.outputs.version != ''
+    if: github.ref == 'refs/heads/main' && (needs.select.outputs.version != '' || needs.select.outputs.statechart == 'true')
     uses: ./.github/workflows/statechart.yml
 
   release:
     needs: [select, check, statechart]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.select.outputs.version != ''
     concurrency:
       group: harness-release-${{ needs.select.outputs.version }}
       cancel-in-progress: false

@@ -56,6 +56,9 @@ its pending intent. After confirmed completion, checkpoint its receipt.
 A pending intent means the operation may already have happened.
 Reconcile current host or forge state before changing that intent or retrying.
 A completed action requires a receipt and never becomes a retry instruction.
+A dispatch receipt proves that the worker was assigned. Pickup resumes an
+unfinished unit even when every recorded action has a receipt. Record the unit's
+terminal state when its assignment finishes.
 
 Checkpoint writes `checkpoint.json` atomically under the existing process lock.
 It captures the unit table, exact-head verification ledger, frontier, gates,

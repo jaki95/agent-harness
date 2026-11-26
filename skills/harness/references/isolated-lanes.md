@@ -20,7 +20,7 @@ Each invocation creates a unique private directory containing a Python venv with
 
 Use `--env <file.json>` for an explicit JSON mapping of additional environment variables. Private directory variables and interpreter, loader, Git, and cache overrides are reserved. The launcher does not copy those supplied values into receipts. Use `--secret-env KEY` to pass a selected credential from the caller's environment. This option can repeat. Known credential values are rejected in command arguments and excluded from hook evidence and receipts. Command arguments and input paths must be public. Arbitrary hidden credentials cannot be identified reliably.
 
-The selected checkout must be the actual Git root at the expected head. Source checks reject tracked changes and untracked source files before and after execution. Put generated files in the lane directory or project-ignored paths. The launcher preserves existing files in the caller's temporary root and retains its own run directories for inspection.
+The selected checkout must be the actual Git root at the expected head. Source checks reject tracked changes and untracked source files before and after execution. They inspect initialized submodules recursively, including submodules configured to hide changes from Git status. Put generated files in the lane directory or project-ignored paths. The launcher preserves existing files in the caller's temporary root and retains its own run directories for inspection.
 
 ## Read the result
 

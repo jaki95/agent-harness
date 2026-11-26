@@ -5,7 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { inspect } from "node:util";
-import { checkView } from "../frontends/view.ts";
+import { checkView } from "../../../skills/statechart/scripts/frontends/view.ts";
 import {
   type CheckResult,
   EC,
@@ -14,10 +14,10 @@ import {
   type Spec,
   stateRules,
   type Verdict,
-} from "../ir.ts";
-import { compile } from "../pipeline.ts";
+} from "../../../skills/statechart/scripts/ir.ts";
+import { compile } from "../../../skills/statechart/scripts/pipeline.ts";
 
-const scripts = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const scripts = fileURLToPath(new URL("../../../skills/statechart/scripts", import.meta.url));
 
 const sources = (target: string) => {
   const full = path.join(scripts, target);

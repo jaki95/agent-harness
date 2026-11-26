@@ -24,6 +24,8 @@ LIMIT = 2 * 1024 * 1024
 TIMEOUT = 90
 ISSUE_LIMIT = 60000
 MARKER = "<!-- agent-harness-upstream-monitor:v1 -->"
+STAGING = MARKER + "\nPreparing the first upstream review snapshot. The monitor will resume an interrupted upload."
+SNAPSHOT_REF = re.compile(r"<!-- upstream-snapshot-parts:([0-9a-f]{64}):([1-9][0-9]{0,4}) -->")
 SNAPSHOT = re.compile(r"<!-- upstream-snapshot:(.*?) -->")
 ACTIONS_LOGIN = "github-actions[bot]"
 
@@ -328,7 +330,7 @@ def fingerprint(snapshot):
     return hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
 
 
-def issue_body(snapshot, digest, generation):
+def issue_body(snapshot, digest, generation, *, reference=None):
     metadata = dict(snapshot, fingerprint=digest, generation=generation)
     lines = [MARKER, "# External skill updates", "", "This body is maintained by the upstream monitor. Add human notes in comments.",
              "Subscribe to this issue for update notifications. Review the report before adopting changes.",
@@ -341,7 +343,7 @@ def issue_body(snapshot, digest, generation):
             label = f"[{label}]({item['link']})"
         lines.append(f"- {label}. {item['status']}. {len(item['changes'])} changed file(s)." +
                      (f" Investigation required. {item['error']}." if item["error"] else ""))
-        for change in item["changes"]:
+        for change in (() if reference else item["changes"]):
             paths = [p for p in (change["old_path"], change["new_path"]) if p is not None]
             lines.append("  - " + change["kind"] + ". " + " → ".join(dict.fromkeys(json.dumps(p) for p in paths)))
         if item["status"] == "unknown" and item["changes"]:
@@ -354,22 +356,92 @@ def issue_body(snapshot, digest, generation):
     run_id = os.environ.get("GITHUB_RUN_ID")
     if repo and run_id:
         lines.extend(["", f"[Workflow run and report artifact]({server}/{repo}/actions/runs/{run_id})"])
-    encoded = json.dumps(metadata, sort_keys=True, separators=(",", ":"), ensure_ascii=True).replace("--", "\\u002d\\u002d")
-    lines.extend(["", f"<!-- upstream-snapshot:{encoded} -->"])
-    body = "\n".join(lines)
+    if reference:
+        lines.extend(["", f"The full queue snapshot for generation {generation} is in the monitor's comments on this issue.",
+                      "", reference])
+        if len("\n".join(lines).encode()) > ISSUE_LIMIT:
+            return f"{MARKER}\nUpstream review generation {generation}. See the snapshot comments on this issue.\n\n{reference}"
+    else:
+        encoded = snapshot_json(metadata)
+        lines.extend(["", f"<!-- upstream-snapshot:{encoded} -->"])
+    return "\n".join(lines)
+
+
+def snapshot_json(metadata):
+    return json.dumps(metadata, sort_keys=True, separators=(",", ":"), ensure_ascii=True).replace("--", "\\u002d\\u002d")
+
+
+def part_heading(digest, index):
+    return f"Upstream snapshot part {index} for `{digest}`."
+
+
+def publish_snapshot(client, issue, snapshot, digest, generation, publishers):
+    body = issue_body(snapshot, digest, generation)
+    if len(body.encode()) <= ISSUE_LIMIT:
+        if issue:
+            client.edit(issue["number"], body=body)
+        else:
+            client.create(body)
+        return
+
+    payload = snapshot_json(dict(snapshot, fingerprint=digest, generation=generation))
+    sha = hashlib.sha256(payload.encode("ascii")).hexdigest()
+    width = ISSUE_LIMIT - len(part_heading(sha, 10000)) - len("\n\n<!--  -->")
+    if width <= 0 or len(payload) > width * 10000:
+        raise MonitorError("issue-limit", "Queue exceeds the supported issue body limit or comment count")
+    pieces = [payload[pos:pos + width] for pos in range(0, len(payload), width)]
+    reference = f"<!-- upstream-snapshot-parts:{sha}:{len(pieces)} -->"
+    body = issue_body(snapshot, digest, generation, reference=reference)
     if len(body.encode()) > ISSUE_LIMIT:
-        raise MonitorError("issue-limit", "Issue snapshot exceeds the body limit. Inspect the report artifact.")
-    return body
+        raise MonitorError("issue-limit", "Queue reference exceeds the issue body limit")
+    if not issue:
+        issue = client.create(STAGING)
+    number = issue["number"]
+    existing = {note.get("body") for note in client.comments(number) if authored_by(note, publishers)}
+    for index, piece in enumerate(pieces, 1):
+        part = f"{part_heading(sha, index)}\n\n<!-- {piece} -->"
+        if part not in existing:
+            client.comment(number, part)
+    read_snapshot(client, {"number": number, "body": body}, publishers)
+    client.edit(number, body=body)
+
+
+def read_snapshot(client, issue, publishers):
+    body = issue["body"]
+    ref = SNAPSHOT_REF.fullmatch(body.rstrip("\r\n").rsplit("\n", 1)[-1])
+    if ref:
+        sha, count = ref[1], int(ref[2])
+        parts = {}
+        pattern = re.compile(r"Upstream snapshot part ([1-9][0-9]{0,4}) for `" + sha + r"`\.\n\n<!-- ([^\r\n]*) -->")
+        for note in client.comments(issue["number"]):
+            if not authored_by(note, publishers):
+                continue
+            match = pattern.fullmatch(note.get("body") or "")
+            if match:
+                index, piece = int(match[1]), match[2]
+                if index > count or parts.setdefault(index, piece) != piece:
+                    raise MonitorError("invalid-snapshot", "Conflicting upstream snapshot parts")
+        if len(parts) != count:
+            raise MonitorError("invalid-snapshot", "Missing upstream snapshot parts")
+        payload = "".join(parts[i] for i in range(1, count + 1))
+        if hashlib.sha256(payload.encode()).hexdigest() != sha:
+            raise MonitorError("invalid-snapshot", "Upstream snapshot parts do not match their digest")
+        body = f"<!-- upstream-snapshot:{payload} -->"
+    snapshot = parse_snapshot(body)
+    if fingerprint(snapshot) != snapshot["fingerprint"]:
+        raise MonitorError("invalid-snapshot", "Queue fingerprint does not match its source identities")
+    return snapshot
 
 
 class GitHub:
-    def __init__(self, repository):
+    def __init__(self, repository, gh="gh"):
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
             raise MonitorError("invalid-repository", "Issue repository must be OWNER/REPO")
         self.base = f"repos/{repository}/issues"
+        self.gh = gh
 
     def request(self, method, endpoint, payload=None):
-        args = ["gh", "api", "--method", method, endpoint]
+        args = [self.gh, "api", "--method", method, endpoint]
         if payload is None:
             raw = run(args)
         else:
@@ -479,23 +551,24 @@ def authored_by(record, publishers):
     return isinstance(login, str) and login.casefold() in publishers
 
 
-def select_issue(issues, publishers):
+def select_issue(client, publishers):
     unfinished = []
-    for issue in issues:
+    for issue in client.issues():
         if ("pull_request" in issue or not authored_by(issue, publishers)
                 or (issue.get("body") or "").splitlines()[:1] != [MARKER]):
             continue
         if (type(issue.get("number")) is not int or issue["number"] < 1
                 or issue.get("state") not in ("open", "closed")):
             raise MonitorError("invalid-api-response", "Monitor issue is missing a valid number or state")
-        snapshot = parse_snapshot(issue.get("body") or "")
-        if fingerprint(snapshot) != snapshot["fingerprint"]:
-            raise MonitorError("invalid-snapshot", "Queue fingerprint does not match its source identities")
+        if issue["body"] == STAGING:
+            unfinished.append((issue, {}))
+            continue
+        snapshot = read_snapshot(client, issue, publishers)
         if issue["state"] != "closed" or is_actionable(snapshot):
-            unfinished.append(issue)
+            unfinished.append((issue, snapshot))
     if len(unfinished) > 1:
         raise MonitorError("duplicate-issues", "Multiple unfinished marked issues exist. Resolve the duplicate before continuing.")
-    return unfinished[0] if unfinished else None
+    return unfinished[0] if unfinished else (None, {})
 
 
 def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
@@ -503,23 +576,19 @@ def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
     publishers = monitor_publishers(repository, monitor_login)
     if client.viewer_login() not in publishers:
         raise MonitorError("publisher-mismatch", "Configure the authenticated monitor publisher with --monitor-login")
-    issue = select_issue(client.issues(), publishers)
-    previous = {}
-    if issue:
-        previous = parse_snapshot(issue.get("body") or "")
+    issue, previous = select_issue(client, publishers)
     snapshot = compact(report, previous)
     digest = fingerprint(snapshot)
     actionable = is_actionable(snapshot)
-    if not issue:
-        if not actionable:
-            return "quiet"
-        client.create(issue_body(snapshot, digest, 1))
-        return "created"
-    generation = previous["generation"]
+    if not issue and not actionable:
+        return "quiet"
+    generation = previous.get("generation", 0)
     changed = digest != previous.get("fingerprint")
     if changed:
         generation += 1
-        client.edit(issue["number"], body=issue_body(snapshot, digest, generation))
+        publish_snapshot(client, issue, snapshot, digest, generation, publishers)
+        if not issue:
+            return "created"
     target = "open" if actionable else "closed"
     if issue["state"] != target:
         client.edit(issue["number"], state=target)

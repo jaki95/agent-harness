@@ -6,11 +6,11 @@ import { inspect } from "node:util";
 import { fileURLToPath } from "node:url";
 import v8 from "node:v8";
 import vm from "node:vm";
-import { mermaid } from "../backends/mermaid.ts";
-import { report } from "../backends/report.ts";
-import { readConfig } from "../frontends/config.ts";
-import { readChecks, readSany, readSpec } from "../frontends/spec.ts";
-import { checkView, json } from "../frontends/view.ts";
+import { mermaid } from "../../../skills/statechart/scripts/backends/mermaid.ts";
+import { report } from "../../../skills/statechart/scripts/backends/report.ts";
+import { readConfig } from "../../../skills/statechart/scripts/frontends/config.ts";
+import { readChecks, readSany, readSpec } from "../../../skills/statechart/scripts/frontends/spec.ts";
+import { checkView, json } from "../../../skills/statechart/scripts/frontends/view.ts";
 import {
   type Bug,
   EC,
@@ -30,18 +30,18 @@ import {
   type Value,
   type Vars,
   type View,
-} from "../ir.ts";
-import { addPast, deadEnds, finder, lasso, mark } from "../passes/annotate.ts";
-import { pathGraph } from "../passes/paths.ts";
-import { bugs, walk } from "../passes/reach.ts";
-import { parseDot } from "../frontends/dot.ts";
-import { parseValue } from "../frontends/value.ts";
-import { readCounterexample, readMarks } from "../frontends/marks.ts";
-import { readMessages } from "../frontends/messages.ts";
-import { readTrace } from "../frontends/trace.ts";
-import { readVerdict } from "../frontends/verdict.ts";
-import { compile, project } from "../pipeline.ts";
-import { fileLines } from "../run.ts";
+} from "../../../skills/statechart/scripts/ir.ts";
+import { addPast, deadEnds, finder, lasso, mark } from "../../../skills/statechart/scripts/passes/annotate.ts";
+import { pathGraph } from "../../../skills/statechart/scripts/passes/paths.ts";
+import { bugs, walk } from "../../../skills/statechart/scripts/passes/reach.ts";
+import { parseDot } from "../../../skills/statechart/scripts/frontends/dot.ts";
+import { parseValue } from "../../../skills/statechart/scripts/frontends/value.ts";
+import { readCounterexample, readMarks } from "../../../skills/statechart/scripts/frontends/marks.ts";
+import { readMessages } from "../../../skills/statechart/scripts/frontends/messages.ts";
+import { readTrace } from "../../../skills/statechart/scripts/frontends/trace.ts";
+import { readVerdict } from "../../../skills/statechart/scripts/frontends/verdict.ts";
+import { compile, project } from "../../../skills/statechart/scripts/pipeline.ts";
+import { fileLines } from "../../../skills/statechart/scripts/run.ts";
 import { drawn } from "./drawn.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));

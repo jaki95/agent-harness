@@ -7,12 +7,12 @@ Use available host filesystem, Git, execution, delegation, and matching verifica
 1. When the change is one or two files with an obvious approach, skip the plan. Say so and stop.
 2. Settle open questions by prototype before you write. Run `prototype.md` for each. Keep the branch, the SHA, and the screenshots for Appendix A. Ask the operator only about a product or preference call that no run can settle. Give options (the **principle-never-block-on-the-human** principle skill).
 3. Explore through supported host delegation, with configured role models or parent inheritance and host concurrency limits, per Harness's Subagents section (the **principle-guard-the-context-window** principle skill). Each returns file pointers, conventions, test commands, and entry points. No inlined dumps.
-4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, write the file under `docs/` in an authorized task or project location. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **principle-sequence-verifiable-units** principle skill). Each PR names one committed acceptance manifest. Its owner declares every scoped outcome, scenario, pass predicate, project gate, required environment, and concrete nonapplicability before implementation or measurement. Put project-specific size and canonical-source rules in that manifest. Name the execution playbook in **How to read this**. Pick between `autopilot-full.md` and `autopilot-stack.md` per the rule at the end of `autopilot-stack.md`. A standing program takes `orchestrate.md`.
+4. Copy the skeleton below into the plan file and fill every placeholder. Unless the operator names a path, write the file under `docs/` in an authorized task or project location. Keep every heading and every sub-block in the order shown. One section per PR. One PR is one change with its own evidence (the **principle-sequence-verifiable-units** principle skill). Each PR names its acceptance manifest with a repository-relative JSON path. Before implementation or measurement, the owner commits and declares the manifest with the scoped outcomes, scenarios, pass predicates, project gates, required environment, and reasons for nonapplicable checks. Put project-specific size and canonical-source rules in that manifest. Name the execution playbook in **How to read this**. Pick between `autopilot-full.md` and `autopilot-stack.md` per the rule at the end of `autopilot-stack.md`. A standing program takes `orchestrate.md`.
 5. Read and apply **technical-writing** in full, then **unslop**. The body is one Diátaxis mode, how-to. Appendices hold explanation and reference. Each heading states the task or the finding. No long dashes. No mid-sentence colons.
 6. Run `node <Harness-package>/scripts/check-plan.mjs <plan.md>` and fix every line it prints (the **principle-encode-lessons-in-structure** principle skill).
 7. Hand back. Post the plan path and the script's output, then stop. Execution starts on the operator's explicit go, under the execution playbook the plan names.
 
-**Verification.** Tests alone are not sufficient verification. A PR is verified only when its applicable unit, live, and perf checks have evidence, with a reason for each nonapplicable check. (the **principle-prove-it-works** skill). That sentence is the verification rule. Every verification block opens with it. Retain unit, live, and perf sections. A nonapplicable block states `N/A. <concrete reason>` after the rule and has no boxes; unavailable tools, unfinished work, or inconclusive results are not reasons to call a required check nonapplicable. Runnable behavior changes require live proof on the matching surface. Size live lanes around distinct scenarios and risks; state the positive lane count, the actual configured or inherited model, and why the coverage is sufficient. Each lane is one box with a concrete scenario, the artifact it saves, and its pass predicate. Use screenshots for visual observations and transcripts, logs, or other actual outputs for nonvisual surfaces. One lane is the **Regression lane against trunk.** It runs the same load-bearing scenario on trunk and head. If trunk does not have the feature, the lane records that fact and gates the behavior the diff adds plus the end state the user waits for instead of inventing a trunk result. When perf applies, comparable trunk and head scenarios must both produce the named metric. If trunk lacks the feature, isolate the work the diff adds and set an absolute budget for that work plus the end-to-end state the user waits for. Do not claim a ratio between unlike scenarios. The perf block names the metric, the interleaved probe, the trunk baseline measured first, and the rule with the number that fails. A PR that changes an interaction is review-gated. The operator reviews it in chat with screenshots and a video before merge. A PR that changes no interaction writes `**Review gate.** None. <PR id> is not review-gated.` and no boxes under it.
+**Verification.** State the verification rule once in **How to read this** (the **principle-prove-it-works** skill). Retain unit, live, and perf sections. A nonapplicable block states `N/A. <concrete reason>` in its heading and has no boxes; unavailable tools, unfinished work, or inconclusive results are not reasons to call a required check nonapplicable. Runnable behavior changes require live proof on the matching surface. Size live lanes around distinct scenarios and risks; state the positive lane count, the actual configured or inherited model, and why the coverage is sufficient. Each lane is one box with a concrete scenario, the artifact it saves, and its pass predicate. Use screenshots for visual observations and transcripts, logs, or other actual outputs for nonvisual surfaces. One lane is the **Regression lane against trunk.** It runs the same load-bearing scenario on trunk and head. If trunk does not have the feature, the lane records that fact and gates the behavior the diff adds plus the end state the user waits for instead of inventing a trunk result. When perf applies, comparable trunk and head scenarios must both produce the named metric. If trunk lacks the feature, isolate the work the diff adds and set an absolute budget for that work plus the end-to-end state the user waits for. Do not claim a ratio between unlike scenarios. The perf block names the metric, the interleaved probe, the trunk baseline measured first, and the rule with the number that fails. A PR that changes an interaction is review-gated. The operator reviews it in chat with screenshots and a video before merge. A PR that changes no interaction writes `**Review gate.** None. <PR id> is not review-gated.` and no boxes under it.
 
 **Control skill.** Pick it by surface. Browser, Electron, and web UIs use **control-ui**. CLIs and TUIs use **control-cli**. Native mobile uses whatever simulator-driving skill the repo has. A PR that touches two surfaces gets lanes on both. A surface with no control skill is a risk in Appendix C, and its live block still names how each lane drives it.
 
@@ -86,6 +86,8 @@ Each live lane runs in an isolated supported host execution environment at the e
 
 **Depends on.** <PR id, or None.>
 
+**Acceptance manifest.** `<repository-relative path to manifest.json>`
+
 **Files.**
 
 - [ ] Edit `<path>`.
@@ -94,24 +96,24 @@ Each live lane runs in an isolated supported host execution environment at the e
 
 **Build.**
 
-- [ ] Commit `<manifest.json>` with the scoped outcomes, scenarios, concrete predicates, project commands, required environment, and justified nonapplicability. Declare it before implementation or measurement.
+- [ ] Commit the acceptance manifest with the scoped outcomes, scenarios, concrete predicates, project commands, required environment, and justified nonapplicability. Declare it before implementation or measurement.
 - [ ] <One change. Name the symbol and the file.>
 
 **You see.**
 
 - [ ] <One observable result, with the exact log line or screen state.>
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its applicable unit, live, and perf checks have evidence, with a reason for each nonapplicable check.
+**Verify, unit.**
 
 - [ ] <Test file and the case it gains.> Run `<command>`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its applicable unit, live, and perf checks have evidence, with a reason for each nonapplicable check. <N> lanes on `<configured or inherited workers model>` at the PR head, per the boot recipe. Coverage follows <distinct scenarios and risks; why these lanes suffice>.
+**Verify, live.** <N> lanes on `<configured or inherited workers model>` at the PR head, per the boot recipe. Coverage follows <distinct scenarios and risks; why these lanes suffice>.
 
 - [ ] Lane 1. Regression lane against trunk. Run <the same load-bearing scenario> at trunk and head. If trunk lacks the feature, record that and gate <the behavior the diff adds plus the end state the user waits for>. Save `<evidence artifact>`. Pass when <predicate>.
 - [ ] Lane 2. <Distinct scenario or risk.> Save `<evidence artifact>`. Pass when <predicate>.
 - [ ] <Continue through the declared N, with one distinct scenario, evidence artifact, and pass predicate per lane. Remove excess lane examples.>
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its applicable unit, live, and perf checks have evidence, with a reason for each nonapplicable check.
+**Verify, perf.**
 
 - [ ] Metric. <What is measured at both trunk and head. If trunk lacks the feature, also name the diff-added work and the end-to-end state the user waits for.>
 - [ ] Probe. <The command or procedure, run at trunk and at the head, interleaved. Both sides must produce the metric.>
