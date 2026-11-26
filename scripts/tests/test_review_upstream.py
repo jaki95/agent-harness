@@ -449,7 +449,8 @@ class InstallerTests(unittest.TestCase):
         self.assertIn('"/var/review $$%%"', service)
         self.assertIn("TMPDIR=/var/review $%%/scratch", service)
         self.assertIn("Persistent=true", timer)
-        self.assertIn("OnCalendar=*:0/15", timer)
+        self.assertEqual([line for line in timer.splitlines() if line.startswith("On")],
+                         ["OnCalendar=*-*-* 09:00:00 UTC"])
 
     def test_staged_worker_runs_the_selected_gh_when_another_is_first_on_path(self):
         with tempfile.TemporaryDirectory() as temp:

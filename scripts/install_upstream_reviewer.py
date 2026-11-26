@@ -46,8 +46,8 @@ def render_units(runtime, state, codex, python, gh, *, repository, model=None, e
         "Environment=" + quote("PATH=" + search_path), "Environment=" + quote("TMPDIR=" + str(Path(state) / "scratch")),
         "ExecStart=" + " ".join(quote(a, expand_dollar=True) for a in args), "TimeoutStartSec=20min",
         "KillMode=control-group", "UMask=0077", ""])
-    timer = "\n".join(["[Unit]", "Description=Check the external skill review queue every fifteen minutes", "",
-        "[Timer]", "OnBootSec=2min", "OnCalendar=*:0/15", "Persistent=true", "RandomizedDelaySec=30s",
+    timer = "\n".join(["[Unit]", "Description=Check the external skill review queue daily", "",
+        "[Timer]", "OnCalendar=*-*-* 09:00:00 UTC", "Persistent=true", "RandomizedDelaySec=30s",
         "Unit=" + UNIT + ".service", "", "[Install]", "WantedBy=timers.target", ""])
     return service, timer
 

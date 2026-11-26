@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The scheduled upstream reviewer checks once a day at 09:00 UTC.
+
 - Queue recovery preserves completed action receipts and resumes unfinished units, including units with a passing PR check. Isolated verification lanes check nested submodules for edits before and after running a command.
 - Multi-PR plans must name each acceptance manifest. Add `**Acceptance manifest.**` followed by its repository-relative JSON path in backticks after each PR's dependency line. State the verification policy once in the introduction.
 - The upstream monitor can publish large review queues in verified parts. Update the installed reviewer before using multipart queues. It now runs the exact GitHub CLI selected during installation.
