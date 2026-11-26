@@ -36,7 +36,7 @@ Exit code `0` means every comparison completed, including comparisons with pendi
 3. Run **Monitor upstream skills** manually or wait for the Monday 08:17 UTC schedule.
 4. Each new batch creates an **External skill updates** issue. Subscribe to each new issue or enable repository issue notifications; subscriptions to completed batches do not carry over.
 5. Read the source summary in the issue. Open the linked workflow run and download `upstream-skill-report` for complete patches.
-6. Configure the recurring Codex reviewer below to receive analysis and suggested next actions in comments.
+6. Configure the [issue-driven operator](upstream-operator.md) to receive numbered proposals, discuss changes and approve selected items on the issue.
 
 The workflow runs only on `main`. Scheduled and manual runs share the `upstream-skill-monitor` concurrency group, so one run at a time can create or update the queue. Its job has read access to contents and write access to issues. It preserves reports even when detection or publication fails, and the workflow retains a failed result.
 
@@ -54,7 +54,7 @@ Manually closing an unresolved issue does not acknowledge a review. The next run
 
 An open issue with a clean snapshot remains the current batch until closure succeeds, so an interrupted close can be retried. Closed issues with pending changes or errors remain unfinished. Multiple unfinished marked issues require manual duplicate cleanup, while malformed snapshots require repair before detection or review can continue. Both the monitor and reviewer use these rules.
 
-Merging an adoption PR does not run detection. Run the workflow manually after merging or wait for its schedule. If fresh upstream changes are already pending at that detection, the current batch remains open until those changes are reviewed too.
+A push to `main` that changes `registry/skills.json` runs detection again. With the issue-driven operator active, it reconciles PR receipts before closing the batch. If fresh upstream changes are already pending at that detection, the current batch remains open until those changes are reviewed too.
 
 ## Request a publication from the command line
 
@@ -68,9 +68,23 @@ The workflow reads the registry on `main` and publishes the result. To inspect a
 
 If previous queues used a separate publisher account, retain its login in the repository's `UPSTREAM_MONITOR_LOGIN` Actions variable and the reviewer installer's `--monitor-login` argument. This lets the workflow and reviewer find existing issues and snapshot parts during the transition.
 
-## Review each new queue with Codex
+## Review and approve changes on the issue
 
-The recurring reviewer checks the digest every fifteen minutes. Each new actionable queue generation receives a Codex review covering every pending source, local customizations, suggested decisions, concrete next actions, and evidence limits. Identical findings trigger no model call and no new comment. Detection stays on the weekly Actions schedule; manually triggered detections receive the same reviews.
+The [private operator](upstream-operator.md) uses one-shot jobs for proposals and adoption. Each item names the upstream revision, the proposed change, local behavior to preserve, dependencies and a verification task. Ask a question in a comment, or post a new standalone command from the configured owner account.
+
+| Example | Effect |
+| --- | --- |
+| `approve P3` | Approve eligible items from proposal 3. |
+| `approve P3 items 1,3` | Approve this selection as one PR. Dependencies need their own approval. |
+| `hold P3 item 1` | Stop merging this item and its dependants. A merge already submitted requires a separate revert decision. |
+| `defer P3 item 2` | Leave this item open until relevant evidence changes or you revisit it. |
+| `revisit item 2` | Ask the worker to reconsider the item. |
+
+The worker rereads the conversation when it reconnects and before a write. Each approval has one branch. CI and an independent check of the final head gate merging. Changes to approval, permissions or merge policy require the operator to merge the PR. A merged decision updates the source repository. Refresh installed skills separately.
+
+## Standalone analysis-only reviewer
+
+For an installation using only the standalone reviewer, its optional timer checks the published digest on the installed schedule. Keep this timer disabled when using the private operator. Each new actionable queue generation receives a Codex review covering every pending source, local customizations, suggested decisions, concrete next actions, and evidence limits. Identical findings trigger no model call and no new comment. Detection stays on the weekly Actions schedule; manually triggered detections receive the same reviews.
 
 The reviewer uses an existing authenticated Codex CLI and authenticated `gh` on an available Linux host with a systemd user manager. It needs no API key or repository secret. The host must remain running and the user manager must remain active for unattended reviews. Check `loginctl show-user "$USER" --property=Linger` if the host relies on timers after logout. Codex CLI 0.160.0 supports the execution options used here. A later incompatible CLI change is reported as a review failure rather than treated as completion.
 

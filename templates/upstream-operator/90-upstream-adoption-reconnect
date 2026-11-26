@@ -1,0 +1,10 @@
+#!/bin/sh
+case "$2" in
+    connectivity-change)
+        [ "$CONNECTIVITY_STATE" = FULL ] || exit 0 ;;
+    up|vpn-up)
+        ;;
+    *)
+        exit 0 ;;
+esac
+exec systemctl --no-block start upstream-adoption-reconnect.service

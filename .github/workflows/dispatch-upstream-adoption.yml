@@ -1,0 +1,74 @@
+name: Dispatch upstream adoption
+
+on:
+  workflow_call:
+    inputs:
+      issue:
+        type: string
+        required: true
+  issue_comment:
+    types: [created]
+  workflow_run:
+    workflows: [Check harness, Check Statechart, Release harness]
+    types: [completed]
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    if: >-
+      vars.UPSTREAM_OPERATOR_REPO != '' && github.ref == 'refs/heads/main' &&
+      (inputs.issue != '' ||
+       (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
+        github.event.comment.user.login == vars.UPSTREAM_ADOPTION_OWNER) ||
+       (github.event_name == 'workflow_run' &&
+        startsWith(github.event.workflow_run.head_branch, 'adoption/issue-') &&
+        github.event.workflow_run.head_repository.full_name == github.repository) ||
+       (github.event_name == 'pull_request_target' &&
+        startsWith(github.event.pull_request.head.ref, 'adoption/issue-') &&
+        github.event.pull_request.head.repo.full_name == github.repository))
+    runs-on: ubuntu-latest
+    outputs:
+      issue: ${{ inputs.issue || steps.event.outputs.issue }}
+    steps:
+      - uses: actions/checkout@v6
+        if: inputs.issue == ''
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+      - id: event
+        if: inputs.issue == ''
+        env:
+          ADOPTION_OWNER: ${{ vars.UPSTREAM_ADOPTION_OWNER }}
+          UPSTREAM_MONITOR_LOGIN: ${{ vars.UPSTREAM_MONITOR_LOGIN }}
+        run: python3 scripts/route_adoption_event.py
+
+  dispatch:
+    needs: route
+    if: needs.route.outputs.issue != ''
+    runs-on: ubuntu-latest
+    environment: upstream-dispatch
+    permissions: {}
+    steps:
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: app
+        with:
+          client-id: ${{ vars.UPSTREAM_DISPATCH_CLIENT_ID }}
+          private-key: ${{ secrets.UPSTREAM_DISPATCH_PRIVATE_KEY }}
+          owner: ${{ vars.UPSTREAM_OPERATOR_OWNER }}
+          repositories: ${{ vars.UPSTREAM_OPERATOR_REPO }}
+          permission-actions: write
+      - name: Wake the private operator
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          OPERATOR_REPO: ${{ vars.UPSTREAM_OPERATOR_OWNER }}/${{ vars.UPSTREAM_OPERATOR_REPO }}
+          ISSUE: ${{ needs.route.outputs.issue }}
+        run: |
+          [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]]
+          branch=$(gh api "repos/$OPERATOR_REPO" --jq 'select(.private == true) | .default_branch')
+          [[ -n "$branch" ]]
+          gh workflow run upstream-adoption.yml --repo "$OPERATOR_REPO" --ref "$branch" -f issue="$ISSUE"

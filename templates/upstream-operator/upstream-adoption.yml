@@ -1,0 +1,54 @@
+name: Reconcile upstream adoption
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Queue issue number. Leave empty to recover all outstanding work.
+        type: string
+        required: false
+
+permissions: {}
+
+jobs:
+  reconcile:
+    if: github.event.repository.private && github.ref_name == github.event.repository.default_branch
+    runs-on: [self-hosted, linux, upstream-adoption]
+    environment: upstream-worker
+    timeout-minutes: 50
+    steps:
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: app
+        with:
+          client-id: ${{ vars.UPSTREAM_WORKER_CLIENT_ID }}
+          private-key: ${{ secrets.UPSTREAM_WORKER_PRIVATE_KEY }}
+          owner: ${{ vars.UPSTREAM_SOURCE_OWNER }}
+          repositories: ${{ vars.UPSTREAM_SOURCE_REPO }}
+          permission-actions: write
+          permission-checks: read
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+          permission-statuses: read
+      - name: Reconcile current issue conversation
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          SOURCE: ${{ vars.UPSTREAM_SOURCE_OWNER }}/${{ vars.UPSTREAM_SOURCE_REPO }}
+          OWNER: ${{ vars.UPSTREAM_ADOPTION_OWNER }}
+          UPSTREAM_MONITOR_LOGIN: ${{ vars.UPSTREAM_MONITOR_LOGIN }}
+          BOT: ${{ steps.app.outputs.app-slug }}[bot]
+          WORKER: ${{ vars.UPSTREAM_ADOPTION_WORKER }}
+          STATE: ${{ vars.UPSTREAM_ADOPTION_STATE }}
+          ISSUE: ${{ inputs.issue }}
+          MODEL: ${{ vars.UPSTREAM_ADOPTION_MODEL }}
+          EFFORT: ${{ vars.UPSTREAM_ADOPTION_EFFORT }}
+        run: |
+          [[ "$WORKER" = /* && "$STATE" = /* && -n "$OWNER" ]]
+          args=(--repo "$SOURCE" --owner "$OWNER" --bot "$BOT" --state-dir "$STATE")
+          if [[ -n "$MODEL" ]]; then args+=(--model "$MODEL"); fi
+          if [[ -n "$EFFORT" ]]; then args+=(--effort "$EFFORT"); fi
+          if [[ -n "$ISSUE" ]]; then
+            [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]]
+            args+=(--issue "$ISSUE")
+          fi
+          exec python3 "$WORKER" "${args[@]}"

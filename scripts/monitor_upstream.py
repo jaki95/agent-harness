@@ -394,7 +394,9 @@ def issue_body(snapshot, digest, generation, *, reference=None):
     metadata = dict(snapshot, fingerprint=digest, generation=generation)
     lines = [MARKER, "# External skill updates", "", "This body is maintained by the upstream monitor. Add human notes in comments.",
              "Subscribe to this issue for update notifications. Review the report before adopting changes.",
-             "The configured Codex reviewer posts analysis and suggested next actions in comments for each new queue generation.", ""]
+             ("The private operator posts a numbered proposal for each changed batch. If no proposal has appeared yet, review is pending."
+              if os.environ.get("UPSTREAM_OPERATOR_REPO") else
+              "The configured Codex reviewer posts analysis and suggested next actions in comments for each new queue generation."), ""]
     for item in snapshot["sources"]:
         if item["status"] == "unchanged":
             continue
@@ -440,9 +442,8 @@ def publish_snapshot(client, issue, snapshot, digest, generation, publishers):
     if len(body.encode()) <= ISSUE_LIMIT:
         if issue:
             client.edit(issue["number"], body=body)
-        else:
-            client.create(body)
-        return
+            return issue["number"]
+        return client.create(body)["number"]
 
     payload = snapshot_json(dict(snapshot, fingerprint=digest, generation=generation))
     sha = hashlib.sha256(payload.encode("ascii")).hexdigest()
@@ -464,6 +465,7 @@ def publish_snapshot(client, issue, snapshot, digest, generation, publishers):
             client.comment(number, part)
     read_snapshot(client, {"number": number, "body": body}, publishers)
     client.edit(number, body=body)
+    return number
 
 
 def read_snapshot(client, issue, publishers):
@@ -631,7 +633,7 @@ def select_issue(client, publishers):
     return unfinished[0] if unfinished else (None, {})
 
 
-def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
+def reconcile_batch(report, repository, *, issues=None, monitor_login=None, adoption=False):
     client = issues or GitHub(repository)
     publishers = monitor_publishers(repository, monitor_login)
     if client.viewer_login() not in publishers:
@@ -641,15 +643,17 @@ def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
     digest = fingerprint(snapshot)
     actionable = is_actionable(snapshot)
     if not issue and not actionable:
-        return "quiet"
+        return "quiet", None
     generation = previous.get("generation", 0)
     changed = digest != previous.get("fingerprint")
     if changed:
         generation += 1
-        publish_snapshot(client, issue, snapshot, digest, generation, publishers)
+        number = publish_snapshot(client, issue, snapshot, digest, generation, publishers)
         if not issue:
-            return "created"
-    target = "open" if actionable else "closed"
+            return "created", number
+    # The adoption worker records the final PR receipt before closing a clean batch.
+    handoff = adoption and not actionable and issue["state"] == "open"
+    target = "open" if actionable or handoff else "closed"
     if issue["state"] != target:
         client.edit(issue["number"], state=target)
     if actionable and generation > 1:
@@ -658,7 +662,13 @@ def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
         if not any(authored_by(comment, publishers) and (comment.get("body") or "").splitlines() == body.splitlines()
                    for comment in client.comments(issue["number"])):
             client.comment(issue["number"], body)
-    return "updated" if changed else "reopened" if issue["state"] != target and actionable else "closed" if not actionable else "quiet"
+    action = "updated" if changed else "reopened" if issue["state"] != target and actionable else "closed" if not actionable else "quiet"
+    return ("awaiting-adoption" if handoff else action), issue["number"]
+
+
+def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
+    action, _ = reconcile_batch(report, repository, issues=issues, monitor_login=monitor_login)
+    return action
 
 
 def main():
@@ -695,7 +705,13 @@ def main():
                     temporary.unlink(missing_ok=True)
         print(f"Report written to {output}. {sum(r.status == 'pending' for r in report.results)} pending source(s).")
         if args.issue_repo:
-            print(f"Issue reconciliation {reconcile_issue(report, args.issue_repo, monitor_login=args.monitor_login)}.")
+            adoption = bool(os.environ.get("UPSTREAM_OPERATOR_REPO"))
+            action, issue = reconcile_batch(report, args.issue_repo, monitor_login=args.monitor_login, adoption=adoption)
+            print(f"Issue reconciliation {action}.")
+            if (issue and os.environ.get("GITHUB_OUTPUT")
+                    and (action != "quiet" or os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch")):
+                with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as outputs:
+                    outputs.write(f"issue={issue}\n")
         if report.failed:
             print("Upstream state is unknown for one or more sources. Inspect report.json.", file=sys.stderr)
         return int(report.failed)
