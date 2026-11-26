@@ -2,6 +2,29 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { agrees, skip } from "./tlc.ts";
 
+for (const [root, imported] of [["ChartBound", "ChartRun"], ["ChartRun", "ChartBound"]]) {
+  test(`four states and both verdicts survive the module names ${root} and ${imported}`, { skip }, () => {
+    const v = agrees(root, {
+      [root]: [`---- MODULE ${root} ----`, "EXTENDS Steps", "===="],
+      Steps: ["---- MODULE Steps ----", `EXTENDS ${imported}`, "===="],
+      [imported]: [
+        `---- MODULE ${imported} ----`,
+        "EXTENDS Naturals",
+        "VARIABLE x",
+        "Init == x = 0",
+        "Next == x' = (x + 1) % 4",
+        "Low == x < 2",
+        "InRange == x < 4",
+        "====",
+      ],
+    }, "INIT Init\nNEXT Next\nINVARIANTS Low InRange\nCHECK_DEADLOCK FALSE\n");
+    assert.equal(v.status, 1);
+    assert.equal(v.breaks.get("Low"), 2);
+    assert.deepEqual(v.holds, ["InRange"]);
+    assert.match(v.report, /The chart draws 4 states and 4 arrows/);
+  });
+}
+
 const late = [
   "---- MODULE Late ----",
   "EXTENDS Naturals, TLC",

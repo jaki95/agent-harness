@@ -637,6 +637,26 @@ class EvidenceTests(RepositoryFixture):
         self.assertEqual(1, source["omitted_local_files"])
         self.assertEqual(["watched/new-file.md"], source["unmatched_upstream_paths"])
 
+    def test_equivalent_registry_watch_paths_reach_the_reviewer(self):
+        (self.harness / "skills/sample/helper.txt").write_text("local helper")
+        self.write("watched/helper.txt", "changed upstream helper")
+        self.commit()
+        for paths, expected in ((["./watched//helper.txt"], ["watched/helper.txt"]),
+                                (["./watched//."], ["watched/"]), (["./"], ["."])):
+            with self.subTest(paths=paths):
+                self.source["paths"] = paths
+                self.write_registry()
+                self.commit_harness()
+                snapshot = monitor.compact(self.collect(), {})
+                item = snapshot["sources"][0]
+                self.assertEqual("pending", item["status"])
+                self.assertEqual(expected, item["paths"])
+                self.queue = review.Queue(self.queue.key, snapshot)
+                with tempfile.TemporaryDirectory() as scratch:
+                    proof = review.gather_evidence("fixture/harness", self.queue, Path(scratch),
+                                                   git_factory=self.evidence_transport)
+                self.assertIn("sample/source", [s["key"] for s in proof.sources])
+
     def test_directory_watch_without_trailing_slash_matches_local_descendants(self):
         self.source["paths"] = ["watched"]
         self.write_registry()
@@ -679,10 +699,16 @@ class EvidenceTests(RepositoryFixture):
         self.assertIn("evidence-limit", client.notes[0]["body"])
         self.assertNotIn("upstream-codex-review:", client.notes[0]["body"])
         self.assertEqual("quiet", run(5).kind)
+        (self.harness / "README.md").write_text("Unrelated change")
+        self.commit_harness()
         self.assertEqual("failed", run(3601).kind)
         self.assertEqual((1, 1), (len(client.notes), len(analyses)))
+        (self.harness / "skills/sample/SKILL.md").write_text("Changed relevant customization")
+        self.commit_harness()
+        self.assertEqual("failed", run(7202).kind)
+        self.assertEqual((2, 2), (len(client.notes), len(analyses)))
         (self.harness / "skills/large/SKILL.md").write_text("small enough")
         self.commit_harness()
-        self.assertEqual("published", run(7202).kind)
+        self.assertEqual("published", run(10803).kind)
         self.assertIn("upstream-codex-review:", client.notes[-1]["body"])
-        self.assertEqual("quiet", run(7203).kind)
+        self.assertEqual("quiet", run(10804).kind)
