@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '17 8 * * 1'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [registry/skills.json]
 
 permissions:
   contents: read
@@ -17,6 +20,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      issue: ${{ steps.monitor.outputs.issue }}
     permissions:
       contents: read
       issues: write
@@ -32,6 +37,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          UPSTREAM_OPERATOR_REPO: ${{ vars.UPSTREAM_OPERATOR_REPO }}
           UPSTREAM_MONITOR_LOGIN: ${{ vars.UPSTREAM_MONITOR_LOGIN }}
         run: python3 scripts/monitor_upstream.py --output-dir work/upstream-report --issue-repo "$GITHUB_REPOSITORY"
       - name: Preserve the review report
@@ -45,3 +51,10 @@ jobs:
       - name: Fail when detection or publication failed
         if: always() && steps.monitor.outcome == 'failure'
         run: exit 1
+
+  wake:
+    needs: monitor
+    if: ${{ always() && needs.monitor.outputs.issue != '' && vars.UPSTREAM_OPERATOR_REPO != '' }}
+    uses: ./.github/workflows/dispatch-upstream-adoption.yml
+    with:
+      issue: ${{ needs.monitor.outputs.issue }}
