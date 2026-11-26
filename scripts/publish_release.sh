@@ -39,7 +39,13 @@ else
     fi
     gh release create "$version" --repo "$GH_REPO" --verify-tag --title "$version" --notes-file "$notes" ||
         echo "Release creation unconfirmed; checking GitHub." >&2
-    state=$(release_state)
+    for delay in 0 1 2 4; do
+        if (( delay )); then sleep "$delay"; fi
+        if state=$(gh api "repos/$GH_REPO/releases/tags/$version" --jq '[.draft, .prerelease] | @tsv'); then
+            break
+        fi
+        state=''
+    done
     [[ $state == $'false\tfalse' ]] || die "GitHub did not confirm a published stable release for $version"
 fi
 target=$(remote_target)

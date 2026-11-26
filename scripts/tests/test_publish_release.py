@@ -29,6 +29,15 @@ if args[:2] == ["api", "--paginate"]:
         sys.exit(1)
     if record.exists():
         print(record.read_text())
+elif args[:2] == ["api", "repos/fixture/harness/releases/tags/v0.1.0"]:
+    assert args[2:] == ["--jq", "[.draft, .prerelease] | @tsv"]
+    if not record.exists():
+        sys.exit(1)
+    first_read = root / "first_read"
+    if mode == "delayed" and not first_read.exists():
+        first_read.touch()
+        sys.exit(1)
+    print(record.read_text())
 elif args[:2] == ["release", "create"]:
     assert args[2:] == ["v0.1.0", "--repo", "fixture/harness", "--verify-tag",
                         "--title", "v0.1.0", "--notes-file", str(root / "notes")]
@@ -99,6 +108,12 @@ class PublishReleaseTests(unittest.TestCase):
         self.assertFalse((self.root / "release").exists())
         self.publish()
         self.assertTrue((self.root / "release").exists())
+
+    def test_waits_for_release_to_be_readable_by_tag(self):
+        self.publish("delayed")
+        self.assertTrue((self.root / "first_read").exists())
+        self.assertEqual(self.creates(), 1)
+        self.assertEqual(self.git("--git-dir=origin", "rev-parse", TAG), self.head)
 
     def test_existing_annotated_tag_at_same_commit_preserves_tag_object(self):
         self.git("-C", "work", "tag", "-a", TAG, "-m", "annotated")
