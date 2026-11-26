@@ -93,6 +93,21 @@ class RunLaneTests(unittest.TestCase):
         result, receipt = self.run_code("raise SystemExit(7)")
         self.assertEqual((result.outcome, result.returncode, receipt["cleanup"]), ("command_failed", 7, "complete"))
 
+    def test_relative_executable_runs_from_selected_checkout(self):
+        script = self.repo / "check-project"
+        script.write_text("#!/bin/sh\ncat source.txt\n")
+        script.chmod(0o755)
+        self.git("add", "check-project")
+        self.git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "project check")
+        head = self.git("rev-parse", "HEAD").strip()
+        args = [sys.executable, str(LAUNCHER), "--checkout", str(self.repo), "--head", head,
+                "--temp-root", str(self.temp), "--deadline", "10", "--", "./check-project"]
+        run = subprocess.run(args, cwd=self.root, text=True, capture_output=True, timeout=15)
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        receipt = json.loads(Path(json.loads(run.stdout)["receipt"]).read_text())
+        self.assertEqual(receipt["resolved_executable"], str(script))
+        self.assertEqual((Path(receipt["run_directory"]) / "execution.stdout").read_text(), "committed\n")
+
     def test_concurrent_interpreters_packages_and_caches_are_private(self):
         code = """import json, os, pathlib, sys, sysconfig, time
 site = pathlib.Path(sysconfig.get_path('purelib'))
