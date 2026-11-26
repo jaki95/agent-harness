@@ -52,12 +52,15 @@ if (record) {
 }
 
 if (!replay) throw new Error("Set STATECHART_RECORD or STATECHART_REPLAY to a folder.");
+for (const source of fs.readdirSync(replay))
+  if (source.endsWith(".tla") && fs.existsSync(source))
+    throw new Error(`Generated module shadows the replay model's ${source}`);
 fs.accessSync(args[args.indexOf("-cp") + 1], fs.constants.R_OK);
 const file = (ext: string) => path.join(replay, `${name}${ext}`);
 if (dump && fs.existsSync(path.join(replay, "graph.dot")))
   fs.copyFileSync(path.join(replay, "graph.dot"), dump);
-const tag = fs.existsSync("ChartRun.tla")
-  ? fs.readFileSync("ChartRun.tla", "utf8").match(TAG)?.[0]
+const tag = dump
+  ? fs.readFileSync(`${args.at(-1)}.tla`, "utf8").match(TAG)?.[0]
   : undefined;
 const saved = fs.readFileSync(file(".out"), "utf8");
 process.stdout.write(tag ? saved.replace(/(<<\s*)"chart"(?=,)/g, `$1${tag}`) : saved);

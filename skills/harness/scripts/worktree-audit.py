@@ -211,13 +211,15 @@ def audit(repository, base, usage_path=None, use_github=False, sizes=False):
         base_sha = os.fsdecode(git(repo, "rev-parse", "--verify", f"{base}^{{commit}}")).strip()
     except AuditError as exc:
         base_error = str(exc)
+    caller = Path.cwd().resolve()
     result = []
     for index, record in enumerate(records):
         path = Path(record["path"])
-        row = {**record, "primary": index == 0, "current": path.resolve() == repo,
+        resolved = path.resolve()
+        row = {**record, "primary": index == 0, "current": resolved == repo or caller.is_relative_to(resolved),
                "tracked": [], "untracked": [], "ignored": [], "populated_submodules": [],
                "prs": None, "merged": False, "merge_evidence": None, "age_days": None,
-               "size_bytes": None, "errors": [], "usage": usage.get(str(path.resolve()))}
+               "size_bytes": None, "errors": [], "usage": usage.get(str(resolved))}
         if not record.get("bare") and not record.get("prunable"):
             try:
                 row.update(parse_status(git(path, "status", "--porcelain=v1", "-z",

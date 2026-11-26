@@ -7,27 +7,27 @@ export function configText(sections: ConfigSection[], extra: string[]) {
   return lines.join("\n");
 }
 
-export const boundRun = (module: string) =>
+export const boundRun = (module: string, prefix: string) =>
   [
-    `---- MODULE ChartBound ----`,
+    `---- MODULE ${prefix}Bound ----`,
     `EXTENDS ${module}`,
-    `ChartTLC == INSTANCE TLC`,
-    `ChartNaturals == INSTANCE Naturals`,
-    `ChartBound == ChartNaturals!<(ChartTLC!TLCGet("distinct"), ${RERUN_STATES})`,
+    `${prefix}TLC == INSTANCE TLC`,
+    `${prefix}Naturals == INSTANCE Naturals`,
+    `${prefix}Bound == ${prefix}Naturals!<(${prefix}TLC!TLCGet("distinct"), ${RERUN_STATES})`,
     `====`,
   ].join("\n");
 
-export function chartRun({ module, variables, invariants }: Spec, tag: string) {
+export function chartRun({ module, variables, invariants }: Spec, tag: string, prefix: string) {
   const every: string[] = [];
   for (const name of invariants) every.push(`(IF ~${name} THEN {"${name}"} ELSE {}) \\cup `);
   return [
-    `---- MODULE ChartRun ----`,
+    `---- MODULE ${prefix}Run ----`,
     `EXTENDS ${module}`,
-    `ChartTLC == INSTANCE TLC`,
-    `ChartNaturals == INSTANCE Naturals`,
-    `ChartBudget == ChartNaturals!<=(ChartTLC!TLCGet("distinct"), ${CHART_STATES})`,
-    `ChartBroken == ${every.join("")}{}`,
-    `ChartMark == ChartBroken = {} \\/ ChartTLC!PrintT(<<"${tag}", <<${variables.join(", ")}>>, ChartBroken>>)`,
+    `${prefix}TLC == INSTANCE TLC`,
+    `${prefix}Naturals == INSTANCE Naturals`,
+    `${prefix}Budget == ${prefix}Naturals!<=(${prefix}TLC!TLCGet("distinct"), ${CHART_STATES})`,
+    `${prefix}Broken == ${every.join("")}{}`,
+    `${prefix}Mark == ${prefix}Broken = {} \\/ ${prefix}TLC!PrintT(<<"${tag}", <<${variables.join(", ")}>>, ${prefix}Broken>>)`,
     `====`,
   ].join("\n");
 }

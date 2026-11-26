@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Queue pickup holds units that share writable scope with a pending dispatch. It recommends at most one replacement per overlapping scope in a pickup.
+- Acceptance declarations can resume after a snapshot was saved. Worktree audits protect the checkout containing the caller even when `--repo` selects another checkout.
+- Statechart avoids module-name collisions with the model. The Control CLI example waits for the command response and fails on timeout.
+- The upstream reviewer reuses partial reviews across unrelated Harness commits. The monitor accepts equivalent relative spellings of watched paths.
+
 - Queue pickup holds reassignment until the coordinator checkpoints new or changed branch ownership. It checks that host observations are still fresh before reporting its decision.
 - Isolated verification lanes resolve project commands such as `./check-project` from the selected checkout.
 - The upstream monitor applies its evidence limit to watched paths and recognizes moves across watch boundaries. To publish on demand, run `gh workflow run monitor-upstream.yml --repo OWNER/REPO --ref main`. Manual and scheduled publications share one writer. Local detection still writes reports.

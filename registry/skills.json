@@ -532,7 +532,7 @@
       ]
     },
     "control-cli": {
-      "maintenance_notes": "Uses the pinned Control CLI SKILL.md unchanged, including repository-native harness discovery, local automation examples, interaction and evidence capture, profiling options, guardrails, and cleanup. Retains upstream default invocation metadata. Adds Codex implicit invocation for name-based Harness routing. Browser or terminal runtimes remain host or project requirements; installation distributes instructions only.",
+      "maintenance_notes": "Adapts the pinned Control CLI SKILL.md, including repository-native harness discovery, local automation examples, interaction and evidence capture, profiling options, guardrails, and cleanup. The PTY example checks the command response, fails on timeout, and reaps the child. Retains upstream default invocation metadata. Adds Codex implicit invocation for name-based Harness routing. Browser or terminal runtimes remain host or project requirements; installation distributes instructions only.",
       "reviewed_on": "2026-10-03",
       "sources": [
         {
@@ -883,7 +883,7 @@
       ]
     },
     "statechart": {
-      "maintenance_notes": "Adopt the upstream package and MIT notice. Nested diagrams show entry and exit transitions. Preserve SANY diagnostics, CRLF parsing, native Windows launch guidance, and cleanup of the spawned worker and its run directories. Resolve a supplied TLC jar from the caller's working directory before starting Java. Model results still require replay against the application. Keep the upstream scripts/test corpus under tests/statechart/test and its test package.json at tests/statechart/package.json. Test imports point to the installed source layout in skills/statechart/scripts. The runtime package declares ES modules.",
+      "maintenance_notes": "Adopt the upstream package and MIT notice. Nested diagrams show entry and exit transitions. Preserve SANY diagnostics, CRLF parsing, native Windows launch guidance, and cleanup of the spawned worker and its run directories. Resolve a supplied TLC jar from the caller's working directory before starting Java. Avoid collisions between generated modules and the model's modules. Model results still require replay against the application. Keep the upstream scripts/test corpus under tests/statechart/test and its test package.json at tests/statechart/package.json. Test imports point to the installed source layout in skills/statechart/scripts. The runtime package declares ES modules.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {

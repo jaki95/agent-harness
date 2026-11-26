@@ -108,6 +108,20 @@ for (const name of fs.readdirSync(corpus)) {
   });
 }
 
+test("generated modules leave the model's imported ChartBound module visible to TLC", () => {
+  const dir = copyCase("CounterInstance", (d) => {
+    fs.renameSync(path.join(d, "CounterSteps.tla"), path.join(d, "ChartBound.tla"));
+    for (const f of ["CounterInstance.tla", "ChartBound.tla", "sany.out"]) {
+      const file = path.join(d, f);
+      fs.writeFileSync(file, read(file).replaceAll("CounterSteps", "ChartBound"));
+    }
+  });
+  const r = run(dir);
+  assert.equal(r.stderr, "");
+  assert.equal(r.report, read(path.join(dir, "report.md")));
+  assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
+});
+
 function asTlcPrintsOnWindows(text: string) {
   const lines = text.split("\n");
   let depth = 0;

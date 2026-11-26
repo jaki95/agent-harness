@@ -50,8 +50,12 @@ class Evidence:
     unavailable: tuple = ()
 
     @property
+    def content(self):
+        return {"sources": self.sources, "unavailable": self.unavailable}
+
+    @property
     def digest(self):
-        return hashlib.sha256(json.dumps(asdict(self), sort_keys=True).encode()).hexdigest()
+        return hashlib.sha256(json.dumps(self.content, sort_keys=True).encode()).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -141,13 +145,13 @@ def registered_source(item, index):
     record = index.get(skill)
     if check_record(record):
         raise monitor.MonitorError("registry-invalid", f"Invalid current registry record for {skill}")
-    current = next((s for s in record["sources"] if s["id"] == source_id), None)
-    if not current or (item["repository"], item["ref"], item["paths"], item["reviewed"]) != (
-            current["repository"], current["ref"], current["paths"], current["last_reviewed_revision"]):
-        raise monitor.MonitorError("queue-superseded", f"Registry changed for {item['key']}; run detection again")
-    return monitor.Source(skill, source_id, current["repository"], current["ref"], tuple(current["paths"]),
-                          current["last_reviewed_revision"], current["last_incorporated_revision"],
-                          record["maintenance_notes"])
+    for current in record["sources"]:
+        if current["id"] == source_id:
+            source = monitor.Source.from_registry(skill, current, record["maintenance_notes"])
+            if (item["repository"], item["ref"], monitor.watch_paths(item["paths"]), item["reviewed"]) == (
+                    source.repository, source.ref, source.paths, source.reviewed):
+                return source
+    raise monitor.MonitorError("queue-superseded", f"Registry changed for {item['key']}; run detection again")
 
 
 def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
@@ -339,7 +343,7 @@ def codex_review(evidence, scratch, *, codex="codex", model=None, effort="high")
         "Registry maintenance_notes are excerpts from registry/skills.json, which may be cited as evidence. "
         "Cite only exact paths allowed by the schema for that source, without line numbers or fragments. "
         "Return precisely one finding per provided source, with 1 to 8 next actions and 1 to 30 evidence paths, "
-        "in the required JSON schema.\n\n" + json.dumps(asdict(evidence)))
+        "in the required JSON schema.\n\n" + json.dumps(evidence.content))
     empty = scratch / "empty"
     empty.mkdir()
     args = [codex, "exec", "--json", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--sandbox", "read-only",
@@ -369,8 +373,7 @@ REVIEW_HEADING = "## Codex analysis and suggested next actions"
 
 def review_comments(queue, evidence, advice, marker):
     lines = [REVIEW_HEADING, "",
-             f"Queue generation {queue.key.generation}. Fingerprint `{queue.key.digest}`.",
-             f"Local evidence from harness main `{evidence.harness_revision}`.", "",
+             f"Queue generation {queue.key.generation}. Fingerprint `{queue.key.digest}`.", "",
              "Recommendations are proposals. This review changes no skills or registry revisions.", ""]
     sources = {s["key"]: s for s in evidence.sources}
     for finding in advice["findings"]:
@@ -392,13 +395,14 @@ def review_comments(queue, evidence, advice, marker):
         lines.append("")
     lines.append(f"Evidence digest `{evidence.digest}`.")
     content = "\n".join(lines)
-    body = content + "\n\n" + marker
+    provenance = f"Local evidence from harness main `{evidence.harness_revision}`."
+    body = f"{content}\n\n{provenance}\n\n{marker}"
     if len(body.encode()) <= monitor.ISSUE_LIMIT:
         yield marker, body
         return
 
     data = content.encode()
-    digest = hashlib.sha256(body.encode()).hexdigest()
+    digest = hashlib.sha256(data + marker.encode()).hexdigest()
     start = 0
     part = 0
     while start < len(data):
@@ -423,7 +427,7 @@ def review_comments(queue, evidence, advice, marker):
         start = end
     summary = (f"{REVIEW_HEADING}\n\nQueue generation {queue.key.generation}. "
                f"See the {part} review parts above." + (" Some sources require another review." if evidence.unavailable else "")
-               + f"\n\nEvidence digest `{evidence.digest}`.\n\n{marker}")
+               + f"\n\nEvidence digest `{evidence.digest}`.\n\n{provenance}\n\n{marker}")
     yield marker, summary
 
 
@@ -441,21 +445,44 @@ def atomic_json(path, value):
             temporary.unlink(missing_ok=True)
 
 
-def delivery_markers(comments, publisher):
-    markers = set()
+def delivery_receipts(comments, publisher):
+    receipts = {}
     for comment in comments:
         if not monitor.authored_by(comment, {publisher}):
             continue
-        lines = (comment.get("body") or "").rstrip("\r\n").splitlines()
+        body = comment.get("body") or ""
+        lines = body.rstrip("\r\n").splitlines()
         if len(lines) < 3 or lines[-2] != "":
             continue
         marker = lines[-1]
         if marker.startswith("<!-- upstream-codex-failure:"):
             if lines[0].startswith("Codex review needs attention for queue generation "):
-                markers.add(marker)
+                receipts[marker] = body
         elif lines[0] == REVIEW_HEADING:
-            markers.add(marker)
-    return markers
+            receipts[marker] = body
+    return receipts
+
+
+def has_legacy_partial(receipts, prefix, key, evidence):
+    if not any(marker.startswith(prefix) for marker in receipts):
+        return False
+    header = f"{REVIEW_HEADING}\n\nQueue generation {key.generation}. Fingerprint `{key.digest}`.\n"
+    revisions = set()
+    for marker, body in receipts.items():
+        if marker.startswith("<!-- upstream-codex-part:") and marker.endswith(":1 -->"):
+            body = body.removeprefix(f"{REVIEW_HEADING}\n\nQueue generation {key.generation}. Review part 1.\n\n")
+        elif not marker.startswith(prefix):
+            continue
+        if body.startswith(header):
+            revision = re.match(rf"Local evidence from harness main `({COMMIT.pattern})`\.\n", body[len(header):])
+            if revision:
+                revisions.add(revision[1])
+    for revision in revisions:
+        legacy = {**evidence.content, "harness_revision": revision}
+        digest = hashlib.sha256(json.dumps(legacy, sort_keys=True).encode()).hexdigest()
+        if f"{prefix}{digest} -->" in receipts:
+            return True
+    return False
 
 
 def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=None, now=None, monitor_login=None):
@@ -472,7 +499,8 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
         if queue is None:
             return Outcome("quiet", "No actionable queue")
         reviewer = client.viewer_login()
-        if queue.key.marker in delivery_markers(client.comments(queue.key.number), reviewer):
+        delivered = delivery_receipts(client.comments(queue.key.number), reviewer)
+        if queue.key.marker in delivered:
             return Outcome("quiet", "This queue generation already has a Codex review")
         clock = time.time() if now is None else now
         cache_path = state_dir / (queue.key.filename + ".json")
@@ -486,6 +514,12 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
             with tempfile.TemporaryDirectory(prefix="review-", dir=state_dir) as temp:
                 scratch = Path(temp)
                 proof = validate_evidence((evidence or gather_evidence)(repository, queue, scratch), queue)
+                if proof.unavailable:
+                    prefix = f"<!-- upstream-codex-partial:{queue.key.generation}:{queue.key.digest}:"
+                    partial_marker = f"{prefix}{proof.digest} -->"
+                    if partial_marker in delivered or has_legacy_partial(delivered, prefix, queue.key, proof):
+                        atomic_json(failure_path, {"retry_at": clock + RETRY_SECONDS, "category": "partial-review"})
+                        return Outcome("failed", "Partial review already delivered; incomplete sources will retry after one hour")
                 batches = list(evidence_batches(proof))
                 cached = json.loads(cache_path.read_text()).get("batches", {}) if cache_path.exists() else {}
                 reusable = {batch.digest: cached[batch.digest] for batch in batches if batch.digest in cached}
@@ -499,15 +533,13 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
                         atomic_json(cache_path, {"batches": reusable})
                     findings.extend(validate_advice(reusable[digest], batch)["findings"])
                 advice = validate_advice({"findings": findings}, proof)
-                if proof.unavailable:
-                    partial_marker = f"<!-- upstream-codex-partial:{queue.key.generation}:{queue.key.digest}:{proof.digest} -->"
                 marker = partial_marker or queue.key.marker
                 parts = set()
                 for part_marker, body in review_comments(queue, proof, advice, marker):
                     current = find_queue(client, publishers)
                     if current is None or current.key != queue.key:
                         return Outcome("stale", "Queue changed during review; delivery stopped")
-                    delivered = delivery_markers(client.comments(queue.key.number), reviewer)
+                    delivered = delivery_receipts(client.comments(queue.key.number), reviewer)
                     if queue.key.marker in delivered:
                         return Outcome("quiet", "Review delivery already completed")
                     if part_marker == marker and not parts.issubset(delivered):
@@ -526,7 +558,7 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
             atomic_json(failure_path, {"retry_at": clock + RETRY_SECONDS, "category": code})
             current = find_queue(client, publishers)
             marker = f"<!-- upstream-codex-failure:{queue.key.generation}:{queue.key.digest}:{code} -->"
-            delivered = delivery_markers(client.comments(queue.key.number), reviewer) if current and current.key == queue.key else set()
+            delivered = delivery_receipts(client.comments(queue.key.number), reviewer) if current and current.key == queue.key else set()
             if queue.key.marker in delivered:
                 failure_path.unlink(missing_ok=True)
                 return Outcome("published", "Codex review delivery confirmed after a lost response")

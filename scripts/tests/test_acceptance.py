@@ -95,6 +95,22 @@ else console.log(JSON.stringify({ok: true}));
         self.assertEqual(self.git("rev-parse", "HEAD"), report["head"])
         return report
 
+    def test_retry_declaration_after_snapshot_before_pointer(self):
+        declared = self.declare()
+        store = Path(declared["store"])
+        identity = declared["declarationId"]
+        pointer = store / "declaration.json"
+        snapshot = store / "declarations" / f"{identity}.json"
+        pointer.unlink()
+        self.assertEqual(self.declare()["declarationId"], identity)
+        self.assertTrue(self.cli("run")["ready"])
+
+        pointer.unlink()
+        snapshot.write_bytes(b"corrupt")
+        self.assertIn("declaration hash mismatch", self.cli("declare", 2))
+        self.assertFalse(pointer.exists())
+        self.assertEqual(snapshot.read_bytes(), b"corrupt")
+
     def test_owner_workflow_red_red_green_before_review(self):
         adjacent = self.manifest["scenarios"].pop()
         self.save()

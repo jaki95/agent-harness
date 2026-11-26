@@ -468,6 +468,36 @@ print(json.dumps({'owners': owners, 'error': error,
             self.assertEqual(unit["overlapping_unconfirmed_owners"], ["owner-2"])
             self.assertIn("overlapping owners", unit["next_safe_action"])
 
+    def test_pending_dispatch_holds_shared_branch_and_releases_after_reconciliation(self):
+        for unit_id in ("u2", "u3"):
+            self.call("unit", "add", unit_id, "--track", "build")
+            self.metadata["units"].append(self.unit(unit_id, "owner-1", f"worktree-{unit_id}"))
+        for unit_id in ("u1", "u2"):
+            self.call("unit", "set", unit_id, "--state", "building", "--branch", "shared")
+        dispatch = {"id": "assign", "kind": "dispatch", "status": "pending", "receipt": None}
+        self.metadata["units"][1]["next_actions"].append(dispatch)
+        self.save_checkpoint()
+        host = self.host_state()
+        units = self.call("pickup", "--host-state", host)["units"]
+        self.assertEqual([u["id"] for u in units if u["same_scope_replacement_allowed"]], ["u3"])
+        self.assertIn("u2", units[0]["next_safe_action"])
+
+        dispatch.update(status="completed", receipt="worker receipt")
+        self.call("unit", "set", "u2", "--state", "completed")
+        self.save_checkpoint()
+        units = self.call("pickup", "--host-state", host)["units"]
+        self.assertEqual([u["id"] for u in units if u["same_scope_replacement_allowed"]], ["u1", "u3"])
+
+    def test_only_one_replacement_per_shared_writable_scope(self):
+        self.call("unit", "add", "u2", "--track", "build")
+        self.metadata["units"].append(self.unit("u2", "owner-2", "worktree-A"))
+        self.save_checkpoint()
+        owners = [{"id": owner, "state": "stopped", "writer_stopped": True}
+                  for owner in ("owner-1", "owner-2")]
+        units = self.call("pickup", "--host-state", self.host_state(owners=owners))["units"]
+        self.assertEqual([u["id"] for u in units if u["same_scope_replacement_allowed"]], ["u1"])
+        self.assertIn("u1", units[1]["next_safe_action"])
+
     def test_new_unit_holds_reuse_until_scope_is_checkpointed(self):
         self.call("unit", "set", "u1", "--state", "building", "--branch", "feature/shared")
         self.save_checkpoint()
