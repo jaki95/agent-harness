@@ -1,0 +1,30 @@
+name: Check Statechart
+
+on:
+  push:
+    paths:
+      - 'skills/statechart/**'
+      - 'scripts/test_statechart.py'
+      - 'package.json'
+      - '.github/workflows/statechart.yml'
+  pull_request:
+    paths:
+      - 'skills/statechart/**'
+      - 'scripts/test_statechart.py'
+      - 'package.json'
+      - '.github/workflows/statechart.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: npm run test:statechart

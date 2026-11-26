@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Queue recovery holds a PR for reconciliation when GitHub reports it open or closed and the local queue says it merged.
+- Acceptance gates must create their declared artifacts under `{run}/`. Migrate fixed output paths in the command and manifest, then declare and run the gates again.
+- Upstream review selects local files relevant to each change. It can report findings for other sources while an oversized source awaits manual review.
+- How answers narrow code questions directly with citations. Complex investigations keep independent explorers and an explainer. [Lookup comparison](evaluations/2026-11-26-how-lookups.md).
+- Document public installation and use one selection for Harness installs and updates. Run Statechart's offline regression tests on changes to its package or test command.
+- Releases require a dated changelog section for the requested version and publish its contents as the GitHub release notes.
+
 - Update Statechart with clearer nested transitions, SANY parse diagnostics, CRLF handling, and a native Windows launch command.
 - Pass the operator's acceptance criteria to delegates, and shorten the writing and engineering skills. Keep local orchestration and configured reviewer models. [Upstream review decisions](reviews/2026-11-26-upstream-skill-updates.md).
 

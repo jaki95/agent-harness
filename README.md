@@ -6,7 +6,7 @@ Project-specific instructions stay in their projects.
 
 ## Install skills
 
-Requires Node 22.20 or newer, Git, and access to this private repository.
+This repository is public. Installation requires Node 22.20 or newer, npm/npx, and Git.
 List the available skills, then install a selected skill from `main` inside your target project:
 
 ```sh
@@ -41,7 +41,7 @@ npm run test:skills
 ```
 
 The CLI test uses temporary fixtures and project-local installations.
-Repository checks validate structure and packaging, not agent behavior.
+For Statechart changes, run `npm run test:statechart` on Linux with Python 3.10+ and Node 22.20+. It tests chart generation, message parsing, the pipeline, and the CLI using recorded model-checker output. It runs offline and needs no Java installation.
 
 ## Maintain the collection
 

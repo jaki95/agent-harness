@@ -23,7 +23,7 @@ Each link opens the skill's instructions. For installation and host requirements
 | [control-ui](../skills/control-ui/SKILL.md) | Drive and inspect browser or Electron UIs with local automation and captured evidence |
 | [control-cli](../skills/control-cli/SKILL.md) | Exercise interactive CLIs and TUIs with repeatable terminal input and transcripts |
 | [create-verification-skill](../skills/create-verification-skill/SKILL.md) | Generate a Codex project skill for app verification, with a maintained feature map in `.agents/skills/verify-<slug>/` |
-| [how](../skills/how/SKILL.md) | Explain architecture and runtime flow through delegated exploration and explanation |
+| [how](../skills/how/SKILL.md) | Answer narrow code questions directly and trace complex architecture with independent explorers |
 | [why](../skills/why/SKILL.md) | Investigate historical rationale across available evidence sources with calibrated confidence |
 | [architect](../skills/architect/SKILL.md) | Ground, compare, and synthesize designs before implementation, with an opt-in checkpoint |
 | [swarm](../skills/swarm/SKILL.md) | Run independent coverage or race workers and consolidate evidence with explicit gaps |

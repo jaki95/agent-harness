@@ -20,7 +20,7 @@
       ]
     },
     "harness": {
-      "maintenance_notes": "Give delegates the user goal and existing acceptance criteria. Trace affected code directly for implementation work. Keep cited investigations, independent Architect designs, and isolated worktrees for unrelated changes. Keep the executable orchestration and plan verification, operator authorization, review and publication checks. Retire the deleted upstream orchestration playbook and plan checker watches. Track the upstream worker brief for future changes.",
+      "maintenance_notes": "Give delegates the user goal and existing acceptance criteria. Trace affected code directly for implementation work. Keep cited investigations, independent Architect designs, and isolated worktrees for unrelated changes. Keep the executable orchestration and plan verification, operator authorization, review and publication checks. Hold conflicting merge observations during pickup and require fresh per-run outputs for acceptance. Retire the deleted upstream orchestration playbook and plan checker watches. Track the upstream worker brief for future changes.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {
@@ -387,7 +387,7 @@
       ]
     },
     "how": {
-      "maintenance_notes": "Adopt the four-step workflow with simple questions handled by one explainer and complex questions by two to four explorers then an explainer. Adopt the shorter explorer prompt, retaining a single exact-citation instruction. Route supported reasoning and speed settings through Harness Subagents. Local invocation metadata, read-only work, configured role models or parent inheritance, host concurrency limits, and missing-capability reporting. Preserves local invocation policy and configured host model/tool bindings.",
+      "maintenance_notes": "Answer narrow questions directly with file and line citations. Keep two to four explorers and an explainer for complex investigations. Adopt the shorter explorer prompt, retaining a single exact-citation instruction. Route supported reasoning and speed settings through Harness Subagents. Local invocation metadata, read-only work, configured role models or parent inheritance, host concurrency limits, and missing-capability reporting. Preserves local invocation policy and configured host model/tool bindings.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {

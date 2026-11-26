@@ -47,6 +47,7 @@ class Queue:
 class Evidence:
     harness_revision: str
     sources: tuple
+    unavailable: tuple = ()
 
     @property
     def digest(self):
@@ -96,10 +97,67 @@ def safe_blob(git, revision, path, entry):
     return git.command("show", f"{revision}:{path}")
 
 
+def local_evidence(harness, revision, tree, root, source, changes):
+    package = f"skills/{source.skill}/"
+    entrypoint = package + "SKILL.md"
+    if entrypoint not in tree:
+        raise monitor.MonitorError("local-evidence-missing", f"No local entrypoint for {source.skill}")
+    directories = {PurePosixPath(path) for path in source.paths}
+    directories.update(PurePosixPath(path).parent for path in source.paths if path.endswith("SKILL.md"))
+    paths = {entrypoint}
+    unmatched = []
+    changed_paths = {c[field] for c in changes for field in ("old_path", "new_path") if c[field]}
+    for path in sorted(changed_paths):
+        upstream = PurePosixPath(path)
+        relatives = {upstream.relative_to(d) for d in directories if d in upstream.parents}
+        if not relatives and path in source.paths:
+            relatives.add(PurePosixPath(upstream.name))
+        matches = {package + str(relative) for relative in relatives if package + str(relative) in tree}
+        if matches:
+            paths.update(matches)
+        else:
+            unmatched.append(path)
+
+    files = {}
+    size = 0
+    for path in sorted(paths):
+        raw = safe_blob(harness, revision, path, tree[path])
+        size += len(raw)
+        if size > INPUT_LIMIT:
+            raise monitor.MonitorError("evidence-limit", "Selected local files exceed 1 MiB")
+        try:
+            files[path] = raw.decode("utf-8")
+        except UnicodeError as exc:
+            raise monitor.MonitorError("binary-evidence", f"Local file is not UTF-8: {path}") from exc
+    detector_entrypoint = root / entrypoint
+    detector_entrypoint.parent.mkdir(parents=True, exist_ok=True)
+    detector_entrypoint.write_text(files[entrypoint], encoding="utf-8")
+    omitted = sum(path.startswith(package) for path in tree) - len(files)
+    return files, omitted, unmatched
+
+
+def registered_source(item, index):
+    parts = item["key"].split("/")
+    if len(parts) != 2 or not all(NAME.fullmatch(p) for p in parts):
+        raise monitor.MonitorError("invalid-snapshot", "Invalid queued source key")
+    skill, source_id = parts
+    if item["status"] != "pending":
+        raise monitor.MonitorError("evidence-unknown", "Detection did not establish the exact change")
+    record = index.get(skill)
+    if check_record(record):
+        raise monitor.MonitorError("registry-invalid", f"Invalid current registry record for {skill}")
+    current = next((s for s in record["sources"] if s["id"] == source_id), None)
+    if not current or (item["repository"], item["ref"], item["paths"], item["reviewed"]) != (
+            current["repository"], current["ref"], current["paths"], current["last_reviewed_revision"]):
+        raise monitor.MonitorError("queue-superseded", f"Registry changed for {item['key']}; run detection again")
+    return monitor.Source(skill, source_id, current["repository"], current["ref"], tuple(current["paths"]),
+                          current["last_reviewed_revision"], current["last_incorporated_revision"],
+                          record["maintenance_notes"])
+
+
 def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
-    active = [s for s in queue.snapshot["sources"] if s["status"] != "unchanged"]
-    if queue.snapshot["errors"] or any(s["status"] != "pending" for s in active):
-        raise monitor.MonitorError("evidence-unknown", "The queue contains unresolved detection errors; exact review must wait for recovery")
+    if queue.snapshot["errors"]:
+        raise monitor.MonitorError("evidence-unknown", "The detector reported a queue-wide error; run detection again")
     harness = git_factory(scratch / "harness.git")
     revision = harness.fetch(f"https://github.com/{repository}.git", "main")
     tree = harness.tree(revision)
@@ -112,70 +170,43 @@ def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
     index, errors = load_index(root)
     if errors:
         raise monitor.MonitorError("registry-invalid", "; ".join(errors))
-    sources = []
-    locals_by_skill = {}
-    total = (root / registry_path).stat().st_size
-    for item in active:
-        parts = item["key"].split("/")
-        if len(parts) != 2 or not all(NAME.fullmatch(p) for p in parts):
-            raise monitor.MonitorError("invalid-snapshot", "Invalid queued source key")
-        skill, source_id = parts
-        record = index.get(skill)
-        if check_record(record):
-            raise monitor.MonitorError("registry-invalid", f"Invalid current registry record for {skill}")
-        candidates = [s for s in record["sources"] if s["id"] == source_id]
-        if len(candidates) != 1:
-            raise monitor.MonitorError("queue-superseded", f"Queued source no longer exists: {item['key']}")
-        current = candidates[0]
-        expected = (item["repository"], item["ref"], item["paths"], item["reviewed"])
-        actual = (current["repository"], current["ref"], current["paths"], current["last_reviewed_revision"])
-        if actual != expected:
-            raise monitor.MonitorError("queue-superseded", f"Registry changed after detection for {item['key']}; rerun the detector")
-        if skill not in locals_by_skill:
-            local_files = {}
-            for path, entry in sorted(tree.items()):
-                if path.startswith(f"skills/{skill}/"):
-                    raw = safe_blob(harness, revision, path, entry)
-                    total += len(raw)
-                    if total > INPUT_LIMIT:
-                        raise monitor.MonitorError("evidence-limit", "Local evidence exceeds 1 MiB")
-                    try:
-                        local_files[path] = raw.decode("utf-8")
-                    except UnicodeError as exc:
-                        raise monitor.MonitorError("binary-evidence", f"Local file is not UTF-8: {path}") from exc
-                    target = root / path
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_bytes(raw)
-            if f"skills/{skill}/SKILL.md" not in local_files:
-                raise monitor.MonitorError("local-evidence-missing", f"No local entrypoint for {skill}")
-            locals_by_skill[skill] = local_files
-        sources.append((item, monitor.Source(skill, source_id, current["repository"], current["ref"],
-                        tuple(current["paths"]), current["last_reviewed_revision"],
-                        current["last_incorporated_revision"], record["maintenance_notes"])))
-    groups = {}
+
+    upstreams = {}
     output = []
-    for item, source in sources:
-        head = observed_revision(item)
-        group = (source.repository, head)
-        if group not in groups:
-            git = git_factory(scratch / f"source-{len(groups)}.git")
-            if git.fetch(source.repository, head) != head:
-                raise monitor.MonitorError("revision-mismatch", "Git fetch did not return the queued commit")
-            groups[group] = git
-        result = monitor.inspect_source(source, root, groups[group], head)
-        if result.status != "pending" or [asdict(c) for c in result.changes] != item["changes"]:
-            raise monitor.MonitorError("evidence-mismatch", f"Reconstructed changes do not match queued identities for {source.key}")
-        if not result.upstream_patch:
-            raise monitor.MonitorError("evidence-missing", f"No upstream patch for {source.key}")
-        output.append({"key": source.key, "repository": source.repository, "reviewed_revision": source.reviewed,
-                       "observed_revision": head, "changed_files": [asdict(c) for c in result.changes],
-                       "upstream_patch": result.upstream_patch, "customization_patch": result.customization_patch,
-                       "comparison_note": result.comparison_note, "maintenance_notes": source.notes,
-                       "local_files": locals_by_skill[source.skill]})
-    evidence = Evidence(revision, tuple(output))
-    if len(json.dumps(asdict(evidence)).encode()) > INPUT_LIMIT:
-        raise monitor.MonitorError("evidence-limit", "Complete review evidence exceeds 1 MiB; no partial review was generated")
-    return evidence
+    failures = []
+    for item in queue.snapshot["sources"]:
+        if item["status"] == "unchanged":
+            continue
+        try:
+            source = registered_source(item, index)
+            local, omitted, unmatched = local_evidence(harness, revision, tree, root, source, item["changes"])
+            head = observed_revision(item)
+            group = (source.repository, head)
+            if group not in upstreams:
+                git = git_factory(Path(tempfile.mkdtemp(prefix="upstream-", dir=scratch)))
+                if git.fetch(source.repository, head) != head:
+                    raise monitor.MonitorError("revision-mismatch", "Git fetch did not return the queued commit")
+                upstreams[group] = git
+            result = monitor.inspect_source(source, root, upstreams[group], head)
+            if result.status != "pending" or [asdict(c) for c in result.changes] != item["changes"]:
+                raise monitor.MonitorError("evidence-mismatch", f"Changed file identities differ for {source.key}")
+            if not result.upstream_patch:
+                raise monitor.MonitorError("evidence-missing", f"No upstream patch for {source.key}")
+            source_evidence = {"key": source.key, "repository": source.repository,
+                               "reviewed_revision": source.reviewed, "observed_revision": head,
+                               "changed_files": item["changes"], "upstream_patch": result.upstream_patch,
+                               "customization_patch": result.customization_patch, "comparison_note": result.comparison_note,
+                               "maintenance_notes": source.notes, "local_files": local,
+                               "omitted_local_files": omitted, "unmatched_upstream_paths": unmatched}
+            if len(json.dumps(asdict(Evidence(revision, (source_evidence,)))).encode()) > INPUT_LIMIT:
+                raise monitor.MonitorError("evidence-limit", "Evidence for this source exceeds 1 MiB")
+            output.append(source_evidence)
+        except monitor.MonitorError as exc:
+            failures.append((item["key"], exc.code, str(exc)))
+    if failures and not output:
+        details = "; ".join(f"{key} ({code}): {reason}" for key, code, reason in failures)
+        raise monitor.MonitorError(failures[0][1], f"No sources reviewed. {details}")
+    return Evidence(revision, tuple(output), tuple((key, code) for key, code, _ in failures))
 
 
 def validate_evidence(proof, queue):
@@ -190,9 +221,25 @@ def validate_evidence(proof, queue):
         if source.get("observed_revision") != observed_revision(expected[key]) or source.get("changed_files") != expected[key]["changes"]:
             raise monitor.MonitorError("evidence-mismatch", "Evidence revision or changed file identities differ from queue")
         seen.add(key)
+    for key, code in proof.unavailable:
+        if key in seen or key not in expected or not code:
+            raise monitor.MonitorError("evidence-mismatch", "Invalid unavailable source record")
+        seen.add(key)
     if seen != set(expected):
         raise monitor.MonitorError("evidence-mismatch", "Evidence omits queued sources")
     return proof
+
+
+def evidence_batches(proof):
+    batch = []
+    for source in proof.sources:
+        candidate = Evidence(proof.harness_revision, (*batch, source))
+        if batch and len(json.dumps(asdict(candidate)).encode()) > INPUT_LIMIT:
+            yield Evidence(proof.harness_revision, tuple(batch))
+            batch = []
+        batch.append(source)
+    if batch:
+        yield Evidence(proof.harness_revision, tuple(batch))
 
 
 def evidence_paths(source):
@@ -291,7 +338,9 @@ def codex_review(evidence, scratch, *, codex="codex", model=None, effort="high")
         "Use no tools. Do not adopt changes, write files, update revisions, or claim testing. "
         "Compare exact upstream changes with the current pinned local customization. Explain summary, local impact, "
         "recommendation, concrete next actions, evidence paths, and limits. Supporting-file equivalence is uncertain "
-        "unless evidence proves it. Recommendations are proposals requiring a separate user decision. "
+        "unless evidence proves it. The local files are the entrypoint and candidate counterparts selected by path. "
+        "Note omitted local files and changed upstream paths with no matching local file when assessing limits. "
+        "Recommendations are proposals requiring a separate user decision. "
         "Registry maintenance_notes are excerpts from registry/skills.json, which may be cited as evidence. "
         "Cite only exact paths allowed by the schema for that source, without line numbers or fragments. "
         "Return precisely one finding per provided source, with 1 to 8 next actions and 1 to 30 evidence paths, "
@@ -320,7 +369,7 @@ def codex_review(evidence, scratch, *, codex="codex", model=None, effort="high")
         raise monitor.MonitorError("invalid-analysis", "Codex did not produce bounded valid JSON") from exc
 
 
-def render_review(queue, evidence, advice):
+def render_review(queue, evidence, advice, marker):
     lines = ["## Codex analysis and suggested next actions", "",
              f"Queue generation {queue.key.generation}. Fingerprint `{queue.key.digest}`.",
              f"Local evidence from harness main `{evidence.harness_revision}`.", "",
@@ -336,7 +385,14 @@ def render_review(queue, evidence, advice):
         lines.extend(f"{i}. {action}" for i, action in enumerate(finding["next_actions"], 1))
         lines.extend(["", "Limits: " + finding["limits"], "",
                       "Evidence: " + ", ".join(f"`{p}`" for p in finding["evidence_paths"]), ""])
-    lines.extend([f"Evidence digest `{evidence.digest}`.", "", queue.key.marker])
+        if "omitted_local_files" in source:
+            lines.extend([f"Local context excludes {source['omitted_local_files']} other package files. "
+                          f"{len(source['unmatched_upstream_paths'])} changed upstream paths had no matching local file.", ""])
+    if evidence.unavailable:
+        lines.extend(["### Incomplete sources", "", "These sources require manual review or a successful retry.", ""])
+        lines.extend(f"- `{key}` (`{code}`)" for key, code in evidence.unavailable)
+        lines.append("")
+    lines.extend([f"Evidence digest `{evidence.digest}`.", "", marker])
     body = "\n".join(lines)
     if len(body.encode()) > monitor.ISSUE_LIMIT:
         raise monitor.MonitorError("analysis-limit", "Completed review exceeds the GitHub comment limit")
@@ -383,23 +439,40 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
             failure = json.loads(failure_path.read_text())
             if failure.get("retry_at", 0) > clock:
                 return Outcome("quiet", "Review retry is delayed after a reported failure")
+        partial_marker = None
         try:
             with tempfile.TemporaryDirectory(prefix="review-", dir=state_dir) as temp:
                 scratch = Path(temp)
                 proof = validate_evidence((evidence or gather_evidence)(repository, queue, scratch), queue)
-                cached = json.loads(cache_path.read_text()) if cache_path.exists() else None
-                if cached and cached.get("evidence_digest") == proof.digest:
-                    advice = validate_advice(cached["advice"], proof)
-                else:
-                    advice = validate_advice((analyze or codex_review)(proof, scratch), proof)
-                    atomic_json(cache_path, {"evidence_digest": proof.digest, "advice": advice})
-                body = render_review(queue, proof, advice)
+                batches = list(evidence_batches(proof))
+                cached = json.loads(cache_path.read_text()).get("batches", {}) if cache_path.exists() else {}
+                reusable = {batch.digest: cached[batch.digest] for batch in batches if batch.digest in cached}
+                findings = []
+                for index, batch in enumerate(batches):
+                    digest = batch.digest
+                    if digest not in reusable:
+                        directory = scratch / f"analysis-{index}"
+                        directory.mkdir()
+                        reusable[digest] = validate_advice((analyze or codex_review)(batch, directory), batch)
+                        atomic_json(cache_path, {"batches": reusable})
+                    findings.extend(validate_advice(reusable[digest], batch)["findings"])
+                advice = validate_advice({"findings": findings}, proof)
+                if proof.unavailable:
+                    partial_marker = f"<!-- upstream-codex-partial:{queue.key.generation}:{queue.key.digest}:{proof.digest} -->"
+                marker = partial_marker or queue.key.marker
+                body = render_review(queue, proof, advice, marker)
                 current = find_queue(client)
                 if current is None or current.key != queue.key:
                     return Outcome("stale", "Queue changed during review; completed output was not posted")
-                if marked(client.comments(queue.key.number), queue.key.marker):
+                delivered = client.comments(queue.key.number)
+                if marked(delivered, queue.key.marker):
                     return Outcome("quiet", "Review delivery already completed")
-                client.comment(queue.key.number, body)
+                if not marked(delivered, marker):
+                    client.comment(queue.key.number, body)
+                if proof.unavailable:
+                    atomic_json(failure_path, {"retry_at": clock + RETRY_SECONDS, "category": "partial-review"})
+                    return Outcome("failed", f"Reviewed {len(proof.sources)} sources; "
+                                   f"{len(proof.unavailable)} require manual review or retry")
                 failure_path.unlink(missing_ok=True)
                 return Outcome("published", "Codex analysis and suggested next actions posted")
         except (monitor.MonitorError, OSError, ValueError, KeyError, TypeError) as exc:
@@ -411,6 +484,8 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
             if marked(delivery, queue.key.marker):
                 failure_path.unlink(missing_ok=True)
                 return Outcome("published", "Codex review delivery confirmed after a lost response")
+            if partial_marker and marked(delivery, partial_marker):
+                return Outcome("failed", "Partial review delivery confirmed; incomplete sources will retry after one hour")
             if current and current.key == queue.key and not marked(delivery, marker):
                 client.comment(queue.key.number, f"Codex review needs attention for queue generation {queue.key.generation}. "
                                f"Category `{code}`. {str(exc)[:1500]}\n\nThe reviewer will retry after one hour. "

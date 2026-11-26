@@ -816,22 +816,27 @@ def recovery_prs(metadata, snapshot, repo, historical):
     numbers.update(row["pr"] for row in historical["frontier"]["prs"])
     result = {}
     for number in sorted(numbers):
+        reads = []
         try:
-            row = gh_json(["pr", "view", str(number), "--repo", metadata["repository"]["name"],
-                           "--json", "number,headRefOid,state,isCrossRepository"], repo)
-            if (not isinstance(row, dict) or type(row.get("number")) is not int or row["number"] != number
-                    or row.get("state") not in ("OPEN", "MERGED", "CLOSED")
-                    or not isinstance(row.get("headRefOid"), str)
-                    or not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", row["headRefOid"])
-                    or row.get("isCrossRepository") is not False):
-                raise StoreError("invalid or cross-repository PR observation")
-            again = gh_json(["pr", "view", str(number), "--repo", metadata["repository"]["name"],
-                             "--json", "number,headRefOid,state,isCrossRepository"], repo)
-            if again != row:
+            for _ in range(2):
+                row = gh_json(["pr", "view", str(number), "--repo", metadata["repository"]["name"],
+                               "--json", "number,headRefOid,state,isCrossRepository"], repo)
+                if (not isinstance(row, dict) or type(row.get("number")) is not int or row["number"] != number
+                        or row.get("state") not in ("OPEN", "MERGED", "CLOSED")
+                        or not isinstance(row.get("headRefOid"), str)
+                        or not re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", row["headRefOid"])
+                        or row.get("isCrossRepository") is not False):
+                    raise StoreError("invalid or cross-repository PR observation")
+                reads.append(row)
+            if reads[0] != reads[1]:
                 raise StoreError("published PR changed during pickup; retry with fresh evidence")
             result[number] = {"pr": number, "state": row["state"], "sha": row["headRefOid"], "error": None}
         except StoreError as exc:
             result[number] = {"pr": number, "state": "UNKNOWN", "sha": None, "error": str(exc)}
+            for row in reads:
+                if row["state"] in ("OPEN", "CLOSED"):
+                    result[number]["unconfirmed_state"] = row["state"]
+                    break
     return result
 
 
@@ -850,6 +855,7 @@ def pickup(args, store):
     owners, host_error = host_observation(args, {row["owner_id"] for row in metadata["units"]}, repo)
     prs = recovery_prs(metadata, current, repo, saved["snapshot"])
     old_prs = {row["pr"]: row for row in saved["snapshot"]["frontier"]["prs"]}
+    frontier_merged = {row["pr"] for row in current["frontier"]["prs"] if row["state"] == "MERGED"}
     old_units = {row["id"]: row for row in saved["snapshot"]["units"]}
     live_units = {row["id"]: row for row in current["units"]}
     retained = [row for bucket in current["inbox"].values() for row in bucket["pointers"]]
@@ -874,7 +880,10 @@ def pickup(args, store):
         same_pr = bool(old and live and old["pr"] == live["pr"])
         saved_merged = same_pr and ((old and old["state"] == "merged") or (
             number in old_prs and old_prs[number]["state"] == "MERGED"))
-        merged = saved_merged or (observed and observed["state"] == "MERGED")
+        forge_state = observed["state"] if observed else "UNKNOWN"
+        observed_state = observed.get("unconfirmed_state", forge_state) if observed else forge_state
+        merged = forge_state == "MERGED" or (saved_merged and observed_state == "UNKNOWN")
+        merge_claim = saved_merged or number in frontier_merged or (live and live["state"] == "merged")
         old_sha = (old["sha"] if old else None) or old_prs.get(number, {}).get("sha")
         ledger = next((row for row in current["ledger"] if observed and observed["sha"]
                        and row["pr"] == str(number) and row["sha"] == observed["sha"]), None)
@@ -888,6 +897,8 @@ def pickup(args, store):
         replacement_allowed = False
         if merged:
             action = "complete; preserve merged result and do not dispatch"
+        elif merge_claim and observed_state in ("OPEN", "CLOSED"):
+            action = f"hold; reconcile the local merge claim with the observed PR state {observed_state}"
         elif pending:
             action = "hold; reconcile pending action receipts before repeating any action"
         elif unit_completions:

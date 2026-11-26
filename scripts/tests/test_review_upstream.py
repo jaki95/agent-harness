@@ -56,7 +56,7 @@ class FakeGitHub:
         if self.fail_before_delivery and review.ReviewKey(6, 1, "").marker.split(":")[0] in body:
             raise monitor.MonitorError("command-failed", "GitHub unavailable")
         self.notes.append({"number": number, "body": body})
-        if self.fail_after_delivery and "upstream-codex-review:" in body:
+        if self.fail_after_delivery and any(marker in body for marker in ("upstream-codex-review:", "upstream-codex-partial:")):
             raise monitor.MonitorError("timeout", "Delivery response lost")
 
 
@@ -105,6 +105,43 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual("published", self.run_review(now=3601).kind)
         self.assertEqual(1, self.models)
         self.assertEqual(2, self.collections)
+
+    def test_complete_sources_split_across_bounded_model_inputs(self):
+        snapshot = monitor.parse_snapshot(self.client.issue["body"])
+        second = {**snapshot["sources"][0], "key": "second/source"}
+        snapshot["sources"].append(second)
+        self.client.issue["body"] = monitor.issue_body(snapshot, monitor.fingerprint(snapshot), 1)
+        first = evidence().sources[0]
+        proof = review.Evidence(MAIN, (first, {**first, "key": "second/source"}))
+        limit = len(json.dumps(monitor.asdict(review.Evidence(MAIN, (proof.sources[1],)))).encode())
+        batches = []
+
+        def analyze(batch, scratch):
+            self.assertLessEqual(len(json.dumps(monitor.asdict(batch)).encode()), limit)
+            batches.append([s["key"] for s in batch.sources])
+            if len(batches) == 2:
+                raise monitor.MonitorError("analysis-timeout", "Second request timed out")
+            return {"findings": [dict(advice()["findings"][0], key=k) for k in batches[-1]]}
+
+        with patch.object(review, "INPUT_LIMIT", limit):
+            self.assertEqual("failed", self.run_review(evidence=lambda *args: proof, analyze=analyze, now=0).kind)
+            result = self.run_review(evidence=lambda *args: proof, analyze=analyze, now=3601)
+        self.assertEqual("published", result.kind)
+        self.assertEqual([["sample/source"], ["second/source"], ["second/source"]], batches)
+        self.assertIn("### second/source", self.client.notes[-1]["body"])
+
+    def test_stale_partial_analysis_is_discarded(self):
+        snapshot = monitor.parse_snapshot(self.client.issue["body"])
+        snapshot["sources"].append({**snapshot["sources"][0], "key": "other/source", "status": "unknown"})
+        self.client.issue["body"] = monitor.issue_body(snapshot, monitor.fingerprint(snapshot), 1)
+        proof = review.Evidence(MAIN, evidence().sources, (("other/source", "evidence-unknown"),))
+
+        def stale(*args):
+            self.client.issue = issue(generation=2)
+            return advice()
+
+        self.assertEqual("stale", self.run_review(evidence=lambda *args: proof, analyze=stale).kind)
+        self.assertEqual([], self.client.notes)
 
     def test_queue_changed_while_model_runs_is_not_published(self):
         def stale(proof, scratch):
@@ -410,7 +447,9 @@ class EvidenceTests(RepositoryFixture):
         self.assertEqual("queue-superseded", raised.exception.code)
 
     def test_symlink_local_evidence_is_rejected_not_followed(self):
-        (self.harness / "skills/sample/external").symlink_to("/etc/passwd")
+        entrypoint = self.harness / "skills/sample/SKILL.md"
+        entrypoint.unlink()
+        entrypoint.symlink_to("/example/unreadable")
         self.commit_harness()
         with self.assertRaises(monitor.MonitorError) as raised:
             self.gather()
@@ -421,3 +460,69 @@ class EvidenceTests(RepositoryFixture):
         with self.assertRaises(monitor.MonitorError) as raised:
             self.gather()
         self.assertEqual("evidence-mismatch", raised.exception.code)
+
+
+    def test_reads_changed_counterparts_and_skips_large_unrelated_files(self):
+        package = self.harness / "skills/sample"
+        (package / "helper.txt").write_text("custom helper")
+        (package / "large-test-corpus").write_bytes(b"x" * (review.INPUT_LIMIT + 1))
+        self.write("watched/helper.txt", "new helper")
+        self.write("watched/new-file.md", "upstream only")
+        self.commit()
+        self.queue = review.Queue(self.queue.key, monitor.compact(self.collect(), {}))
+        self.commit_harness()
+        source = self.gather().sources[0]
+        self.assertEqual({"skills/sample/SKILL.md": "customized skill\n", "skills/sample/helper.txt": "custom helper"},
+                         source["local_files"])
+        self.assertEqual(1, source["omitted_local_files"])
+        self.assertEqual(["watched/new-file.md"], source["unmatched_upstream_paths"])
+
+    def test_directory_watch_without_trailing_slash_matches_local_descendants(self):
+        self.source["paths"] = ["watched"]
+        self.write_registry()
+        (self.harness / "skills/sample/helper.txt").write_text("local helper")
+        self.write("watched/helper.txt", "changed upstream helper")
+        self.commit()
+        self.queue = review.Queue(self.queue.key, monitor.compact(self.collect(), {}))
+        self.commit_harness()
+        source = self.gather().sources[0]
+        self.assertEqual("local helper", source["local_files"]["skills/sample/helper.txt"])
+        self.assertEqual([], source["unmatched_upstream_paths"])
+
+    def test_oversized_source_leaves_other_review_publishable_and_retries_without_duplication(self):
+        self.index["skills"]["large"] = copy.deepcopy(self.index["skills"]["sample"])
+        (self.harness / "skills/large").mkdir()
+        (self.harness / "skills/large/SKILL.md").write_text("x" * (review.INPUT_LIMIT + 1))
+        self.save_registry()
+        self.commit_harness()
+        snapshot = monitor.compact(self.collect(), {})
+        client = FakeGitHub()
+        client.issue["body"] = monitor.issue_body(snapshot, monitor.fingerprint(snapshot), 1)
+        analyses = []
+
+        def analyze(proof, scratch):
+            keys = [s["key"] for s in proof.sources]
+            analyses.append(keys)
+            return {"findings": [dict(advice()["findings"][0], key=k) for k in keys]}
+
+        def run(now):
+            return review.review_queue("fixture/harness", self.root / "state", github=client, now=now,
+                evidence=lambda repo, queue, path: review.gather_evidence(repo, queue, path, git_factory=self.evidence_transport),
+                analyze=analyze)
+
+        client.fail_after_delivery = True
+        self.assertEqual("failed", run(0).kind)
+        client.fail_after_delivery = False
+        self.assertEqual([["sample/source"]], analyses)
+        self.assertIn("Suggested decision", client.notes[0]["body"])
+        self.assertIn("large/source", client.notes[0]["body"])
+        self.assertIn("evidence-limit", client.notes[0]["body"])
+        self.assertNotIn("upstream-codex-review:", client.notes[0]["body"])
+        self.assertEqual("quiet", run(5).kind)
+        self.assertEqual("failed", run(3601).kind)
+        self.assertEqual((1, 1), (len(client.notes), len(analyses)))
+        (self.harness / "skills/large/SKILL.md").write_text("small enough")
+        self.commit_harness()
+        self.assertEqual("published", run(7202).kind)
+        self.assertIn("upstream-codex-review:", client.notes[-1]["body"])
+        self.assertEqual("quiet", run(7203).kind)

@@ -10,7 +10,7 @@ Version the harness as one collection. Skill directories stay stable; do not add
 - Minor versions add skills or backward-compatible capabilities.
 - Major versions cover removals, renames, prerequisite changes, or changes that break established workflows. Before 1.0, a minor release can contain these changes if its notes identify them clearly.
 - Never move an existing release tag. Publish a new version for corrections; consumers can explicitly roll back.
-- Record meaningful changes under Unreleased in `CHANGELOG.md`. Move them to a dated version section before dispatching that release. GitHub also generates commit/PR-based release notes.
+- Record meaningful changes under Unreleased in `CHANGELOG.md`. Before dispatch, move the notes under a heading of the form `## vMAJOR.MINOR.PATCH - YYYY-MM-DD`. The text under that heading becomes the GitHub release description.
 
 Tags identify reviewed repository snapshots. Upstream author revisions remain independently tracked in the registry. Detecting an upstream change does not itself create a harness release.
 
@@ -26,7 +26,7 @@ Alternatively, dispatch from the authenticated GitHub CLI:
 gh workflow run release.yml --repo jaki95/agent-harness --ref main -f version=v0.1.0
 ```
 
-The workflow runs the repository checks, maintenance tests, and pinned Skills CLI integration test. It then validates the version, requires at least one owned skill, and rejects an existing tag. It tags the exact commit checked by that run and creates a GitHub release with generated notes. No npm package or additional skills.sh publication is produced.
+The workflow runs the repository checks, maintenance tests, and pinned Skills CLI integration test. It validates the version, requires at least one owned skill and a nonempty dated changelog section for that version, and rejects an existing tag. It tags the commit checked by that run and publishes its changelog section on GitHub.
 
 Run the read-only release preflight locally:
 
@@ -34,9 +34,16 @@ Run the read-only release preflight locally:
 python3 scripts/check_release.py v0.1.0
 ```
 
-It checks the current collection and rejects invalid versions or empty collections. It does not create tags, query the remote, or publish anything; existing-tag checks occur in the release workflow.
+Pass `--notes-file PATH` to save the validated notes for inspection. The preflight runs locally. The release workflow checks for an existing tag.
 
-The workflow pushes without force, so a conflicting tag push fails. If tag creation succeeds but GitHub release creation fails, preserve the tag and complete its release using `gh release create <version> --verify-tag --generate-notes`. Verify the tag's commit first; do not rerun the workflow with the same tag.
+If the tag push succeeds and GitHub release creation fails, recover from the existing tag. Fetch the tag and open a clean worktree at that tag. Compare `git rev-parse HEAD` there with the failed run's commit SHA. Stop if they differ. From that worktree, for the example version:
+
+```sh
+version=v0.1.0
+notes=$(mktemp)
+python3 scripts/check_release.py "$version" --notes-file "$notes" &&
+  gh release create "$version" --verify-tag --title "$version" --notes-file "$notes" --latest
+```
 
 ## Upgrade the installer
 

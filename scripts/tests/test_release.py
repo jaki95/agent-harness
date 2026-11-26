@@ -26,8 +26,8 @@ class ReleaseTests(unittest.TestCase):
             "schema_version": 1, "skills": skills,
         }), encoding="utf-8")
 
-    def run_check(self, version="v0.1.0"):
-        return subprocess.run([sys.executable, str(CHECK), version, "--root", str(self.root)],
+    def run_check(self, version="v0.1.0", *args):
+        return subprocess.run([sys.executable, str(CHECK), version, "--root", str(self.root), *args],
                               capture_output=True, text=True, check=False)
 
     def test_empty_harness_cannot_be_released(self):
@@ -42,7 +42,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("vMAJOR.MINOR.PATCH", result.stderr)
 
-    def test_valid_owned_skill_can_be_released(self):
+    def write_skill(self):
         skill = self.root / "skills/example"
         skill.mkdir()
         (skill / "SKILL.md").write_text(
@@ -52,10 +52,38 @@ class ReleaseTests(unittest.TestCase):
             "maintenance_notes": "Independent fixture.",
             "reviewed_on": date.today().isoformat(), "sources": [],
         }})
-        result = self.run_check()
+
+    def test_exports_only_the_matching_release_notes(self):
+        self.write_skill()
+        notes = "### Fixed\n\n- Keep the exact commit.\n\n```md\n## Example heading\n```\n"
+        (self.root / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## Unreleased\n\n- Pending.\n\n## v0.1.0 - 2026-01-01\n\n"
+            + notes + "\n## v0.0.1 - 2025-12-31\n\n- Old.\n", encoding="utf-8")
+        output = self.root / "notes.md"
+        result = self.run_check("v0.1.0", "--notes-file", str(output))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("v0.1.0 is ready", result.stdout)
+        self.assertEqual(output.read_text(encoding="utf-8"), notes)
         self.assertFalse((self.root / ".git").exists())
+
+    def test_missing_changelog_blocks_release(self):
+        self.write_skill()
+        result = self.run_check()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("CHANGELOG.md", result.stderr)
+
+    def test_unprepared_or_ambiguous_notes_block_release(self):
+        self.write_skill()
+        for content in ("## Unreleased\n\n- Pending.\n", "## v0.1.0\n\n- Undated.\n",
+                        "## v0.1.0 - 2026-02-30\n\n- Invalid date.\n",
+                        "## v0.1.0 - 2026-01-01\n\n## Older\n\n- Not this version.\n",
+                        "```md\n## v0.1.0 - 2026-01-01\n\n- Example.\n```\n",
+                        "## v0.1.0 - 2026-01-01\n\nFirst.\n## v0.1.0 - 2026-01-02\n\nSecond.\n"):
+            with self.subTest(content=content):
+                (self.root / "CHANGELOG.md").write_text(content, encoding="utf-8")
+                result = self.run_check()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("CHANGELOG.md", result.stderr)
 
     def test_invalid_harness_cannot_be_released(self):
         self.write_index({"missing": {}})

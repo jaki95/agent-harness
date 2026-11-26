@@ -52,7 +52,9 @@ Every declared gate is required, even when no scenario references it. Gates cont
 
 `timeoutMs` is an integer from `1` through `3600000`. A command timeout, nonzero exit, unavailable tool, output above the runner's 8 MiB capture limit, or missing artifact fails readiness. `predicate.exitCode` must be `0`. Optional `predicate.jsonEquals` compares each named top-level stdout JSON property against a literal value. Objects and arrays compare by value. Extra stdout properties are allowed.
 
-`artifacts` lists file paths relative to `repoRoot` or absolute paths. `{run}` expands to the current receipt directory in command arguments and artifact paths. The runner also exposes `HARNESS_ACCEPTANCE_RUN_DIR` and `HARNESS_ACCEPTANCE_REPO_ROOT` to each command. Gate outputs belong in the receipt directory or project-ignored proof paths. Untracked source files and tracked changes fail readiness.
+`artifacts` lists files the gate must create. Give the command and its declaration the same output path, such as `{run}/checkout-screen.png`. Each run gets a new directory. Each output must be absent immediately before its gate and must be a regular file there when the command returns. The runner captures outputs before the post-measurement probe. It reserves its own receipt and log filenames.
+
+Pass existing fixtures and reference files as command arguments. For a gate that used to write evidence to a fixed or project-ignored path, change its output argument and artifact declaration to use `{run}/<file>`, commit the updated manifest, and declare it again. Rerun any existing gate with artifacts once after upgrading the runner. The runner also exposes `HARNESS_ACCEPTANCE_RUN_DIR` and `HARNESS_ACCEPTANCE_REPO_ROOT` to each command. Untracked source files and tracked changes fail readiness.
 
 For private environment state and owned process deadlines, use the opt-in [isolated lane launcher](isolated-lanes.md) as a gate command and capture its lifecycle receipt as an artifact.
 
