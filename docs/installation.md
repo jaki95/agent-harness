@@ -2,9 +2,9 @@
 
 ## Requirements and current status
 
-Use Node 22.20 or newer, npm/npx, Git, and access to the private `jaki95/agent-harness` GitHub repository. The tested Skills CLI version is `1.7.0`; commands below pin the installer independently of the harness version. Existing Git credentials, an authenticated GitHub CLI, or SSH can provide repository access. No public directory listing is required.
+Use Node 22.20 or newer, npm/npx, and Git. Anyone can read this public repository over HTTPS. The examples use Skills CLI 1.7.0.
 
-The collection includes `grill-me`, `wayfinder`, `retro`, `statechart`, `correct`, `maintain-verification-skill`, `blast-radius`, `harness`, `unslop`, `technical-writing`, `deslop`, `no-comments`, `interrogate`, `show-me-your-work`, `figure-it-out`, `benchmark-checklist`, `how`, `why`, `architect`, `arena`, `swarm`, `control-ui`, `control-cli`, `create-verification-skill`, `principle-laziness-protocol`, `principle-foundational-thinking`, `principle-redesign-from-first-principles`, `principle-attack-the-premise`, `principle-subtract-before-you-add`, `principle-minimize-reader-load`, `principle-outcome-oriented-execution`, `principle-experience-first`, `principle-exhaust-the-design-space`, `principle-build-the-lever`, `principle-model-the-domain`, `principle-boundary-discipline`, `principle-type-system-discipline`, `principle-make-operations-idempotent`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-separate-before-serializing-shared-state`, `principle-prove-it-works`, `principle-fix-root-causes`, `principle-sequence-verifiable-units`, `principle-test-behavior-not-implementation`, `principle-explain-the-number`, `principle-guard-the-context-window`, `principle-never-block-on-the-human`, and `principle-encode-lessons-in-structure`. The following command lists skills at the remote revision, so unmerged local changes are not available through `main` yet:
+See the [skill catalog](skills.md) for descriptions, or list the skills available on the remote branch:
 
 ```sh
 npx skills@1.7.0 add jaki95/agent-harness --list
@@ -21,50 +21,27 @@ npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex 
 npx skills@1.7.0 update grill-me --global
 ```
 
-For Harness's full workflow, select the mode, both writing skills, Deslop, No-comments, Interrogate, Show Me Your Work, Figure It Out, Benchmark Checklist, How, Why, Architect, Arena, Swarm, Control UI, Control CLI, and its engineering, verification, delegation, and meta principles. The CLI does not install other skills automatically.
+For the full Harness workflow, use the same selection for installation and updates. In Bash or Zsh, set this array before running either command:
 
-```sh
-npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness unslop technical-writing deslop no-comments interrogate show-me-your-work figure-it-out benchmark-checklist how why architect arena swarm control-ui control-cli principle-laziness-protocol principle-foundational-thinking principle-redesign-from-first-principles principle-attack-the-premise principle-subtract-before-you-add principle-minimize-reader-load principle-outcome-oriented-execution principle-experience-first principle-exhaust-the-design-space principle-build-the-lever principle-model-the-domain principle-boundary-discipline principle-type-system-discipline principle-make-operations-idempotent principle-migrate-callers-then-delete-legacy-apis principle-separate-before-serializing-shared-state principle-prove-it-works principle-fix-root-causes principle-sequence-verifiable-units principle-test-behavior-not-implementation principle-explain-the-number principle-guard-the-context-window principle-never-block-on-the-human principle-encode-lessons-in-structure --agent codex --global
-npx skills@1.7.0 update harness --global
-npx skills@1.7.0 update unslop --global
-npx skills@1.7.0 update technical-writing --global
-npx skills@1.7.0 update deslop --global
-npx skills@1.7.0 update no-comments --global
-npx skills@1.7.0 update interrogate --global
-npx skills@1.7.0 update show-me-your-work --global
-npx skills@1.7.0 update figure-it-out --global
-npx skills@1.7.0 update benchmark-checklist --global
-npx skills@1.7.0 update how --global
-npx skills@1.7.0 update why --global
-npx skills@1.7.0 update architect --global
-npx skills@1.7.0 update arena --global
-npx skills@1.7.0 update swarm --global
-npx skills@1.7.0 update control-ui --global
-npx skills@1.7.0 update control-cli --global
-npx skills@1.7.0 update principle-laziness-protocol --global
-npx skills@1.7.0 update principle-foundational-thinking --global
-npx skills@1.7.0 update principle-redesign-from-first-principles --global
-npx skills@1.7.0 update principle-attack-the-premise --global
-npx skills@1.7.0 update principle-subtract-before-you-add --global
-npx skills@1.7.0 update principle-minimize-reader-load --global
-npx skills@1.7.0 update principle-outcome-oriented-execution --global
-npx skills@1.7.0 update principle-experience-first --global
-npx skills@1.7.0 update principle-exhaust-the-design-space --global
-npx skills@1.7.0 update principle-build-the-lever --global
-npx skills@1.7.0 update principle-model-the-domain --global
-npx skills@1.7.0 update principle-boundary-discipline --global
-npx skills@1.7.0 update principle-type-system-discipline --global
-npx skills@1.7.0 update principle-make-operations-idempotent --global
-npx skills@1.7.0 update principle-migrate-callers-then-delete-legacy-apis --global
-npx skills@1.7.0 update principle-separate-before-serializing-shared-state --global
-npx skills@1.7.0 update principle-prove-it-works --global
-npx skills@1.7.0 update principle-fix-root-causes --global
-npx skills@1.7.0 update principle-sequence-verifiable-units --global
-npx skills@1.7.0 update principle-test-behavior-not-implementation --global
-npx skills@1.7.0 update principle-explain-the-number --global
-npx skills@1.7.0 update principle-guard-the-context-window --global
-npx skills@1.7.0 update principle-never-block-on-the-human --global
-npx skills@1.7.0 update principle-encode-lessons-in-structure --global
+```bash
+harness_skills=(
+  harness unslop technical-writing
+  deslop no-comments interrogate
+  show-me-your-work figure-it-out benchmark-checklist
+  how why architect
+  arena swarm control-ui
+  control-cli principle-laziness-protocol principle-foundational-thinking
+  principle-redesign-from-first-principles principle-attack-the-premise principle-subtract-before-you-add
+  principle-minimize-reader-load principle-outcome-oriented-execution principle-experience-first
+  principle-exhaust-the-design-space principle-build-the-lever principle-model-the-domain
+  principle-boundary-discipline principle-type-system-discipline principle-make-operations-idempotent
+  principle-migrate-callers-then-delete-legacy-apis principle-separate-before-serializing-shared-state principle-prove-it-works
+  principle-fix-root-causes principle-sequence-verifiable-units principle-test-behavior-not-implementation
+  principle-explain-the-number principle-guard-the-context-window principle-never-block-on-the-human
+  principle-encode-lessons-in-structure
+)
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill "${harness_skills[@]}" --agent codex --global
+npx skills@1.7.0 update "${harness_skills[@]}" --global
 ```
 
 Harness can also be installed alone:
@@ -73,9 +50,9 @@ Harness can also be installed alone:
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex --global
 ```
 
-Harness resolves `unslop`, `technical-writing`, `deslop`, `no-comments`, `interrogate`, `show-me-your-work`, `figure-it-out`, `benchmark-checklist`, `control-ui`, `control-cli`, `how`, `why`, `architect`, `arena`, `swarm`, `principle-laziness-protocol`, `principle-foundational-thinking`, `principle-redesign-from-first-principles`, `principle-attack-the-premise`, `principle-subtract-before-you-add`, `principle-minimize-reader-load`, `principle-outcome-oriented-execution`, `principle-experience-first`, `principle-exhaust-the-design-space`, `principle-build-the-lever`, `principle-model-the-domain`, `principle-boundary-discipline`, `principle-type-system-discipline`, `principle-make-operations-idempotent`, `principle-migrate-callers-then-delete-legacy-apis`, `principle-separate-before-serializing-shared-state`, `principle-prove-it-works`, `principle-fix-root-causes`, `principle-sequence-verifiable-units`, `principle-test-behavior-not-implementation`, `principle-explain-the-number`, `principle-guard-the-context-window`, `principle-never-block-on-the-human`, and `principle-encode-lessons-in-structure` by name through the host's skill catalog. Their installation directories can differ from Harness's directory. If a routed skill is unavailable, Harness reports its name and continues with its own communication rules. Bundled playbooks remain available. The [source collection](https://github.com/jaki95/agent-harness) identifies where the separate skills can be obtained; it does not load or install them automatically.
+Harness looks up each routed skill by name in the host's catalog. If one is missing, Harness names it and continues with its own communication rules. Bundled playbooks are available with either installation.
 
-How and Why require host subagent tools. How uses one explainer for a narrow question, or two to four explorers followed by an explainer for a complex question. Why defaults to parallel investigators for available evidence categories followed by a synthesizer. It requires local git history and `gh` access for repository discussions; connected MCP sources are optional and missing sources are recorded as coverage gaps. Delegates use existing host role models or inherit the parent model. Host concurrency limits determine scheduling. Missing tools and denied access are reported; skipped steps are not presented as completed. The installer does not provide delegation tools, connect services, or configure models.
+How answers narrow questions directly with source citations. Complex How investigations use two to four explorers followed by an explainer. These investigations and Why require host subagent tools. Why defaults to parallel investigators for available evidence categories followed by a synthesizer. It requires local git history and `gh` access for repository discussions; connected MCP sources are optional and missing sources are recorded as coverage gaps. Delegates use existing host role models or inherit the parent model. Host concurrency limits determine scheduling. Missing tools and denied access are reported; skipped steps are not presented as completed. The installer does not provide delegation tools, connect services, or configure models.
 
 The bundled Feature playbook traces the affected subsystem and uses Architect for parallel design exploration. Before delegating implementation, record all four throughput-checkpoint items in the host todo list or the task plan, keeping nonapplicable dimensions with `n/a` and a reason. Feature implementation is delegated even for small changes, using an existing configured feature model or parent inheritance. The delegate receives file scope, a domain data shape, and success criteria. Multiple valid implementation shapes use Arena. A child agent forbidden to spawn owns its code directly while preserving separate review. Feature verification runs on the matching surface; inconclusive or wrong-surface results are flagged and do not count as a pass. Feature delivery builds, verifies, and commits each small unit before the next, then organizes small ordered commits and stacked follow-ups. Contested feature designs require Interrogate before shipping; task-authorized PR preparation or creation follows the bundled Opening a PR playbook. One owner handles coupled feature or migration work and fans out after the blocking phase. Parent-level fan-out is for independent artifacts. Checkpoints are rewritten at phase boundaries, and new work goes to a fresh owner rather than chained interrupts. Architect and Arena can be invoked directly. They require host delegation tools and use a todo list when the host provides one. Arena defaults to three independent parent-model candidates and an inherited cross-judge; configured host runner and judge models take precedence. Architect uses its own configured roster when available and requires at least two structurally distinct completed designs before synthesis. Separate named skills provide grounding and verification when installed; missing skills are reported without claiming their rules were applied.
 

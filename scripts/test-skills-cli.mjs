@@ -119,7 +119,11 @@ try {
         assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
       }
     }
-    for (const name of ['harness', 'unslop', 'technical-writing', 'deslop', 'no-comments', 'interrogate', 'show-me-your-work', 'figure-it-out', 'benchmark-checklist', 'how', 'why', 'architect', 'arena', 'swarm', 'control-ui', 'control-cli', 'principle-laziness-protocol', 'principle-foundational-thinking', 'principle-redesign-from-first-principles', 'principle-attack-the-premise', 'principle-subtract-before-you-add', 'principle-minimize-reader-load', 'principle-outcome-oriented-execution', 'principle-experience-first', 'principle-exhaust-the-design-space', 'principle-build-the-lever', 'principle-model-the-domain', 'principle-boundary-discipline', 'principle-type-system-discipline', 'principle-make-operations-idempotent', 'principle-migrate-callers-then-delete-legacy-apis', 'principle-separate-before-serializing-shared-state', 'principle-prove-it-works', 'principle-fix-root-causes', 'principle-sequence-verifiable-units', 'principle-test-behavior-not-implementation', 'principle-explain-the-number', 'principle-guard-the-context-window', 'principle-never-block-on-the-human', 'principle-encode-lessons-in-structure']) {
+    const guide = await readFile(join(root, 'docs/installation.md'), 'utf8');
+    const selection = guide.match(/^harness_skills=\(\n([a-z0-9\s-]+)\n\)$/m);
+    assert.ok(selection, 'Installation guide must name the full Harness selection');
+    const harnessSkills = selection[1].trim().split(/\s+/);
+    for (const name of harnessSkills) {
       const expected = name === 'harness'
         ? /allow_implicit_invocation: false/
         : /allow_implicit_invocation: true/;
@@ -139,14 +143,20 @@ try {
     const modeFiles = (await skillFiles(mode))
       .filter(name => name.endsWith('.md'))
       .map(name => join(mode, name));
+    const routedSkills = new Set(['harness']);
     for (const file of modeFiles) {
       const content = await readFile(file, 'utf8');
+      for (const [, name] of content.matchAll(/\*\*([a-z][a-z0-9-]+)\*\*/g)) {
+        if (owned.includes(name)) routedSkills.add(name);
+      }
       for (const match of content.matchAll(/\(`([^`]+\.md)`\)|\]\(([^)]+\.md)\)/g)) {
         const target = resolve(dirname(file), match[1] ?? match[2]);
         assert.ok(target.startsWith(`${mode}${sep}`), `${file} refers outside the Harness package`);
         await access(target);
       }
     }
+    assert.deepEqual(harnessSkills.sort(), [...routedSkills].sort(),
+      'Full install selection matches the skills named in Harness instructions');
     const laneRoot = join(temporary, 'installed-lanes');
     await mkdir(laneRoot);
     const sourceHead = run('git', ['rev-parse', 'HEAD'], source).trim();
