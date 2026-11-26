@@ -41,7 +41,7 @@ npm run test:skills
 ```
 
 The CLI test uses temporary fixtures and project-local installations.
-For Statechart changes, run `npm run test:statechart` on Linux with Python 3.10+ and Node 22.20+. It tests chart generation, message parsing, the pipeline, and the CLI using recorded model-checker output. It runs offline and needs no Java installation.
+For Statechart changes, run `npm run test:statechart` on Linux with Python 3.10+ and Node 22.20+. It tests chart generation, message parsing, the pipeline, and the CLI using recorded model-checker output. It runs offline and needs no Java installation. The upstream test corpus lives in [tests/statechart/test](tests/statechart/test/). Keep upstream test updates there and runtime updates in [skills/statechart/scripts](skills/statechart/scripts/). For the upstream test command, run `npm install --ignore-scripts --no-package-lock` and `npm test` from `tests/statechart/`. Live model-checker tests require `TLA2TOOLS` and Java.
 
 ## Maintain the collection
 

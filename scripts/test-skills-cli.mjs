@@ -119,6 +119,9 @@ try {
         assert.ok(!(await readdir(join(installedRoot, name))).includes(reserved));
       }
     }
+    const statechartFiles = await readdir(join(installedRoot, 'statechart/scripts'));
+    assert.ok(statechartFiles.includes('statechart.ts') && !statechartFiles.includes('test'),
+      'Statechart installs the runtime without its maintainer test corpus');
     const guide = await readFile(join(root, 'docs/installation.md'), 'utf8');
     const selection = guide.match(/^harness_skills=\(\n([a-z0-9\s-]+)\n\)$/m);
     assert.ok(selection, 'Installation guide must name the full Harness selection');
