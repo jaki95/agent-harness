@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -605,11 +606,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT, help="harness repository root")
     parser.add_argument("--output-dir", type=Path, required=True, help="directory for report.json and report.md")
-    parser.add_argument("--issue-repo", help="explicitly publish the maintained issue to OWNER/REPO")
+    parser.add_argument("--issue-repo", help="publish the queue from OWNER/REPO's monitor workflow on main")
     parser.add_argument("--monitor-login", default=os.environ.get("UPSTREAM_MONITOR_LOGIN"),
                         help="trusted monitor login alongside GitHub Actions (default: repository owner)")
     args = parser.parse_args()
     try:
+        if args.issue_repo:
+            publisher_ref = f"{args.issue_repo}/.github/workflows/monitor-upstream.yml@refs/heads/main"
+            if os.environ.get("GITHUB_WORKFLOW_REF") != publisher_ref:
+                raise MonitorError("workflow-required", "Publish through the monitor workflow. Run "
+                                   f"gh workflow run monitor-upstream.yml --repo {shlex.quote(args.issue_repo)} --ref main")
         root = args.root.resolve()
         output = args.output_dir.resolve()
         if any(output == (root / name).resolve() or (root / name).resolve() in output.parents
