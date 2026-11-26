@@ -87,8 +87,9 @@ def safe_blob(git, revision, path, entry):
     return git.command("show", f"{revision}:{path}")
 
 
-def local_evidence(harness, revision, tree, root, source, changes):
+def local_evidence(harness, revision, root, source, changes):
     package = f"skills/{source.skill}/"
+    tree = harness.tree(revision, [package, f"tests/{source.skill}/"])
     entrypoint = package + "SKILL.md"
     if entrypoint not in tree:
         raise monitor.MonitorError("local-evidence-missing", f"No local entrypoint for {source.skill}")
@@ -154,9 +155,9 @@ def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
         raise monitor.MonitorError("evidence-unknown", "The detector reported a queue-wide error; run detection again")
     harness = git_factory(scratch / "harness.git")
     revision = harness.fetch(f"https://github.com/{repository}.git", "main")
-    tree = harness.tree(revision)
     root = scratch / "evidence"
     registry_path = "registry/skills.json"
+    tree = harness.tree(revision, [registry_path])
     if registry_path not in tree:
         raise monitor.MonitorError("registry-unavailable", "Pinned harness main has no registry")
     (root / "registry").mkdir(parents=True)
@@ -173,7 +174,7 @@ def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
             continue
         try:
             source = registered_source(item, index)
-            local, omitted, unmatched = local_evidence(harness, revision, tree, root, source, item["changes"])
+            local, omitted, unmatched = local_evidence(harness, revision, root, source, item["changes"])
             head = observed_revision(item)
             group = (source.repository, head)
             if group not in upstreams:

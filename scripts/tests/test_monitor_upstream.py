@@ -246,10 +246,10 @@ class DetectorTests(RepositoryFixture):
         self.commit()
         original = self.transport.command
 
-        def limited(transport, *args):
+        def limited(transport, *args, **kwargs):
             if "--binary" in args:
                 raise monitor.MonitorError("output-limit", "Too much patch")
-            return original(transport, *args)
+            return original(transport, *args, **kwargs)
 
         with patch.object(self.transport, "command", limited):
             result = self.collect().results[0]
@@ -811,8 +811,9 @@ class CommandTests(unittest.TestCase):
     def test_limits_and_timeout(self):
         with self.assertRaisesRegex(monitor.MonitorError, "evidence limit"):
             monitor.run([sys.executable, "-c", "print('x'*1000)"], limit=10)
-        with self.assertRaisesRegex(monitor.MonitorError, "time limit"):
-            monitor.run([sys.executable, "-c", "import time; time.sleep(2)"], timeout=0.1)
+        for consume in (None, lambda stream: stream.read()):
+            with self.subTest(consume=consume), self.assertRaisesRegex(monitor.MonitorError, "time limit"):
+                monitor.run([sys.executable, "-c", "import time; time.sleep(2)"], timeout=0.1, read_stdout=consume)
 
 
 if __name__ == "__main__":

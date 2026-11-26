@@ -2,6 +2,8 @@
 """Detect upstream skill changes and optionally reconcile the current issue batch."""
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from contextlib import ExitStack
 from dataclasses import asdict, dataclass
 import difflib
 import hashlib
@@ -88,22 +90,34 @@ class MonitorError(Exception):
         super().__init__(detail)
 
 
-def run(args, *, env=None, limit=LIMIT, timeout=TIMEOUT, input=None):
-    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err, tempfile.TemporaryFile() as incoming:
+def run(args, *, env=None, limit=LIMIT, timeout=TIMEOUT, input=None, read_stdout=None):
+    with ExitStack() as stack:
+        out = stack.enter_context(tempfile.TemporaryFile())
+        err = stack.enter_context(tempfile.TemporaryFile())
+        incoming = stack.enter_context(tempfile.TemporaryFile())
         if input is not None:
             incoming.write(input)
             incoming.seek(0)
         try:
-            proc = subprocess.Popen(args, stdout=out, stderr=err, stdin=incoming if input is not None else subprocess.DEVNULL, env=env, start_new_session=os.name == "posix")
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE if read_stdout else out, stderr=err,
+                                    stdin=incoming if input is not None else subprocess.DEVNULL,
+                                    env=env, start_new_session=os.name == "posix")
         except OSError as exc:
             raise MonitorError("command-unavailable", str(exc)) from exc
+        reader = None
         try:
             deadline = time.monotonic() + timeout
+            if read_stdout:
+                pipe = stack.enter_context(proc.stdout)
+                pool = stack.enter_context(ThreadPoolExecutor(max_workers=1))
+                reader = pool.submit(read_stdout, pipe)
             while True:
                 try:
                     proc.wait(timeout=max(0.001, min(0.1, deadline - time.monotonic())))
                     break
                 except subprocess.TimeoutExpired:
+                    if reader and reader.done():
+                        reader.result()
                     if out.tell() + err.tell() > limit:
                         raise MonitorError("output-limit", "Command output exceeded the evidence limit")
                     if time.monotonic() >= deadline:
@@ -112,15 +126,22 @@ def run(args, *, env=None, limit=LIMIT, timeout=TIMEOUT, input=None):
                 raise MonitorError("output-limit", "Command output exceeded the evidence limit")
             out.seek(0)
             err.seek(0)
-            output = out.read()
             diagnostic = err.read().decode("utf-8", errors="replace").strip()
             if proc.returncode:
                 raise MonitorError("command-failed", diagnostic[:2000] or f"Command exited {proc.returncode}")
-            return output
+            if reader:
+                try:
+                    return reader.result(timeout=max(0, deadline - time.monotonic()))
+                except FutureTimeout as exc:
+                    raise MonitorError("timeout", "Command exceeded its time limit") from exc
+            return out.read()
         finally:
-            if proc.poll() is None:
+            if proc.poll() is None or (reader and not reader.done()):
                 if os.name == "posix":
-                    os.killpg(proc.pid, signal.SIGKILL)
+                    try:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                 else:
                     proc.kill()
                 proc.wait()
@@ -140,11 +161,11 @@ class Git:
             self.env.pop(key, None)
         run(["git", "init", "--bare", str(directory)], env=self.env)
 
-    def command(self, *args):
+    def command(self, *args, read_stdout=None):
         return run(["git", "--git-dir", str(self.directory), "-c", f"core.hooksPath={os.devnull}",
                     "-c", "credential.helper=", "-c", "protocol.allow=never",
                     "-c", "protocol.https.allow=always", "-c", "protocol.http.allow=always",
-                    *args], env=self.env)
+                    *args], env=self.env, read_stdout=read_stdout)
 
     def fetch(self, repository, ref):
         if ref.startswith("-"):
@@ -156,9 +177,9 @@ class Git:
         self.command("fetch", "--filter=blob:none", "--no-tags", "--no-recurse-submodules", "--", "source", ref)
         return self.command("rev-parse", "FETCH_HEAD^{commit}").decode().strip()
 
-    def tree(self, revision):
+    def tree(self, revision, paths):
         try:
-            entries = self.command("ls-tree", "-rz", "--full-tree", revision)
+            entries = self.command("ls-tree", "-rz", "--full-tree", revision, "--", *paths)
         except MonitorError as exc:
             if exc.code == "command-failed":
                 raise MonitorError("missing-commit", f"Cannot inspect commit {revision}") from exc
@@ -171,20 +192,42 @@ class Git:
                 tree[path.decode("utf-8", errors="surrogateescape")] = (mode, kind, oid)
         return tree
 
-    def changes(self, before, after):
-        tokens = iter(self.command("diff", "--no-ext-diff", "--no-textconv", "--raw", "-z", "--no-abbrev", "-M", before, after).split(b"\0"))
-        changes = []
-        for token in tokens:
-            if not token:
-                continue
-            old_mode, new_mode, old_oid, new_oid, status = token.decode().lstrip(":").split()
-            first = next(tokens).decode("utf-8", errors="surrogateescape")
-            kind = status[0]
-            second = next(tokens).decode("utf-8", errors="surrogateescape") if kind == "R" else first
-            changes.append(Change(kind, None if kind == "A" else first,
-                                  None if kind == "D" else second,
-                                  old_oid, new_oid, old_mode, new_mode))
-        return tuple(changes)
+    def changes(self, before, after, paths):
+        # Git needs both sides of a move to pair paths across a watch boundary.
+        return self.command("diff", "--no-ext-diff", "--no-textconv", "--raw", "-z", "--no-abbrev", "-M",
+                            before, after, read_stdout=lambda pipe: watched_changes(pipe, paths))
+
+
+def nul_fields(pipe):
+    pending = b""
+    for chunk in iter(lambda: pipe.read(65536), b""):
+        *fields, pending = (pending + chunk).split(b"\0")
+        yield from fields
+        if len(pending) > LIMIT:
+            raise MonitorError("output-limit", "Git diff field exceeds the evidence limit")
+    if pending:
+        raise MonitorError("invalid-diff", "Git diff returned an incomplete field")
+
+
+def watched_changes(pipe, paths):
+    tokens = nul_fields(pipe)
+    changes = []
+    retained = 0
+    for token in tokens:
+        old_mode, new_mode, old_oid, new_oid, status = token.decode().lstrip(":").split()
+        first = next(tokens)
+        kind = status[0]
+        second = next(tokens) if kind == "R" else first
+        old = None if kind == "A" else first.decode("utf-8", errors="surrogateescape")
+        new = None if kind == "D" else second.decode("utf-8", errors="surrogateescape")
+        if watches(old, paths) or watches(new, paths):
+            retained += len(token) + len(first) + 2
+            if kind == "R":
+                retained += len(second) + 1
+            if retained > LIMIT:
+                raise MonitorError("output-limit", "Watched Git changes exceed the evidence limit")
+            changes.append(Change(kind, old, new, old_oid, new_oid, old_mode, new_mode))
+    return tuple(changes)
 
 
 def watches(path, watched):
@@ -193,16 +236,15 @@ def watches(path, watched):
 
 
 def inspect_source(source, root, git, head):
-    before = git.tree(source.reviewed)
-    after = git.tree(head)
+    before = git.tree(source.reviewed, source.paths)
+    after = git.tree(head, source.paths)
     try:
         git.command("merge-base", "--is-ancestor", source.reviewed, head)
     except MonitorError as exc:
         if exc.code == "command-failed":
             raise MonitorError("history-rewritten", "Reviewed commit is not an ancestor of the source ref") from exc
         raise
-    changes = tuple(c for c in git.changes(source.reviewed, head)
-                    if watches(c.old_path, source.paths) or watches(c.new_path, source.paths))
+    changes = () if before == after else git.changes(source.reviewed, head, source.paths)
     missing = tuple(p for p in source.paths if not any(watches(path, (p,)) for path in after))
     patch = ""
     comparison = ""
@@ -212,7 +254,7 @@ def inspect_source(source, root, git, head):
         patch = git.command("diff", "--no-ext-diff", "--no-textconv", "--binary", "-M",
                             source.reviewed, head, "--", *paths).decode("utf-8", errors="replace")
         incorporated = source.incorporated or source.reviewed
-        origin_tree = before if incorporated == source.reviewed else git.tree(incorporated)
+        origin_tree = before if incorporated == source.reviewed else git.tree(incorporated, source.paths)
         entrypoints = [p for p in origin_tree if p.rsplit("/", 1)[-1] == "SKILL.md" and watches(p, source.paths)]
         if len(entrypoints) == 1 and origin_tree[entrypoints[0]][0] in ("100644", "100755"):
             upstream = git.command("show", f"{incorporated}:{entrypoints[0]}").decode("utf-8", errors="replace")

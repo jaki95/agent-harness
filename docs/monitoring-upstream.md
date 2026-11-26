@@ -27,7 +27,7 @@ Watched paths cover files and directories. A trailing slash requires a directory
 
 Each changed source includes its upstream patch. When one watched upstream `SKILL.md` exists at the incorporated revision, the report compares that entrypoint with the local skill. Inspiration without an incorporated revision uses the reviewed revision. The report includes maintenance notes. Supporting files need an explicit local mapping before you can judge their equivalence.
 
-Exit code `0` means every comparison completed, including comparisons with pending changes. Exit code `1` means detection or publication failed. An unknown status requires investigation. Missing paths, unavailable commits or refs, rewritten history, unavailable comparison evidence, and command limits cannot count as a clean result. Commands have a 90-second timeout and a 2 MiB output limit. Oversized evidence fails visibly rather than presenting a partial patch as complete.
+Exit code `0` means every comparison completed, including comparisons with pending changes. Exit code `1` means detection or publication failed. An unknown status requires investigation. Missing paths, unavailable commits or refs, rewritten history, unavailable comparison evidence, and command limits cannot count as a clean result. Commands have a 90-second timeout and a 2 MiB evidence limit. The detector reads the watched trees first. If they differ, it streams the repository-wide diff to identify moves across watch boundaries. Only matching change records count toward the evidence limit for that diff. Oversized watched evidence fails visibly.
 
 ## Receive the weekly digest
 
