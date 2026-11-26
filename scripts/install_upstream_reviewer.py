@@ -25,7 +25,7 @@ def quote(value, *, expand_dollar=False):
     return '"' + value + '"'
 
 
-def render_units(runtime, state, codex, python, gh, *, repository, model=None, effort="high", path=None):
+def render_units(runtime, state, codex, python, gh, *, repository, model=None, effort="high", monitor_login=None, path=None):
     for value in (runtime, state, codex, python, gh):
         if not Path(value).is_absolute():
             raise ValueError("Runtime, state and executable paths must be absolute")
@@ -35,6 +35,8 @@ def render_units(runtime, state, codex, python, gh, *, repository, model=None, e
         raise ValueError("Unsupported reasoning effort")
     args = [python, Path(runtime) / "review_upstream.py", "--issue-repo", repository, "--state-dir", state,
             "--codex", codex, "--effort", effort]
+    if monitor_login:
+        args.extend(["--monitor-login", monitor_login])
     if model:
         args.extend(["--model", model])
     search_path = path or os.environ.get("PATH", os.defpath)
@@ -50,8 +52,8 @@ def render_units(runtime, state, codex, python, gh, *, repository, model=None, e
     return service, timer
 
 
-def stage(runtime, state, units, codex, python, gh, *, repository, model=None, effort="high", source=SCRIPTS):
-    service, timer = render_units(runtime, state, codex, python, gh, repository=repository, model=model, effort=effort)
+def stage(runtime, state, units, codex, python, gh, *, repository, model=None, effort="high", monitor_login=None, source=SCRIPTS):
+    service, timer = render_units(runtime, state, codex, python, gh, repository=repository, model=model, effort=effort, monitor_login=monitor_login)
     runtime, state, units = map(Path, (runtime, state, units))
     if not units.is_absolute():
         raise ValueError("Unit directory must be absolute")
@@ -75,12 +77,14 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--issue-repo", required=True)
+    parser.add_argument("--monitor-login", default=os.environ.get("UPSTREAM_MONITOR_LOGIN"),
+                        help="trusted monitor login alongside GitHub Actions (default: repository owner)")
     parser.add_argument("--model")
     parser.add_argument("--effort", choices=("low", "medium", "high", "xhigh"), default="high")
     args = parser.parse_args()
     try:
         stage(args.runtime_dir, args.state_dir, args.unit_dir, args.codex, args.python, args.gh,
-              repository=args.issue_repo, model=args.model, effort=args.effort)
+              repository=args.issue_repo, model=args.model, effort=args.effort, monitor_login=args.monitor_login)
         print(f"Reviewer staged at {args.runtime_dir}. Units are not enabled. Run a one-shot review before enabling the timer.")
         return 0
     except (MonitorError, OSError, ValueError) as exc:

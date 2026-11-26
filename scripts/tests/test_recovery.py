@@ -130,6 +130,32 @@ module['main'](['--store', sys.argv[2], 'inbox', 'drain', '--json'])
         self.assertEqual(self.call("pickup", "--host-state", state), pickup)
         self.assertEqual(self.inventory(), before)
 
+    def test_open_gate_without_scope_holds_replacement_until_resolved(self):
+        self.call("gate", "park", "resume", "--question", "Resume work?", "--options", "yes,no", "--default", "no")
+        state = self.host_state()
+        held = self.call("pickup", "--host-state", state)["units"][0]
+        self.assertFalse(held["same_scope_replacement_allowed"])
+        self.assertIn("resume", held["next_safe_action"])
+        self.call("gate", "resolve", "resume", "--answer", "Resume within the saved scope.")
+        recovered = self.call("pickup", "--host-state", state)["units"][0]
+        self.assertTrue(recovered["same_scope_replacement_allowed"])
+        self.assertIn("only if the recorded operator answers permit", recovered["next_safe_action"])
+        self.assertEqual(recovered["replacement_packet"]["operator_gates"][0]["Answer"], "Resume within the saved scope.")
+
+    def test_scoped_gate_holds_only_its_unit(self):
+        self.call("unit", "add", "u2", "--track", "build")
+        self.metadata["units"].append(self.unit("u2", "owner-2", "worktree-B"))
+        self.save_checkpoint()
+        args = ("gate", "park", "resume", "--question", "Resume work?", "--options", "yes,no", "--default", "no")
+        self.call(*args, "--unit", "missing-unit", code=2)
+        self.call(*args, "--unit", "u1")
+        owners = [{"id": owner, "state": "stopped", "writer_stopped": True} for owner in ("owner-1", "owner-2")]
+        result = self.call("pickup", "--host-state", self.host_state(owners=owners))
+        held, independent = result["units"]
+        self.assertFalse(held["same_scope_replacement_allowed"])
+        self.assertIn("resume", held["next_safe_action"])
+        self.assertTrue(independent["same_scope_replacement_allowed"])
+
     def test_updates_after_checkpoint_survive_pickup_and_batch_replay(self):
         self.call("inbox", "push", "owner-1", "u1", "completed", "--report", "reports/final.md")
         batch = self.call("inbox", "drain")

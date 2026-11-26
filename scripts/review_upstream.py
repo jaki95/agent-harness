@@ -72,8 +72,8 @@ def queue_from_issue(issue):
     return Queue(ReviewKey(issue["number"], snapshot["generation"], snapshot["fingerprint"]), snapshot)
 
 
-def find_queue(client):
-    issue = monitor.select_issue(client.issues())
+def find_queue(client, publishers):
+    issue = monitor.select_issue(client.issues(), publishers)
     return queue_from_issue(issue) if issue else None
 
 
@@ -362,15 +362,18 @@ def codex_review(evidence, scratch, *, codex="codex", model=None, effort="high")
     except monitor.MonitorError as exc:
         raise monitor.MonitorError("analysis-" + exc.code, str(exc)) from exc
     try:
-        if output.stat().st_size > monitor.ISSUE_LIMIT:
-            raise ValueError("Output exceeds comment limit")
+        if output.stat().st_size > monitor.LIMIT:
+            raise ValueError("Analysis exceeds the model output limit")
         return validate_advice(json.loads(output.read_text()), evidence)
     except (OSError, ValueError, UnicodeError) as exc:
         raise monitor.MonitorError("invalid-analysis", "Codex did not produce bounded valid JSON") from exc
 
 
-def render_review(queue, evidence, advice, marker):
-    lines = ["## Codex analysis and suggested next actions", "",
+REVIEW_HEADING = "## Codex analysis and suggested next actions"
+
+
+def review_comments(queue, evidence, advice, marker):
+    lines = [REVIEW_HEADING, "",
              f"Queue generation {queue.key.generation}. Fingerprint `{queue.key.digest}`.",
              f"Local evidence from harness main `{evidence.harness_revision}`.", "",
              "Recommendations are proposals. This review changes no skills or registry revisions.", ""]
@@ -392,11 +395,41 @@ def render_review(queue, evidence, advice, marker):
         lines.extend(["### Incomplete sources", "", "These sources require manual review or a successful retry.", ""])
         lines.extend(f"- `{key}` (`{code}`)" for key, code in evidence.unavailable)
         lines.append("")
-    lines.extend([f"Evidence digest `{evidence.digest}`.", "", marker])
-    body = "\n".join(lines)
-    if len(body.encode()) > monitor.ISSUE_LIMIT:
-        raise monitor.MonitorError("analysis-limit", "Completed review exceeds the GitHub comment limit")
-    return body
+    lines.append(f"Evidence digest `{evidence.digest}`.")
+    content = "\n".join(lines)
+    body = content + "\n\n" + marker
+    if len(body.encode()) <= monitor.ISSUE_LIMIT:
+        yield marker, body
+        return
+
+    data = content.encode()
+    digest = hashlib.sha256(body.encode()).hexdigest()
+    start = 0
+    part = 0
+    while start < len(data):
+        part += 1
+        part_marker = f"<!-- upstream-codex-part:{digest}:{part} -->"
+        header = f"{REVIEW_HEADING}\n\nQueue generation {queue.key.generation}. Review part {part}.\n\n"
+        footer = "\n\n" + part_marker
+        capacity = monitor.ISSUE_LIMIT - len((header + footer).encode())
+        if capacity < 4:
+            raise monitor.MonitorError("analysis-limit", "Comment limit cannot fit the review part metadata")
+        end = min(start + capacity, len(data))
+        if end < len(data):
+            boundary = data.rfind(b"\n### ", start + capacity // 2, end)
+            if boundary == -1:
+                boundary = data.rfind(b"\n", start + capacity // 2, end)
+            if boundary != -1:
+                end = boundary + 1
+            else:
+                while (data[end] & 0xC0) == 0x80:
+                    end -= 1
+        yield part_marker, header + data[start:end].decode() + footer
+        start = end
+    summary = (f"{REVIEW_HEADING}\n\nQueue generation {queue.key.generation}. "
+               f"See the {part} review parts above." + (" Some sources require another review." if evidence.unavailable else "")
+               + f"\n\nEvidence digest `{evidence.digest}`.\n\n{marker}")
+    yield marker, summary
 
 
 def atomic_json(path, value):
@@ -413,12 +446,26 @@ def atomic_json(path, value):
             temporary.unlink(missing_ok=True)
 
 
-def marked(comments, marker):
-    return any(marker in (c.get("body") or "") for c in comments)
+def delivery_markers(comments, publisher):
+    markers = set()
+    for comment in comments:
+        if not monitor.authored_by(comment, {publisher}):
+            continue
+        lines = (comment.get("body") or "").rstrip("\r\n").splitlines()
+        if len(lines) < 3 or lines[-2] != "":
+            continue
+        marker = lines[-1]
+        if marker.startswith("<!-- upstream-codex-failure:"):
+            if lines[0].startswith("Codex review needs attention for queue generation "):
+                markers.add(marker)
+        elif lines[0] == REVIEW_HEADING:
+            markers.add(marker)
+    return markers
 
 
-def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=None, now=None):
+def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=None, now=None, monitor_login=None):
     client = github or monitor.GitHub(repository)
+    publishers = monitor.monitor_publishers(repository, monitor_login)
     state_dir = Path(state_dir).resolve()
     state_dir.mkdir(parents=True, exist_ok=True)
     with (state_dir / "review.lock").open("a") as lock:
@@ -426,11 +473,11 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return Outcome("quiet", "Another reviewer is running")
-        queue = find_queue(client)
+        queue = find_queue(client, publishers)
         if queue is None:
             return Outcome("quiet", "No actionable queue")
-        comments = client.comments(queue.key.number)
-        if marked(comments, queue.key.marker):
+        reviewer = client.viewer_login()
+        if queue.key.marker in delivery_markers(client.comments(queue.key.number), reviewer):
             return Outcome("quiet", "This queue generation already has a Codex review")
         clock = time.time() if now is None else now
         cache_path = state_dir / (queue.key.filename + ".json")
@@ -460,15 +507,19 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
                 if proof.unavailable:
                     partial_marker = f"<!-- upstream-codex-partial:{queue.key.generation}:{queue.key.digest}:{proof.digest} -->"
                 marker = partial_marker or queue.key.marker
-                body = render_review(queue, proof, advice, marker)
-                current = find_queue(client)
-                if current is None or current.key != queue.key:
-                    return Outcome("stale", "Queue changed during review; completed output was not posted")
-                delivered = client.comments(queue.key.number)
-                if marked(delivered, queue.key.marker):
-                    return Outcome("quiet", "Review delivery already completed")
-                if not marked(delivered, marker):
-                    client.comment(queue.key.number, body)
+                parts = set()
+                for part_marker, body in review_comments(queue, proof, advice, marker):
+                    current = find_queue(client, publishers)
+                    if current is None or current.key != queue.key:
+                        return Outcome("stale", "Queue changed during review; delivery stopped")
+                    delivered = delivery_markers(client.comments(queue.key.number), reviewer)
+                    if queue.key.marker in delivered:
+                        return Outcome("quiet", "Review delivery already completed")
+                    if part_marker == marker and not parts.issubset(delivered):
+                        raise monitor.MonitorError("missing-part", "A previous review part is absent; retry delivery")
+                    if part_marker not in delivered:
+                        client.comment(queue.key.number, body)
+                    parts.add(part_marker)
                 if proof.unavailable:
                     atomic_json(failure_path, {"retry_at": clock + RETRY_SECONDS, "category": "partial-review"})
                     return Outcome("failed", f"Reviewed {len(proof.sources)} sources; "
@@ -478,15 +529,15 @@ def review_queue(repository, state_dir, *, github=None, evidence=None, analyze=N
         except (monitor.MonitorError, OSError, ValueError, KeyError, TypeError) as exc:
             code = exc.code if isinstance(exc, monitor.MonitorError) else "review-unavailable"
             atomic_json(failure_path, {"retry_at": clock + RETRY_SECONDS, "category": code})
-            current = find_queue(client)
+            current = find_queue(client, publishers)
             marker = f"<!-- upstream-codex-failure:{queue.key.generation}:{queue.key.digest}:{code} -->"
-            delivery = client.comments(queue.key.number) if current and current.key == queue.key else []
-            if marked(delivery, queue.key.marker):
+            delivered = delivery_markers(client.comments(queue.key.number), reviewer) if current and current.key == queue.key else set()
+            if queue.key.marker in delivered:
                 failure_path.unlink(missing_ok=True)
                 return Outcome("published", "Codex review delivery confirmed after a lost response")
-            if partial_marker and marked(delivery, partial_marker):
+            if partial_marker in delivered:
                 return Outcome("failed", "Partial review delivery confirmed; incomplete sources will retry after one hour")
-            if current and current.key == queue.key and not marked(delivery, marker):
+            if current and current.key == queue.key and marker not in delivered:
                 client.comment(queue.key.number, f"Codex review needs attention for queue generation {queue.key.generation}. "
                                f"Category `{code}`. {str(exc)[:1500]}\n\nThe reviewer will retry after one hour. "
                                "No completed analysis or adoption is claimed.\n\n" + marker)
@@ -500,9 +551,11 @@ def main():
     parser.add_argument("--codex", default="codex")
     parser.add_argument("--model")
     parser.add_argument("--effort", choices=("low", "medium", "high", "xhigh"), default="high")
+    parser.add_argument("--monitor-login", default=os.environ.get("UPSTREAM_MONITOR_LOGIN"),
+                        help="trusted monitor login alongside GitHub Actions (default: repository owner)")
     args = parser.parse_args()
     try:
-        outcome = review_queue(args.issue_repo, args.state_dir, analyze=lambda e, s: codex_review(
+        outcome = review_queue(args.issue_repo, args.state_dir, monitor_login=args.monitor_login, analyze=lambda e, s: codex_review(
             e, s, codex=args.codex, model=args.model, effort=args.effort))
         print(outcome.message)
         return int(outcome.kind == "failed")

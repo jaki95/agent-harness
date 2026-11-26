@@ -22,6 +22,8 @@ python3 <harness-package>/scripts/audit.py --store <program-store> stop
 
 `complete` requires a nonempty UTF-8 evidence file of at most 65,536 bytes. It captures its contents and SHA-256 hash. The report requires `progress`, `failures`, and `required_actions` lists. The supplied occurrence must match `next_expected_audit` and be due. A late completion advances one nominal hourly occurrence. Registration readbacks and pickup never advance a missed occurrence. Replaying the same delivery with the same occurrence, report, and evidence does not record a second completion. Conflicting replay fails. A stopped program cannot record a new completion.
 
+Completion and delivery replay both read current queue files. A changed gate sets `notify` once, even when the completed delivery is unchanged. Read-only status reports the same `recovery_hold` for the same queue and leaves that notification pending.
+
 `stop` persists stopped intent before discovery or cancellation. It refreshes exact ownership readback before cancelling the owned identifier. An absent or disabled readback confirms `stopped`. A timeout, ambiguity, changed owner, or unavailable readback retains `cancellation-unconfirmed` and the identifier. Pickup retries reconciliation and cancellation without enabling a schedule. Unrelated registrations remain outside the cancellation scope.
 
 A command exits with `0` for a recorded result, including an explicit unsupported host. Host uncertainty exits with `1` and a saved JSON result. Invalid inputs exit with `2` and an error on stderr.

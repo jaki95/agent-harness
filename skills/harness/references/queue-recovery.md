@@ -127,8 +127,13 @@ holds for the environment. Missing or type-check-only evidence needs behavioral
 verification. Pickup preserves completed receipts while reporting that work.
 
 For a confirmed active owner, continue observation instead of dispatching a
-second writer. For a confirmed stopped writer, the coordinator may reuse its
-scope within the saved authorization. For an unknown writer, use a new isolated
+second writer. Read the replacement packet's `operator_gates` before dispatch.
+It contains applicable open gates and resolved answers. Honor any recorded
+restriction even when the previous writer has stopped.
+Pickup holds reassignment for an open gate on the unit. An open gate with
+an unknown or unspecified unit holds reassignment across the queue.
+Once the previous writer has stopped and applicable gates permit reassignment,
+the coordinator may reuse its scope within the saved authorization. For an unknown writer, use a new isolated
 writable scope or visibly hold the unit. Deliver the entire replacement packet
 and all retained findings to a fresh owner. Confirm no external action is pending
 before dispatch. Pickup grants no new authorization.

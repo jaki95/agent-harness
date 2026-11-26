@@ -24,7 +24,8 @@ LIMIT = 2 * 1024 * 1024
 TIMEOUT = 90
 ISSUE_LIMIT = 60000
 MARKER = "<!-- agent-harness-upstream-monitor:v1 -->"
-SNAPSHOT = re.compile(r"<!-- upstream-snapshot:(.*?) -->", re.DOTALL)
+SNAPSHOT = re.compile(r"<!-- upstream-snapshot:(.*?) -->")
+ACTIONS_LOGIN = "github-actions[bot]"
 
 
 @dataclass(frozen=True)
@@ -381,19 +382,35 @@ class GitHub:
         except (ValueError, UnicodeError) as exc:
             raise MonitorError("invalid-api-response", "GitHub returned invalid JSON") from exc
 
+    def viewer_login(self):
+        response = self.request("POST", "graphql", {"query": "query { viewer { login } }"})
+        try:
+            login = response["data"]["viewer"]["login"]
+            if not isinstance(login, str) or not login.strip():
+                raise ValueError
+            return login.casefold()
+        except (TypeError, KeyError, ValueError) as exc:
+            raise MonitorError("invalid-api-response", "GitHub did not identify the authenticated publisher") from exc
+
     def pages(self, endpoint):
-        page = 1
+        size = 100
         records = []
-        while page <= 100:
-            separator = "&" if "?" in endpoint else "?"
-            batch = self.request("GET", f"{endpoint}{separator}per_page=100&page={page}")
+        separator = "&" if "?" in endpoint else "?"
+        while len(records) < 10000:
+            page, skip = divmod(len(records), size)
+            try:
+                batch = self.request("GET", f"{endpoint}{separator}per_page={size}&page={page + 1}")
+            except MonitorError as exc:
+                if exc.code != "output-limit" or size == 1:
+                    raise
+                size = max(1, size // 2)
+                continue
             if not isinstance(batch, list) or not all(isinstance(item, dict) for item in batch):
                 raise MonitorError("invalid-api-response", "GitHub list response must be an array of objects")
-            records.extend(batch)
-            if len(batch) < 100:
+            records.extend(batch[skip:])
+            if len(batch) < size and len(records) <= 10000:
                 return records
-            page += 1
-        raise MonitorError("pagination-limit", "Issue or comment discovery exceeded 100 pages")
+        raise MonitorError("pagination-limit", "Issue or comment discovery reached 10,000 records")
 
     def issues(self):
         return self.pages(self.base + "?state=all")
@@ -412,7 +429,7 @@ class GitHub:
 
 
 def parse_snapshot(body):
-    match = SNAPSHOT.search(body)
+    match = SNAPSHOT.fullmatch(body.rstrip("\r\n").rsplit("\n", 1)[-1])
     try:
         previous = json.loads(match[1]) if match else None
         if (not isinstance(previous, dict) or not isinstance(previous.get("sources"), list)
@@ -452,10 +469,21 @@ def is_actionable(snapshot):
     return bool(snapshot["errors"] or any(i["status"] != "unchanged" for i in snapshot["sources"]))
 
 
-def select_issue(issues):
+def monitor_publishers(repository, monitor_login):
+    return {ACTIONS_LOGIN, (monitor_login or repository.split("/", 1)[0]).casefold()}
+
+
+def authored_by(record, publishers):
+    user = record.get("user")
+    login = user.get("login") if isinstance(user, dict) else None
+    return isinstance(login, str) and login.casefold() in publishers
+
+
+def select_issue(issues, publishers):
     unfinished = []
     for issue in issues:
-        if "pull_request" in issue or MARKER not in (issue.get("body") or ""):
+        if ("pull_request" in issue or not authored_by(issue, publishers)
+                or (issue.get("body") or "").splitlines()[:1] != [MARKER]):
             continue
         if (type(issue.get("number")) is not int or issue["number"] < 1
                 or issue.get("state") not in ("open", "closed")):
@@ -470,9 +498,12 @@ def select_issue(issues):
     return unfinished[0] if unfinished else None
 
 
-def reconcile_issue(report, repository, *, issues=None):
+def reconcile_issue(report, repository, *, issues=None, monitor_login=None):
     client = issues or GitHub(repository)
-    issue = select_issue(client.issues())
+    publishers = monitor_publishers(repository, monitor_login)
+    if client.viewer_login() not in publishers:
+        raise MonitorError("publisher-mismatch", "Configure the authenticated monitor publisher with --monitor-login")
+    issue = select_issue(client.issues(), publishers)
     previous = {}
     if issue:
         previous = parse_snapshot(issue.get("body") or "")
@@ -494,8 +525,10 @@ def reconcile_issue(report, repository, *, issues=None):
         client.edit(issue["number"], state=target)
     if actionable and generation > 1:
         token = f"<!-- upstream-notification:{generation}:{digest} -->"
-        if not any(token in (comment.get("body") or "") for comment in client.comments(issue["number"])):
-            client.comment(issue["number"], "The external skill review queue changed. Inspect the maintained issue and report.\n\n" + token)
+        body = "The external skill review queue changed. Inspect the maintained issue and report.\n\n" + token
+        if not any(authored_by(comment, publishers) and (comment.get("body") or "").splitlines() == body.splitlines()
+                   for comment in client.comments(issue["number"])):
+            client.comment(issue["number"], body)
     return "updated" if changed else "reopened" if issue["state"] != target and actionable else "closed" if not actionable else "quiet"
 
 
@@ -504,6 +537,8 @@ def main():
     parser.add_argument("--root", type=Path, default=ROOT, help="harness repository root")
     parser.add_argument("--output-dir", type=Path, required=True, help="directory for report.json and report.md")
     parser.add_argument("--issue-repo", help="explicitly publish the maintained issue to OWNER/REPO")
+    parser.add_argument("--monitor-login", default=os.environ.get("UPSTREAM_MONITOR_LOGIN"),
+                        help="trusted monitor login alongside GitHub Actions (default: repository owner)")
     args = parser.parse_args()
     try:
         root = args.root.resolve()
@@ -526,7 +561,7 @@ def main():
                     temporary.unlink(missing_ok=True)
         print(f"Report written to {output}. {sum(r.status == 'pending' for r in report.results)} pending source(s).")
         if args.issue_repo:
-            print(f"Issue reconciliation {reconcile_issue(report, args.issue_repo)}.")
+            print(f"Issue reconciliation {reconcile_issue(report, args.issue_repo, monitor_login=args.monitor_login)}.")
         if report.failed:
             print("Upstream state is unknown for one or more sources. Inspect report.json.", file=sys.stderr)
         return int(report.failed)

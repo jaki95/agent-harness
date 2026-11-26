@@ -275,6 +275,8 @@ def save_gates(store, rows):
     blocks = []
     for row in rows:
         keys = ["Status", "Question", "Options", "Default"]
+        if "Unit" in row:
+            keys.append("Unit")
         if row["Status"] == "resolved":
             keys.append("Answer")
         blocks.append(f"## {row['id']}\n\n" + "\n".join(f"- {key}: {row[key]}" for key in keys))
@@ -353,7 +355,7 @@ def render_status(store):
     changed = changes(previous, summary)
     sections = [("Units", UNIT_FIELDS, units), ("Verification ledger", LEDGER_FIELDS, ledger),
                 ("Frontier", ("pr", "branches", "sha", "state"), current["prs"]),
-                ("Gates", ("id", "Status", "Question", "Options", "Default", "Answer"), gates)]
+                ("Gates", ("id", "Status", "Question", "Options", "Default", "Answer", "Unit"), gates)]
     text = f"# Orchestrate status\n\nGenerated: {now()}\n\n"
     text += "\n\n".join(f"## {name}\n\n{markdown_table(fields, rows)}" for name, fields, rows in sections)
     text += f"\n\n<!-- orch-summary {json.dumps(summary)} -->\n"
@@ -462,6 +464,11 @@ def operate(args, store):
         if args.action == "park":
             value = {"id": gate_id, "Status": "open", "Question": required(args.question, "question"),
                      "Options": required(args.options, "options"), "Default": required(args.default, "default")}
+            if args.unit is not None:
+                unit_id = required(args.unit, "unit id")
+                if not any(unit["id"] == unit_id for unit in read_table(store / "units.tsv", UNIT_FIELDS)):
+                    raise Missing(f"unit {unit_id} not found")
+                value["Unit"] = unit_id
             if row is not None:
                 rows.remove(row)
             rows.append(value)
@@ -892,6 +899,9 @@ def pickup(args, store):
         pending = [action for action in unit["next_actions"] if action["status"] == "pending"]
         completed = [action for action in unit["next_actions"] if action["status"] == "completed"]
         unit_completions = [row for row in retained if row["unit"] == unit["id"]]
+        operator_gates = [gate for gate in current["gates"]
+                          if gate.get("Unit") not in live_units or gate["Unit"] == unit["id"]]
+        open_gates = [gate for gate in operator_gates if gate["Status"] == "open"]
         complete = bool(live and live["state"] in ("done", "merged", "completed", "landed")) or (
             bool(unit["next_actions"]) and len(completed) == len(unit["next_actions"]))
         replacement_allowed = False
@@ -915,6 +925,8 @@ def pickup(args, store):
             action = "hold; current-head verification is blocked, reconcile the environment before retrying"
         elif classification == "active":
             action = "observe existing owner; do not duplicate dispatch"
+        elif open_gates:
+            action = "hold; reconcile open operator gates before dispatch: " + ", ".join(gate["id"] for gate in open_gates)
         elif overlapping:
             action = "hold or isolate a new writable scope; overlapping owners are not confirmed stopped"
         elif not stopped:
@@ -928,8 +940,11 @@ def pickup(args, store):
         else:
             action = "create fresh owner in confirmed stopped scope with the consolidated packet"
             replacement_allowed = True
+        if replacement_allowed and operator_gates:
+            action = "only if the recorded operator answers permit reassignment: " + action
         packet = {**unit, "program": metadata["program"], "authorization": metadata["authorization"], "repository": metadata["repository"],
                   "current_unit": live, "previous_unit": old,
+                  "operator_gates": operator_gates,
                   "retained_completions": unit_completions,
                   "checkpoint_completions": [row for row in historical if row["unit"] == unit["id"]],
                   "published_pr": observed, "verification": verification,
@@ -1008,6 +1023,8 @@ def parser():
                     item.add_argument("batch")
             elif command == "gate" and action != "list":
                 item.add_argument("id")
+                if action == "park":
+                    item.add_argument("--unit", help="limit the gate to this unit")
                 for field in (("question", "options", "default") if action == "park" else ("answer",)):
                     item.add_argument("--" + field, required=True)
             elif command == "frontier" and action == "set":

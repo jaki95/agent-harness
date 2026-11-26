@@ -1,6 +1,7 @@
 name: Check Statechart
 
 on:
+  workflow_call:
   push:
     paths:
       - 'skills/statechart/**'

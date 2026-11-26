@@ -91,6 +91,42 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no runtime skill", result.stderr)
 
+    def detect(self, before, after):
+        previous = self.root / "before.md"
+        previous.write_text(before, encoding="utf-8")
+        (self.root / "CHANGELOG.md").write_text(after, encoding="utf-8")
+        return subprocess.run([sys.executable, str(CHECK), "--new-since", str(previous),
+                               "--root", str(self.root)], capture_output=True, text=True)
+
+    def test_detects_only_a_new_prepared_release(self):
+        first = "## v0.9.1 - 2026-01-01\n\n- First.\n"
+        second = "## v0.10.0 - 2026-01-02\n\n- Second.\n"
+        for before, after, expected in [
+                ("", first, "v0.9.1\n"),
+                (first, second + first, "v0.10.0\n"),
+                (first.replace("2026-01-01", "2026-02-30"), first, "v0.9.1\n"),
+                (first, "## Unreleased\n\n- Pending.\n" + first, ""),
+                (first, first.replace("First.", "Documentation edit."), ""),
+                (first, "~~~markdown\n" + second + "~~~\n" + first, ""),
+                ("", "# Changelog\n", "")]:
+            with self.subTest(before=before, after=after):
+                result = self.detect(before, after)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+
+    def test_ambiguous_invalid_and_backwards_releases_fail_detection(self):
+        old = "## v1.1.0 - 2026-01-01\n\n- Released.\n"
+        valid = "## v1.2.0 - 2026-02-02\n\n- New.\n"
+        for entry in (valid.replace("v1.2.0", "v1.02.0"), valid.replace("v1.2.0", "1.2.0"),
+                      valid.replace("2026-02-02", "2026-02-30"), "## v1.2.0\nNew.\n",
+                      "## v1.2.0 - 2026-02-02\n\n", valid + valid,
+                      valid + valid.replace("v1.2.0", "v2.0.0"), valid.replace("v1.2.0", "v1.0.9")):
+            with self.subTest(entry=entry):
+                result = self.detect(old, entry + old)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("CHANGELOG.md", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

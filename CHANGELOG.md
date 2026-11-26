@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v0.1.0 - 2026-11-26
+
+- Install any of 48 skills from the collection with Skills CLI. Select Harness alone for its bundled playbooks or add its routed skills for the full workflow.
+- Harness answers narrow code questions through How. Its playbook list covers investigation, verification, queue recovery, and release work.
+- Acceptance checks inspect edits inside submodules. Worktree cleanup reports nested content that needs preservation review.
+- Queue pickup accounts for open operator gates. Hourly audit completion reports the current gate state.
+- The upstream monitor and reviewer verify which account published each queue or delivery record. The reviewer delivers large reviews in parts and resumes interrupted delivery.
+- Statechart resolves a relative TLC jar path from the caller's working directory.
+- Adding a dated version section to `CHANGELOG.md` on `main` now publishes the checked commit and its release notes after the maintenance, installation, and offline Statechart tests pass.
+
+## Pre-release development history
+
 - Queue recovery holds a PR for reconciliation when GitHub reports it open or closed and the local queue says it merged.
 - Acceptance gates must create their declared artifacts under `{run}/`. Migrate fixed output paths in the command and manifest, then declare and run the gates again.
 - Upstream review selects local files relevant to each change. It can report findings for other sources while an oversized source awaits manual review.
@@ -188,5 +200,3 @@
 - Adaptation and optional upstream review templates.
 - Pinned Skills CLI installation compatibility checks.
 - Manual release workflow with version validation and release tags.
-
-No versioned releases have been published yet.

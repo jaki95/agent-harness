@@ -52,6 +52,7 @@ if (record) {
 }
 
 if (!replay) throw new Error("Set STATECHART_RECORD or STATECHART_REPLAY to a folder.");
+fs.accessSync(args[args.indexOf("-cp") + 1], fs.constants.R_OK);
 const file = (ext: string) => path.join(replay, `${name}${ext}`);
 if (dump && fs.existsSync(path.join(replay, "graph.dot")))
   fs.copyFileSync(path.join(replay, "graph.dot"), dump);

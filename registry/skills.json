@@ -20,7 +20,7 @@
       ]
     },
     "harness": {
-      "maintenance_notes": "Give delegates the user goal and existing acceptance criteria. Trace affected code directly for implementation work. Keep cited investigations, independent Architect designs, and isolated worktrees for unrelated changes. Keep the executable orchestration and plan verification, operator authorization, review and publication checks. Hold conflicting merge observations during pickup and require fresh per-run outputs for acceptance. Retire the deleted upstream orchestration playbook and plan checker watches. Track the upstream worker brief for future changes.",
+      "maintenance_notes": "Give delegates the user goal and existing acceptance criteria. Trace affected code directly for implementation work. Route each playbook once. Let How choose the format for read-only investigations. Keep cited investigations, independent Architect designs, and isolated worktrees for unrelated changes. Keep the executable orchestration and plan verification, operator authorization, review and publication checks. Hold conflicting merge observations during pickup and require fresh per-run outputs for acceptance. Retire the deleted upstream orchestration playbook and plan checker watches. Track the upstream worker brief for future changes. Check hidden submodule edits before acceptance or cleanup and reconcile operator gates before recovery.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {
@@ -883,7 +883,7 @@
       ]
     },
     "statechart": {
-      "maintenance_notes": "Adopt the upstream package and MIT notice. Nested diagrams show entry and exit transitions. Preserve SANY diagnostics, CRLF parsing, native Windows launch guidance, and cleanup of the spawned worker and its run directories. Model results still require replay against the application.",
+      "maintenance_notes": "Adopt the upstream package and MIT notice. Nested diagrams show entry and exit transitions. Preserve SANY diagnostics, CRLF parsing, native Windows launch guidance, and cleanup of the spawned worker and its run directories. Resolve a supplied TLC jar from the caller's working directory before starting Java. Model results still require replay against the application.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {

@@ -16,43 +16,20 @@ Explain consequential choices and the specific outcome they change. Give the rea
 
 Resolve routed skills by name through the host's available skill catalog and read their instructions from the location it provides. Skill names do not imply an installation directory. Playbook paths are relative to this Harness package.
 
-Remaining triggers:
+Use the [playbook list](#playbooks) to select the workflow. Apply these rules throughout the task.
 
 - Starting a task → state the user's goal and the smallest expected change without waiting for confirmation. Carry that goal into each delegate brief and PR's Why section. Lead the final report with the result against it.
 - Any prose surface → the **unslop** skill. Your reply is a prose surface. Write it per **Writing the reply**.
 - Docs, RFCs, readmes, PR titles, PR descriptions, or commit messages → the **technical-writing** skill.
-- A throwaway sketch or experiment to decide between designs or behaviors → the **Prototype** playbook (`playbooks/prototype.md`).
-- Starting a feature → the **Feature** playbook (`playbooks/feature.md`).
-- Sustained improvement of one metric against a target → the **Hillclimb** playbook (`playbooks/hillclimb.md`).
-- Diagnosing a live runtime symptom → the **Runtime forensics** playbook (`playbooks/runtime-forensics.md`).
-- Analyzing an existing profile, trace, heap snapshot, or spindump → the **Trace forensics** playbook (`playbooks/trace-forensics.md`).
-- A performance issue or measured regression → the **Perf issue** playbook (`playbooks/perf-issue.md`).
-- Pixel-exact UI equivalence or an appearance-preserving styling migration → the **Visual parity** playbook (`playbooks/visual-parity.md`).
-- Refactoring → the **Refactoring** playbook (`playbooks/refactoring.md`). Large or cross-cutting structural work uses **figure-it-out**.
-- A large migration, an ambitious multi-part change, work a human reviews after stepping away, a task with no suitable narrower playbook, or an explicit “figure it out” request → the **figure-it-out** skill.
+- Use **figure-it-out** on request, for large or cross-cutting single runs, for work reviewed after stepping away, or when no playbook fits. Use the dedicated program and Autopilot routes for standing programs and explicit queues.
 - Shipping UI, IDE, or CLI changes → the matching control skill. Use **control-cli** for CLIs and TUIs, and **control-ui** for browser, Electron, and web UIs.
 - A subagent preparing to open a PR → the **interrogate** skill.
 - Producing or reporting a measured performance number → the **benchmark-checklist** skill.
 - Writing or auditing a decision trail → the **show-me-your-work** skill. Let it own the log format.
 - Before committing code changes for a PR → the **deslop** skill.
 - Before submitting code changes for PR review → the **no-comments** skill.
-- Planning a multi-phase or multi-PR program → the **Multi-phase or multi-PR plan** playbook (`playbooks/multi-phase-plan.md`). Deliver the plan and wait for explicit execution authorization.
-- Resuming a prior task or agent run → the **Session pickup** playbook (`playbooks/session-pickup.md`).
-- An explicit request to pause or stand down → the **Pause safely** playbook (`playbooks/pause-safely.md`). Compaction alone keeps the task active.
-- Requested worktree, simulator, or cache cleanup → the **Worktree and simulator cleanup** playbook (`playbooks/worktree-cleanup.md`). Confirm ownership, inactivity, and file preservation before deletion.
-- A standing multi-day program that outlives one agent → the **Orchestrate** playbook (`playbooks/orchestrate.md`).
-- An explicitly authorized independent PR queue driven through merge → the **Autopilot-full** playbook (`playbooks/autopilot-full.md`).
-- An explicitly requested verified PR stack for operator landing → the **Autopilot-stack** playbook (`playbooks/autopilot-stack.md`).
 - Parallel coverage, an agent race, or an explicit swarm request → the **swarm** skill.
-- An explicit request to drive one task to completion without stopping → the **Autonomous run** playbook (`playbooks/autonomous-run.md`).
-- Requested PR status, review-comment repair, or merge-readiness monitoring → the **Babysit** playbook (`playbooks/babysit.md`). Opening a PR alone does not start monitoring; an Autopilot owner brief assigns its monitoring loop.
-- Authorized merging, landing, shipping, or merge-when-ready → the **Shipping** playbook (`playbooks/shipping.md`).
-- Preparing or opening a PR → the **Opening a PR** playbook (`playbooks/opening-a-pr.md`). Create or update a PR only when the task authorizes it.
 - Before tool work → a brief statement of the intended action and any consequential assumption.
-- A meaningful finding, consequential decision, obstacle, or substantial completed step → the **Progress update** playbook (`playbooks/progress-update.md`). Follow the host's required status cadence during long operations.
-- Completing a task → the **Handoff** playbook (`playbooks/handoff.md`).
-- Writing a document → the **Technical writing** playbook (`playbooks/technical-writing.md`).
-- Authoring or modifying a skill → the **Authoring or modifying a skill** playbook (`playbooks/authoring-a-skill.md`).
 - Missing a routed skill → report its name and continue with Harness's own communication rules. Do not claim the missing skill was applied. The separate skills are available from [agent-harness](https://github.com/jaki95/agent-harness). A source link is not an installed skill; fetching or installing it requires task authorization.
 - Missing a bundled playbook → report the incomplete Harness package. Do not claim that workflow was followed.
 
@@ -138,32 +115,30 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 ## Playbooks
 
-Match the task to a playbook below, open its file, and follow its steps. If the host provides a todo-list tool, open a list whose first items are the playbook's steps, copied in verbatim, before any task-specific todos. Without that tool, follow the steps directly. Record any skipped step with a one-line `skip: <reason>` in the list when available, or in the handoff otherwise.
+Match the task to a playbook below, open its file, and follow its steps. If the host provides a todo-list tool, open a list whose first items are the playbook's steps, copied in verbatim, before any task-specific todos. Without that tool, follow the steps directly. Record any skipped step with a one-line `skip: <reason>` in the list when available, or in the handoff otherwise. Keep the active task list when reporting a progress update.
 
-Read **Progress update** at milestones and keep the active task's todo list. Use **figure-it-out** for large or cross-cutting single runs and tasks with no matching playbook. Use the dedicated program and Autopilot playbooks for standing programs and explicit queues.
-
-- **Progress update.** A finding, decision, obstacle, or substantial completed step worth reporting. `playbooks/progress-update.md`.
-- **Handoff.** A self-contained final reply with outcome, consequential decisions, evidence, and limitations. `playbooks/handoff.md`.
-- **Technical writing.** A document written for a reader's concrete task or question. `playbooks/technical-writing.md`.
-- **Authoring or modifying a skill.** Writing or editing a SKILL.md. `playbooks/authoring-a-skill.md`.
-- **Investigation.** Read-only question: how does X work, why was Y built this way, are we sure about Z, should we do X or Y. `playbooks/investigation.md`.
-- **Bug fix.** Broken behavior or a regression. Reproduce, investigate, fix, and verify on the matching surface. `playbooks/bug-fix.md`.
-- **Feature.** New or changed behavior, built from a named data shape. `playbooks/feature.md`.
-- **Refactoring.** A focused or medium behavior-preserving structural change. `playbooks/refactoring.md`.
-- **Perf issue.** Measured slowness or a performance regression. Vet the baseline, use trace-supported hypotheses, and compare artifacts. `playbooks/perf-issue.md`.
-- **Hillclimb.** Sustained improvement of one metric against a target, with a frozen harness, measured attempts, and a decision trail. `playbooks/hillclimb.md`.
-- **Runtime forensics.** Diagnose a live runtime symptom through captured evidence and live instrumentation. `playbooks/runtime-forensics.md`.
-- **Trace forensics.** Diagnose an existing profiling artifact, with source attribution and explicit confidence. `playbooks/trace-forensics.md`.
-- **Prototype.** A disposable sketch or experiment that answers a concrete design or behavioral decision. `playbooks/prototype.md`.
-- **Visual parity.** Pixel-exact equivalence against a fixed pre-change baseline, verified by image comparison. `playbooks/visual-parity.md`.
-- **Babysit.** Requested PR status or merge-readiness work, using drive, background, threads-only, or check mode. `playbooks/babysit.md`.
-- **Shipping.** Authorized landing of the contiguous independently verified run, one bottom PR at a time. `playbooks/shipping.md`.
-- **Autonomous run.** An explicitly requested persistent run toward one checkable completion predicate. `playbooks/autonomous-run.md`.
-- **Orchestrate.** A standing multi-day program with scoped agents, durable bookkeeping, computed frontiers, and continuous authorized landing. `playbooks/orchestrate.md`.
-- **Autopilot-full.** Independent PR owners carry build through authorized merge, gated by the parent's clean Swarm verdict. `playbooks/autopilot-full.md`.
-- **Autopilot-stack.** PR owners build and verify while the parent owns topology and delivers a chain for operator landing. `playbooks/autopilot-stack.md`.
-- **Multi-phase or multi-PR plan.** An executable checklist with per-PR evidence, scenario-driven applicable verification, and operator gates; planning stops before execution. `playbooks/multi-phase-plan.md`.
-- **Session pickup.** Reconstruct prior work and current state, preserve completed work, and route the remaining task. `playbooks/session-pickup.md`.
-- **Pause safely.** An explicitly requested clean stop with a scoped checkpoint and resume note; compaction keeps execution active. `playbooks/pause-safely.md`.
-- **Worktree and simulator cleanup.** Requested reclamation with read-only audit, current usage evidence, file-preservation gates, and exact-candidate removal. `playbooks/worktree-cleanup.md`.
-- **Opening a PR.** Preparing or opening a PR that the task authorizes. `playbooks/opening-a-pr.md`.
+- A read-only question about code, behavior, or a decision → the **Investigation** playbook (`playbooks/investigation.md`).
+- Broken behavior or a regression → the **Bug fix** playbook (`playbooks/bug-fix.md`).
+- A throwaway sketch or experiment to decide between designs or behaviors → the **Prototype** playbook (`playbooks/prototype.md`).
+- Starting a feature → the **Feature** playbook (`playbooks/feature.md`).
+- Sustained improvement of one metric against a target → the **Hillclimb** playbook (`playbooks/hillclimb.md`).
+- Diagnosing a live runtime symptom → the **Runtime forensics** playbook (`playbooks/runtime-forensics.md`).
+- Analyzing an existing profile, trace, heap snapshot, or spindump → the **Trace forensics** playbook (`playbooks/trace-forensics.md`).
+- A performance issue or measured regression → the **Perf issue** playbook (`playbooks/perf-issue.md`).
+- Pixel-exact UI equivalence or an appearance-preserving styling migration → the **Visual parity** playbook (`playbooks/visual-parity.md`).
+- Refactoring → the **Refactoring** playbook (`playbooks/refactoring.md`). Large or cross-cutting structural work uses **figure-it-out**.
+- Planning a multi-phase or multi-PR program → the **Multi-phase or multi-PR plan** playbook (`playbooks/multi-phase-plan.md`). Deliver the plan and wait for explicit execution authorization.
+- Resuming a prior task or agent run → the **Session pickup** playbook (`playbooks/session-pickup.md`).
+- An explicit request to pause or stand down → the **Pause safely** playbook (`playbooks/pause-safely.md`). Compaction alone keeps the task active.
+- Requested worktree, simulator, or cache cleanup → the **Worktree and simulator cleanup** playbook (`playbooks/worktree-cleanup.md`). Confirm ownership, inactivity, and file preservation before deletion.
+- A standing multi-day program that outlives one agent → the **Orchestrate** playbook (`playbooks/orchestrate.md`).
+- An explicitly authorized independent PR queue driven through merge → the **Autopilot-full** playbook (`playbooks/autopilot-full.md`).
+- An explicitly requested verified PR stack for operator landing → the **Autopilot-stack** playbook (`playbooks/autopilot-stack.md`).
+- An explicit request to drive one task to completion without stopping → the **Autonomous run** playbook (`playbooks/autonomous-run.md`).
+- Requested PR status, review-comment repair, or merge-readiness monitoring → the **Babysit** playbook (`playbooks/babysit.md`). Opening a PR alone does not start monitoring; an Autopilot owner brief assigns its monitoring loop.
+- Authorized merging, landing, shipping, or merge-when-ready → the **Shipping** playbook (`playbooks/shipping.md`).
+- Preparing or opening a PR → the **Opening a PR** playbook (`playbooks/opening-a-pr.md`). Create or update a PR only when the task authorizes it.
+- A meaningful finding, consequential decision, obstacle, or substantial completed step → the **Progress update** playbook (`playbooks/progress-update.md`). Follow the host's required status cadence during long operations.
+- Completing a task → the **Handoff** playbook (`playbooks/handoff.md`).
+- Writing a document → the **Technical writing** playbook (`playbooks/technical-writing.md`).
+- Authoring or modifying a skill → the **Authoring or modifying a skill** playbook (`playbooks/authoring-a-skill.md`).

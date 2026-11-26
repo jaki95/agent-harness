@@ -136,8 +136,11 @@ try {
     const standaloneRoot = join(standaloneProject, '.agents/skills');
     assert.deepEqual(await readdir(standaloneRoot), ['harness']);
     const mode = join(standaloneRoot, 'harness');
-    assert.equal(await readFile(join(mode, 'SKILL.md'), 'utf8'),
-      await readFile(join(root, 'skills/harness/SKILL.md'), 'utf8'));
+    const instructions = await readFile(join(mode, 'SKILL.md'), 'utf8');
+    assert.equal(instructions, await readFile(join(root, 'skills/harness/SKILL.md'), 'utf8'));
+    const playbooks = [...instructions.matchAll(/playbooks\/([a-z-]+\.md)/g)].map(match => match[1]);
+    assert.deepEqual(playbooks.sort(), (await readdir(join(mode, 'playbooks'))).sort(),
+      'Harness names every bundled playbook once');
     assert.match(await readFile(join(mode, 'agents/openai.yaml'), 'utf8'),
       /allow_implicit_invocation: false/);
     const modeFiles = (await skillFiles(mode))

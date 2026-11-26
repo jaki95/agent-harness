@@ -253,6 +253,30 @@ class AuditTests(unittest.TestCase):
         self.assertNotEqual(result["current_queue_files"]["gates.md"], result["checkpoint"]["queue_files"]["gates.md"])
         self.assertEqual(result["checkpoint"]["metadata"]["authorization"], self.metadata["authorization"])
 
+    def test_completion_and_replay_report_current_gates_and_notify_once_per_change(self):
+        self.metadata["unresolved_gates"] = []
+        self.checkpoint.write_text(json.dumps(self.metadata))
+        self.assertFalse(self.ensure()["recovery_hold"])
+        args = ("complete", "--delivery-id", "one", "--due-at", DUE,
+                "--evidence", str(self.evidence), "--report", str(self.report))
+        path = self.store / "gates.md"
+        saved = path.read_bytes()
+        path.write_text("# Gates\n\nOperator approval pending.\n")
+        completed = self.call(*args, now=DUE)
+        self.assertTrue(completed["recovery_hold"])
+        self.assertTrue(completed["notify"])
+        status = self.call("status", now=DUE)
+        self.assertEqual(completed["current_queue_files"], status["current_queue_files"])
+        self.assertEqual(completed["recovery_hold"], status["recovery_hold"])
+        self.assertFalse(status["notify"])
+        self.assertFalse(self.call(*args, now=DUE)["notify"])
+        path.write_bytes(saved)
+        replay = self.call(*args, now=DUE)
+        self.assertFalse(replay["recovery_hold"])
+        self.assertTrue(replay["notify"])
+        self.assertEqual(replay["last_completed_audit"], completed["last_completed_audit"])
+        self.assertFalse(self.call("pickup", now=DUE)["notify"])
+
     @unittest.skipUnless(sys.platform.startswith("linux"), "Linux process-group liveness proof")
     def test_inherited_pipe_holder_is_bounded_and_killed(self):
         self.host(mode="pipe-holder")
