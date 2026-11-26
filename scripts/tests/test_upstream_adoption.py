@@ -176,7 +176,7 @@ class AdoptionFlowTests(unittest.TestCase):
         self.assertFalse(self.git.opened)
 
     def test_final_head_settles_without_another_external_event(self):
-        with patch.object(self.worker, "run", side_effect=["settling", "changed", "merged"]) as reconcile:
+        with patch.object(self.worker, "run", side_effect=[monitor.MonitorError("queue-moved", "new main"), "settling", "merged"]) as reconcile:
             with patch.object(adoption.time, "sleep"):
                 self.assertEqual(self.worker.settle(4), "merged")
         self.assertEqual(reconcile.call_count, 3)

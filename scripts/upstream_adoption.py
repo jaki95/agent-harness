@@ -302,7 +302,7 @@ class Worker:
             if history and history[-1]["version"] == proposal["version"]:
                 return
             if not fresh():
-                raise failure("Queue or main changed before proposal publication. Reconcile again.")
+                raise monitor.MonitorError("queue-moved", "Queue or main changed before proposal publication")
             state["publishing"] = proposal
             journal.save()
             finish_proposal()
@@ -345,7 +345,7 @@ class Worker:
                        for c in current["discussion"] + current["revisit"]):
                     return []
                 if not fresh():
-                    raise failure("Queue or main moved. Reconcile the current evidence before writing.")
+                    raise monitor.MonitorError("queue-moved", "Queue or main moved before execution")
                 return group_items(current, gid)
             items = group_items(snapshot, gid) if active else []
             result = state.get("unreported_merges", {}).get(gid) or self.execute(ctx, int(gid), items, recheck)
@@ -443,11 +443,16 @@ class Worker:
         for delay in (0, 5, 15, 30):
             if delay:
                 time.sleep(delay)
-            status = self.run(number)
+            try:
+                status = self.run(number)
+            except monitor.MonitorError as exc:
+                if exc.code != "queue-moved":
+                    raise
+                continue
             if not {"changed", "settling"}.intersection(status.split(", ")):
                 return status
         journal = Journal(self.directory / str(number))
-        revision = journal.state["history"][-1]["version"]
+        revision = journal.state["history"][-1]["version"] if journal.state["history"] else 0
         journal.post(self.client, number, self.bot, f"settling-{revision}",
                      "GitHub or the approval changed during verification. The worker paused after four "
                      "checks. Use the private workflow to retry once the PR and checks have settled.")
