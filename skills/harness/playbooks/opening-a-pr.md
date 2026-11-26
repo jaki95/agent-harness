@@ -2,7 +2,7 @@
 
 Use when preparing or opening a PR that the task authorizes. Resolve named skills as specified in Harness's non-negotiables.
 
-**Worktree.** Work from a git worktree off main. Subagents inherit it. Multiple `Task` calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
+**Worktree.** Start a new PR from a worktree based on trunk, or from its parent branch for a stacked PR. If the current checkout contains unrelated work, leave it in place and use a separate worktree. Give concurrent writers separate worktrees and branches.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable.
 

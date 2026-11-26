@@ -20,8 +20,8 @@
       ]
     },
     "harness": {
-      "maintenance_notes": "Adopt matching inline-code delimiters in the plan checker while retaining fence parsing and acceptance dispatch. Carry the user goal through initial updates, briefs, PR purpose, and the final result. Align root-cause, testing, and pre-measurement summaries with their updated leaf skills. Centralize supported effort/speed selection under existing configured role and cost preferences. Use the existing expected-head publication helper in Autopilot owner and topology paths. Keep decision trails accessible to the root and replacements. Extend verifier evidence and root countersigns to all gate loosening. Clarify worker topology prohibitions and freeze unrelated writes during landing. Keep full independent verification rounds and current-head evidence requirements; do not adopt the major-versus-minor swarm relaxation. Retain the Python orchestration, queue recovery, audit registration, acceptance, worktree audit, and guarded publication implementations. Retain gh-only operations, exact published-head checks, explicit task authorization, native-stack handling, stopped-writer isolation, and operator-landing topology. Do not adopt Cursor-specific model names, project stores, mandatory model diversity, or no-script orchestration. Do not adopt only-runnable findings or missing-checks-as-success policies. Retires watches for three deleted upstream TypeScript orchestration files; original provenance remains at the baseline revision and the independent Python implementation remains local.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Give delegates the user goal and existing acceptance criteria. Trace affected code directly for implementation work. Keep cited investigations, independent Architect designs, and isolated worktrees for unrelated changes. Keep the executable orchestration and plan verification, operator authorization, review and publication checks. Retire the deleted upstream orchestration playbook and plan checker watches. Track the upstream worker brief for future changes.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -30,6 +30,7 @@
           "ref": "main",
           "paths": [
             "pstack/skills/poteto-mode/SKILL.md",
+            "pstack/skills/poteto-mode/worker.md",
             "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
             "pstack/skills/poteto-mode/playbooks/investigation.md",
             "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
@@ -46,7 +47,6 @@
             "pstack/skills/poteto-mode/playbooks/shipping.md",
             "pstack/skills/poteto-mode/references/bugbot-triage.md",
             "pstack/skills/poteto-mode/playbooks/autonomous-run.md",
-            "pstack/skills/poteto-mode/playbooks/orchestrate.md",
             "pstack/skills/poteto-mode/playbooks/autopilot-full.md",
             "pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
             "pstack/skills/poteto-mode/scripts/bootstrap.ts",
@@ -54,18 +54,17 @@
             "pstack/skills/poteto-mode/playbooks/session-pickup.md",
             "pstack/skills/poteto-mode/playbooks/pause-safely.md",
             "pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
-            "pstack/skills/poteto-mode/scripts/check-plan.mjs",
             "pstack/skills/poteto-mode/scripts/worktree-audit.sh"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "unslop": {
-      "maintenance_notes": "Adopt all upstream body compression, preserving stable rule numbers and gaps. Keep local invocation metadata and the existing always-apply description clause; this update does not change discovery or scope policy. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Use one-line editing rules and retain stable rule numbers, gaps, and local discovery metadata. Rule 26 applies to abstract uses and preserves literal technical names.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -76,14 +75,14 @@
             "pstack/skills/unslop/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "technical-writing": {
-      "maintenance_notes": "Keeps the four named writing standards, document purposes, sentence guidance, amendment proposals, and worked example. Selectively incorporates upstream prose compression while retaining real symbol names, discovery triggers, and the Unslop dependency rule: discover by installed skill name, read explicitly, and fall back to this skill's own rules when Unslop cannot be located or read. Retains upstream explicit-only frontmatter. Codex allows implicit invocation for Harness routing and other writing tasks.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "Condense the four writing layers. Keep the worked example, Unslop discovery and fallback, and proposals for additions to its vocabulary. Retain invocation metadata.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -94,8 +93,8 @@
             "pstack/skills/technical-writing/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -118,8 +117,8 @@
       ]
     },
     "principle-foundational-thinking": {
-      "maintenance_notes": "Preserves the pinned Foundational Thinking instructions except for the concurrency corollary. It prefers isolated state and requires explicit ownership and synchronization when sharing is necessary, rather than mandating isolation whenever another actor can affect the state. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for name-based Harness routing.",
-      "reviewed_on": "2026-10-03",
+      "maintenance_notes": "Choose core data structures around access patterns and put shared foundations first. Keep explicit ownership and synchronization when actors must share state.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -130,8 +129,8 @@
             "pstack/skills/principle-foundational-thinking/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -154,8 +153,8 @@
       ]
     },
     "principle-attack-the-premise": {
-      "maintenance_notes": "Rerunnable discriminating observations. Follow the next causal question when evidence supports the premise. Remove demonstrated causes rather than compensate. Remove redundant worked examples. Repeated failed fixes alone do not prove a premise false. Supporting, contradicting, and inconclusive evidence remain distinct. Installed-skill names replace sibling package links. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Use a discriminating observation before the next fix. Distinguish results that support or contradict the premise from inconclusive evidence. Keep the rerunnable check with the diagnosis.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -166,8 +165,8 @@
             "pstack/skills/principle-attack-the-premise/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -190,8 +189,8 @@
       ]
     },
     "principle-minimize-reader-load": {
-      "maintenance_notes": "Selectively incorporates upstream prose compression while keeping both independent reader-load axes, all six rules, the 30-second test, and the Guard the Context Window connection by skill name. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for named Harness routing.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "Judge layers by what they hide and what callers must remember. Keep the two tracing questions and the 30-second test.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -202,8 +201,8 @@
             "pstack/skills/principle-minimize-reader-load/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -262,8 +261,8 @@
       ]
     },
     "principle-build-the-lever": {
-      "maintenance_notes": "Selectively incorporates upstream editorial compression while keeping the non-triviality threshold, reproducible tools, rerun safety, shared delegate contracts, artifact requirement, and committing tools when work outlives the session. Uses skill names instead of sibling-file links. Retains upstream explicit-only frontmatter; Codex allows implicit invocation for named Harness routing.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "Keep the non-triviality threshold, a hand-checked first unit, rerun safety, one shared delegate contract, and the smallest reproducible tool. Drop repeated explanations.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -274,14 +273,14 @@
             "pstack/skills/principle-build-the-lever/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-model-the-domain": {
-      "maintenance_notes": "Selectively incorporates upstream editorial compression while keeping domain structures in place of scattered conditionals, concrete structure examples, ownership rather than execution-order decomposition, and restraint when existing local code is clear. Keeps discovery metadata and Codex implicit invocation for named Harness routing.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "Select a structure that removes branches or invalid states. Keep one owner for domain knowledge repeated across processing phases and preserve discovery metadata.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -292,14 +291,14 @@
             "pstack/skills/principle-model-the-domain/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-boundary-discipline": {
-      "maintenance_notes": "Uses the pinned Boundary Discipline SKILL.md unchanged, including validation at system boundaries, trust in internal types, pure business logic, thin framework wiring, and public interfaces expressed in domain concepts. Codex allows implicit invocation for name-based Harness routing.",
-      "reviewed_on": "2026-10-03",
+      "maintenance_notes": "Use two questions to locate parsing and pure logic. Keep domain types at public boundaries and framework dependencies in the shell.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -310,14 +309,14 @@
             "pstack/skills/principle-boundary-discipline/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-type-system-discipline": {
-      "maintenance_notes": "Adopt the three-rule body for semantic types, boundary parsing, and schema derivation. Remove five generic reminder bullets and the corresponding compiler-bypass description phrase. Language-neutral scope. Full installed skill names. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Keep semantic types, parsed inputs, and schema-derived types. Use installed, language-neutral principle names for related guidance.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -328,14 +327,14 @@
             "pstack/skills/principle-type-system-discipline/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-make-operations-idempotent": {
-      "maintenance_notes": "Derive each step from existing state and apply only the difference. Use interruption-safe evidence of staleness. Replace PID-specific lock advice with general recovery reasoning. Retain repeated-run and crash-point questions. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Derive each action from current state and check convergence across repeated and interrupted runs. Scope the temporary-path rename example to file replacement.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -346,8 +345,8 @@
             "pstack/skills/principle-make-operations-idempotent/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -370,8 +369,8 @@
       ]
     },
     "principle-separate-before-serializing-shared-state": {
-      "maintenance_notes": "Uses the pinned Separate Before Serializing Shared State SKILL.md unchanged, including identifying shared mutation, eliminating independent shared write targets, and structural serialization when one canonical write target is a real invariant. Codex allows implicit invocation for name-based Harness routing.",
-      "reviewed_on": "2026-10-03",
+      "maintenance_notes": "Give independent writers their own records. Serialize structurally only when writers must share one target.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -382,14 +381,14 @@
             "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "how": {
       "maintenance_notes": "Adopt the four-step workflow with simple questions handled by one explainer and complex questions by two to four explorers then an explainer. Adopt the shorter explorer prompt, retaining a single exact-citation instruction. Route supported reasoning and speed settings through Harness Subagents. Local invocation metadata, read-only work, configured role models or parent inheritance, host concurrency limits, and missing-capability reporting. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -400,14 +399,14 @@
             "pstack/skills/how/"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
         }
       ]
     },
     "why": {
-      "maintenance_notes": "Adopt the shorter entrypoint, epistemics framework, investigator and synthesizer prompts, and all five changed source references. Retain five confidence tiers, verbatim searches, source boundaries, contradiction reporting, citation spot-checks, and read-only work. Replace Cursor model/tool calls with configured host roles, concurrency limits, connected-tool discovery, and Harness Subagents settings. Keep a concise squash-history caveat in code archaeology and three Sentry-specific pitfalls: regrouping, manual resolution, and event sampling. Keep invocation metadata and full seven-category coverage with explicit missing-source reporting. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Shorten the discovery description and open with the evidence requirement. Retain seven evidence categories, confidence tiers, source restrictions, contradiction reporting, and citation checks.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -418,14 +417,14 @@
             "pstack/skills/why/"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "architect": {
-      "maintenance_notes": "Preserves the pinned five-phase Architect workflow, How/Why grounding, independent candidate design, opt-in human checkpoint, implementation, redesign, and design rationale. Uses host tools, optional todo lists, existing role models or parent-model inheritance, and Arena's default three candidates. Requires two structurally distinct completed candidates after dropouts. Uses full skill names and removes the sibling Arena path. Aligns the runner's fixed three-file flattening threshold with the agreed Laziness rule. Candidates need not use different models when none are configured. Codex allows implicit invocation for name-based routing. Adopts the limited-context contributor screening perspective and appends four upstream red flags: split state ownership, duplicate task APIs, importable internals, and manually synchronized lists. Keeps the original four red flags and per-actor state discipline; does not adopt upstream model defaults, candidate-count changes, or rationale-contract removal.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "Compare state ownership, duplicate public operations, and what callers must know. Retain five phases, independent candidate designs, the opt-in human checkpoint, design rationale, and the bundled reviewer references.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -436,14 +435,14 @@
             "pstack/skills/architect/"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "arena": {
       "maintenance_notes": "Adopt current upstream compact six-phase structure, removing repeated setup, rationale, graft, and verification prose. Keep isolated candidates, hidden rubric, independent judging after candidates finish, synthesis, and verification. Keep existing invocation metadata and Codex policy files. Use configured role models or parent inheritance, optional model diversity, and host concurrency and permission limits. Map upstream reasoning and speed selection to configured role settings or host defaults. Keep three inherited candidates when no roster is configured and replace unavailable models with parent inheritance. Use an independent same-model judge when appropriate rather than requiring a different family or skipping judging for lack of diversity. Missing delegation remains an explicit review gap, not a completed independent review. Use host tools, temporary paths, optional todo tooling, and installed principle names. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -454,7 +453,7 @@
             "pstack/skills/arena/"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
         }
       ]
@@ -478,8 +477,8 @@
       ]
     },
     "no-comments": {
-      "maintenance_notes": "Adopt canonical comment-sicko agent name in its prompt metadata and delegation instruction. Use configured role reasoning and speed settings where available. Keep existing invocation metadata and Codex policy files. Use configured role models or parent inheritance, optional model diversity, and host concurrency and permission limits. Map upstream reasoning and speed selection to configured role settings or host defaults. Keep explicit bundled prompt passing rather than depend on a Cursor subagent type. Preserve unresolved comment rationales and constraint comments until investigation or an approved, verified replacement. Keep existing scope, restoration, and approval rules for comment deletion and structural encoding. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Trace the symbol directly or use Why for history. Keep unproven constraints, permissions for structural replacements, and host-configured reviewer settings.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -491,8 +490,8 @@
             "pstack/agents/comment-sicko.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -574,7 +573,7 @@
     },
     "show-me-your-work": {
       "maintenance_notes": "Use configured reviewer reasoning and speed settings where available. Name the trail review independent review and allow a separate same-model reviewer under current user model policy. Keep existing invocation metadata and Codex policy files. Use configured role models or parent inheritance, optional model diversity, and host concurrency and permission limits. Map upstream reasoning and speed selection to configured role settings or host defaults. Keep current-run-only transcript access and prohibit scanning unrelated conversations. Keep independent review, incomplete-review reporting, append-only log history, local-by-default storage, and truthful Attention output. A same-model review is valid and is not described as cross-family review; diversity is optional. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -587,14 +586,14 @@
             "pstack/skills/show-me-your-work/scripts/log.sh"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
         }
       ]
     },
     "figure-it-out": {
       "maintenance_notes": "Adopt compact phase-placement and experiment-loop wording. Route supported reasoning and speed settings through Harness Subagents. Keep broad discovery triggers, Show Me Your Work dependency, local task-plan fallback, named principle routing, and tool/permission assumptions. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -605,14 +604,14 @@
             "pstack/skills/figure-it-out/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
         }
       ]
     },
     "benchmark-checklist": {
-      "maintenance_notes": "Keeps all seven measurement checks, the requested quick-ballpark exception, intended-claim and script-inspection preparation, verdict rules, PR evidence guidance, and composition with Perf issue and Hillclimb. Selectively adapts upstream prose compression while preserving host-appropriate load, CPU, runtime, I/O, and syscall tools, task authorization, permissions, catalog discovery, and unavailable-capability reporting. Retains separate unreported profiling, generator saturation and source attribution, tuning, capacity arithmetic, error and correctness counts, at-least-five alternating runs, median and range, close-call statistics, end-to-end relevance, and timed-work checks. Uses the installed Explain the Number skill name. Codex allows implicit invocation for named routing. Installation does not supply measurement tools, named dependencies, or the Perf issue and Hillclimb playbooks.",
-      "reviewed_on": "2026-10-13",
+      "maintenance_notes": "State the one-primary-number rule directly. Keep seven measurement questions, host tools and permissions, and Benchmark Checklist use in the local Perf issue and Hillclimb playbooks.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -623,14 +622,14 @@
             "pstack/skills/benchmark-checklist/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50",
-          "last_incorporated_revision": "c86f349b102feb91f1966f8a6a60882a4e601b50"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-prove-it-works": {
-      "maintenance_notes": "Uses the pinned Prove It Works SKILL.md byte-identically: direct verification of real outputs and process state, scrutiny of observation methods, repeatable scripted comparisons where possible, visible evidence, and conditional artifact commits for complex work through Show Me Your Work. Codex allows implicit invocation for named Harness routing.",
-      "reviewed_on": "2026-10-03",
+      "maintenance_notes": "Check the actual output and observation method. Keep scripted evidence visible and route durable decision trails to Show Me Your Work by name.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -641,14 +640,14 @@
             "pstack/skills/principle-prove-it-works/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-fix-root-causes": {
-      "maintenance_notes": "Distinguish legitimate states from invalid states produced earlier. Scrutinize retries, swallowed errors, clamping, and discarded state. Investigate persisted state after restart without inferring that clearing it proves a validation fix. Keep instrumentation and pattern-wide fault repair. Correct boundary validation can fix the root cause. Diagnostic signal remains a proposal. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Condense reproduction, instrumentation, and pattern-wide repair. Keep legitimate states, corrective boundary validation, and persisted-state inspection after restart.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -659,14 +658,14 @@
             "pstack/skills/principle-fix-root-causes/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-sequence-verifiable-units": {
-      "maintenance_notes": "Preserves the pinned small-unit execution and delivery workflow, known-good baseline, per-unit checks before advancing, clean-trunk baseline, and commit/PR order that demonstrates failing repro then fix, subtraction then reshape, baseline then treatment, or scaffold then feature. Normalizes Prove It Works and Build the Lever to their full installed skill names. Codex allows implicit invocation for named Harness routing.",
-      "reviewed_on": "2026-10-03",
+      "maintenance_notes": "Verify each unit, including automated edits. Keep the known-good trunk baseline and order commits to demonstrate the change.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -677,14 +676,14 @@
             "pstack/skills/principle-sequence-verifiable-units/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_incorporated_revision": "23e4138daa01c42d4969f7a5465f82704e64f798"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-test-behavior-not-implementation": {
-      "maintenance_notes": "Check behavior breakage and stability under internal restructuring. Treat external effects and contractually required absence as behavior. Derive expectations from requirements. Keep invariant and compile-time checks. Replace assertion-shape lists with contract-driven judgment. A missed defect does not establish that a test catches no defects. Strengthen useful tests before deleting them. Exact error wording remains valid when part of the contract. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Use two imagined edits to check observable behavior and independence from internals. Keep useful tests, exact contractual error wording, external effects, and compile-time or cross-table invariants.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -695,14 +694,14 @@
             "pstack/skills/principle-test-behavior-not-implementation/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
     "principle-explain-the-number": {
-      "maintenance_notes": "Trigger before measurement. State the decision-changing result and noise floor before the run. Stop when spread exceeds the measured effect. Remove repeated introductory explanation. Existing exclusion of agent evaluation scope. Installed-skill names replace sibling package links. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "maintenance_notes": "Keep the decision threshold, noise floor, measured limiter, and run evidence. Resolve the performance checklist by installed name. Keep this skill scoped to measurement rather than model evaluation.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -713,8 +712,8 @@
             "pstack/skills/principle-explain-the-number/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
-          "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -774,7 +773,7 @@
     },
     "swarm": {
       "maintenance_notes": "Adopt upstream removal of redundant opening, worker-count reminder, and duplicate aggregate/report instructions. Renumber model selection and output isolation steps and update the dispatch reference. Use configured role reasoning and speed settings where available. Keep existing invocation metadata and Codex policy files. Use configured role models or parent inheritance, optional model diversity, and host concurrency and permission limits. Map upstream reasoning and speed selection to configured role settings or host defaults. Keep portable execution environments, verified checkout SHAs, rolling scheduling within host concurrency, and honest missing-delegation reporting. Keep configured or inherited models. General diversity is optional; missing arms in an explicitly requested model race remain coverage gaps. Keep exact-SHA and measurement-method receipts, one retry for missing metadata, all proven issues, and explicit coverage gaps. Preserves local invocation policy and configured host model/tool bindings.",
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -785,7 +784,7 @@
             "pstack/skills/swarm/SKILL.md"
           ],
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
-          "last_reviewed_revision": "ae5650febf4320793844c12c4adaa937f417f8da",
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "ae5650febf4320793844c12c4adaa937f417f8da"
         }
       ]
@@ -846,8 +845,8 @@
       ]
     },
     "blast-radius": {
-      "maintenance_notes": "Preserves the pinned upstream runtime instructions unchanged, including evidence-driven analysis and executable proof of safety assumptions. References How, Why, Arena, and Unslop and requires project source and runnable checks; model and delegation availability depend on the host. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
-      "reviewed_on": "2026-11-09",
+      "maintenance_notes": "Trace the change and its commits directly. Use independent Arena candidates for wide changes under configured runner and judge roles. Keep executable evidence for the safety claim.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -859,8 +858,8 @@
             "pstack/LICENSE"
           ],
           "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
-          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
-          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     },
@@ -884,8 +883,8 @@
       ]
     },
     "statechart": {
-      "maintenance_notes": "Preserves the pinned upstream runtime package unchanged, including scripts and fixtures. Requires a TypeScript-capable runtime, Java and TLC, and optionally Pele for rendering; upstream tooling may use mise and network downloads. Results are bounded to the model and require replay against real code. Includes the upstream MIT license notice in the installed package. No upstream instruction changes.",
-      "reviewed_on": "2026-11-09",
+      "maintenance_notes": "Adopt the upstream package and MIT notice. Nested diagrams show entry and exit transitions. Preserve SANY diagnostics, CRLF parsing, native Windows launch guidance, and cleanup of the spawned worker and its run directories. Model results still require replay against the application.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -897,8 +896,8 @@
             "pstack/LICENSE"
           ],
           "baseline_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
-          "last_reviewed_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3",
-          "last_incorporated_revision": "0bb6f379f2c3cd07c92a4e0bfa815ffa773bd4f3"
+          "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
+          "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
         }
       ]
     }
