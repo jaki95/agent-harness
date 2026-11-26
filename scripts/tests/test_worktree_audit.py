@@ -179,6 +179,19 @@ class WorktreeAuditTests(unittest.TestCase):
         row = next(row for row in rows if row["path"] == str(self.worktree))
         self.assertIn("invocation-worktree", row["reasons"])
 
+    def test_caller_inside_linked_tree_is_held_when_repo_selects_primary(self):
+        self.receipt()
+        nested = self.worktree / "nested"
+        nested.mkdir()
+        result = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(self.repo),
+                                 "--base", "main", "--usage", str(self.usage)],
+                                cwd=nested, capture_output=True, text=True, check=True)
+        row = next(row for row in json.loads(result.stdout)["worktrees"]
+                   if row["path"] == str(self.worktree))
+        self.assertTrue(row["current"])
+        self.assertIn("invocation-worktree", row["reasons"])
+        self.assertEqual(row["bucket"], "hold")
+
     def test_cli_audit_does_not_change_git_metadata_or_files(self):
         before = {path: path.read_bytes() for path in (self.worktree / ".git", self.repo / ".git/config",
                                                      self.repo / ".git/index", self.worktree / "tracked.txt")}
