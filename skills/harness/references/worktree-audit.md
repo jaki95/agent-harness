@@ -41,6 +41,8 @@ Set completeness to true only after checking the relevant host records and deleg
 
 The helper holds the primary and invocation worktrees, locked or unavailable trees, active or pinned work, unknown ownership/activity, tracked edits, untracked files, ignored content, detached heads, open PRs, incomplete metadata, and unconfirmed merge or abandonment. Untracked and ignored files may contain valuable work. Review them individually before any authorized disposal.
 
+The audit overrides Git's submodule ignore settings. It lists nonempty submodule directories in `populated_submodules` and holds the worktree even when the parent reports a clean status. Check each listed directory for local commits, edits, untracked files, and ignored content before authorizing removal. An empty submodule directory adds no hold.
+
 Merge evidence is either current HEAD ancestry under the chosen trunk SHA or a merged same-repository PR whose published head exactly matches the worktree. A closed-unmerged PR proves neither; a merged PR at an older head does not cover newer local commits. Failed or truncated GitHub reads stay explicit gaps. A retained branch ref must preserve committed work before removal, including explicitly abandoned work.
 
 An `eligible-for-confirmation` bucket means the supplied facts pass the audit's initial gates. It grants no deletion permission. Recheck live HEAD and status, file preservation, ownership, and activity through the cleanup playbook before removing that exact candidate. Simulator IDs, runtimes, application state, and caches have separate ownership and preservation checks; the helper does not assess them.

@@ -151,6 +151,26 @@ else console.log(JSON.stringify({ok: true}));
         self.declare()
         self.assertIn("dirty", " ".join(self.cli("run", 1)["problems"]))
 
+    def test_ignored_submodule_edits_invalidate_a_passing_run(self):
+        leaf = Path(self.temp.name) / "leaf"
+        middle = Path(self.temp.name) / "middle"
+        for repo in (leaf, middle):
+            self.git("clone", str(self.root), str(repo))
+        for repo, source in ((middle, leaf), (self.root, middle)):
+            self.git("-C", str(repo), "-c", "protocol.file.allow=always", "submodule", "add", str(source), "child")
+            self.git("-C", str(repo), "config", "-f", ".gitmodules", "submodule.child.ignore", "all")
+            self.git("-C", str(repo), "add", ".gitmodules")
+            self.git("-C", str(repo), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                     "commit", "-qm", "Add submodule")
+        self.git("-c", "protocol.file.allow=always", "submodule", "update", "--init", "--recursive")
+        self.ready()
+        for path in (self.root / "child/tracked.txt", self.root / "child/child/tracked.txt"):
+            with self.subTest(path=path):
+                path.write_text("changed")
+                self.assertIn("dirty", " ".join(self.cli("check", 1)["problems"]))
+                path.write_text("original")
+        self.assertTrue(self.cli("check")["ready"])
+
     def test_changed_evidence_and_changed_declaration(self):
         report = self.ready()
         receipt = Path(report["store"]) / "runs" / report["runId"] / "receipt.json"

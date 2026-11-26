@@ -270,7 +270,7 @@ def next_due(receipt):
     return timestamp(last["due_at"]) + timedelta(seconds=CADENCE) if last else timestamp(receipt["first_due_at"])
 
 
-def view(receipt, moment, current=None, notify=False):
+def view(receipt, moment, current, notify=False):
     due = next_due(receipt)
     return {"schema_version": 1, "program_key": receipt["program_key"], "desired": receipt["desired"],
             "registration_id": receipt["registration_id"], "registration_status": receipt["registration_status"],
@@ -281,13 +281,12 @@ def view(receipt, moment, current=None, notify=False):
             "checkpoint": receipt["checkpoint"], "checkpoint_sha256": receipt["checkpoint_sha256"],
             "current_queue_files": current,
             "recovery_hold": bool(receipt["checkpoint"]["metadata"]["unresolved_gates"])
-                or (current is not None and current.get("gates.md") != receipt["checkpoint"]["queue_files"].get("gates.md"))}
+                or current.get("gates.md") != receipt["checkpoint"]["queue_files"].get("gates.md")}
 
 
-def notification(receipt, moment, current=None):
+def notification(receipt, moment, current):
     value = {key: receipt[key] for key in ("desired", "registration_status", "error")}
-    value["gates_sha256"] = digest(encode(current.get("gates.md"))) if current is not None else receipt.get("gates_sha256")
-    receipt["gates_sha256"] = value["gates_sha256"]
+    value["gates_sha256"] = digest(encode(current.get("gates.md")))
     value["overdue"] = receipt["desired"] == "active" and moment > next_due(receipt)
     value["report"] = receipt.get("last_report", {"progress": [], "failures": [], "required_actions": []})
     fingerprint = digest(encode(value))
@@ -316,7 +315,7 @@ def complete(receipt, args, moment):
         if any(prior[key] != item[key] for key in item):
             raise StoreError("replayed delivery differs from its completed receipt")
         if receipt["last_completed_audit"] and timestamp(due) < next_due(receipt):
-            return False
+            return
     if receipt["desired"] == "stopped":
         raise StoreError("stopped programs cannot complete a new audit")
     if not args.delivery_id.strip() or timestamp(due) != next_due(receipt) or timestamp(due) > moment:
@@ -329,7 +328,6 @@ def complete(receipt, args, moment):
     receipt["last_completed_audit"]["receipt_path"] = str(completion_path)
     receipt["last_completed_audit"]["evidence"] = {key: item["evidence"][key] for key in ("path", "sha256")}
     receipt["last_report"] = report
-    return notification(receipt, moment)
 
 
 def parser():
@@ -393,9 +391,11 @@ def main(arguments=None):
             if receipt is None:
                 raise StoreError("audit receipt missing; run ensure with a complete checkpoint")
             if args.command == "complete":
-                notify = complete(receipt, args, moment)
+                current = queue_snapshot(store)
+                complete(receipt, args, moment)
+                notify = notification(receipt, moment, current)
                 save(path, receipt)
-                print(json.dumps(view(receipt, moment, notify=notify), sort_keys=True))
+                print(json.dumps(view(receipt, moment, current, notify), sort_keys=True))
                 return 0
             if args.command == "stop":
                 receipt["desired"] = "stopped"

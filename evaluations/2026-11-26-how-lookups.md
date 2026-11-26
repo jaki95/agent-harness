@@ -27,3 +27,9 @@ The recorded comparison used Codex CLI 0.172.0 and the configured gpt-6.2-astra 
 Elapsed time covers CLI startup through process exit. Token counts come from the individual session records. An earlier trial of each route used ephemeral sessions. The recorded pair ran in the reverse order so the child and its token counts could be checked. The checkout was shared and cache usage differed. These observations support removing mandatory delegation for these lookups. They do not establish a general timing difference, a dollar cost, or comparative quality on cross-cutting work.
 
 A fresh agent then used the revised skill on a fourth question about changes to a source's link or observed revision. It traced the fingerprint calculation, ran it with each field changed, and correctly reported that both changes leave the digest unchanged. It cited the two relevant lines and answered without a delegate. [Fingerprint calculation](../scripts/monitor_upstream.py#L324)
+
+## Lookup through Harness
+
+In a temporary Git project, install the checkout's Harness, How, and Unslop skills with the pinned Skills CLI and copy `scripts/check.py` into the project. In a fresh read-only Codex session, ask `$harness` what `load_index` returns when registry JSON contains duplicate object keys.
+
+The session read the installed Harness Investigation playbook and How skill, inspected the implementation, and exercised a duplicate key. Its one-paragraph answer gave the empty dictionary and the single diagnostic, including the repeated key. It cited the [duplicate-key check](../scripts/check.py#L145) and [return value](../scripts/check.py#L157). The session used no delegate and included no throughput checkpoint or architecture sections.

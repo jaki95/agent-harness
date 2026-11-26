@@ -259,6 +259,9 @@ class DetectorTests(RepositoryFixture):
 
 
 class FakeIssues:
+    def viewer_login(self):
+        return monitor.ACTIONS_LOGIN
+
     def __init__(self):
         self.records = []
         self.notes = []
@@ -275,7 +278,7 @@ class FakeIssues:
     def create(self, body):
         self.calls.append("create")
         number = max((record["number"] for record in self.records), default=0) + 1
-        self.records.append({"number": number, "body": body, "state": "open"})
+        self.records.append({"number": number, "body": body, "state": "open", "user": {"login": self.viewer_login()}})
         self.after("create")
         return self.records[-1]
 
@@ -291,7 +294,7 @@ class FakeIssues:
             self.fail_comment = False
             raise monitor.MonitorError("command-failed", "Comment API failed")
         self.calls.append("comment")
-        self.notes.append({"number": number, "body": body})
+        self.notes.append({"number": number, "body": body, "user": {"login": self.viewer_login()}})
         self.after("comment")
         return self.notes[-1]
 
@@ -321,6 +324,31 @@ class PublisherTests(unittest.TestCase):
 
     def clean_report(self):
         return monitor.Report((monitor.Result(self.source, "unchanged", "b" * 40),))
+
+    def test_foreign_and_quoted_monitor_records_do_not_control_publication(self):
+        self.publish()
+        owned = self.client.records[0].copy()
+        self.client.records.extend([
+            dict(owned, number=2, user={"login": "unrelated"}),
+            dict(owned, number=3, body="Copied tracker for discussion\n" + owned["body"]),
+        ])
+        self.assertEqual("quiet", self.publish())
+        self.publish(self.report("3" * 40))
+        notification = self.client.notes.pop()
+        self.client.notes.extend([dict(notification, user={"login": "unrelated"}),
+                                  dict(notification, body="Copied notification\n" + notification["body"])])
+        self.publish(self.report("3" * 40))
+        self.assertEqual(notification, self.client.notes[-1])
+        self.assertEqual(3, len(self.client.notes))
+
+    def test_configured_monitor_publisher_must_match_authenticated_account(self):
+        self.client.viewer_login = lambda: "operator"
+        with self.assertRaisesRegex(monitor.MonitorError, "authenticated monitor publisher"):
+            self.publish()
+        self.assertEqual([], self.client.calls)
+        for expected in ("created", "quiet"):
+            self.assertEqual(expected, monitor.reconcile_issue(
+                self.pending, "example/harness", issues=self.client, monitor_login="Operator"))
 
     def test_initial_creation_notifies_without_extra_comment(self):
         self.assertEqual("created", self.publish())
@@ -538,14 +566,14 @@ class PublisherTests(unittest.TestCase):
         calls = list(self.client.calls)
         for body in (monitor.MARKER, monitor.issue_body(clean, "0" * 64, 1)):
             with self.subTest(body=body):
-                self.client.records = [self.client.records[0], {"number": 2, "state": "closed", "body": body}]
+                self.client.records = [self.client.records[0], {"number": 2, "state": "closed", "body": body, "user": {"login": monitor.ACTIONS_LOGIN}}]
                 with self.assertRaises(monitor.MonitorError) as raised:
                     self.publish()
                 self.assertEqual("invalid-snapshot", raised.exception.code)
                 self.assertEqual(calls, self.client.calls)
 
     def test_invalid_snapshot_fails(self):
-        self.client.records = [{"number": 1, "state": "open", "body": monitor.MARKER}]
+        self.client.records = [{"number": 1, "state": "open", "body": monitor.MARKER, "user": {"login": monitor.ACTIONS_LOGIN}}]
         with self.assertRaisesRegex(monitor.MonitorError, "invalid snapshot"):
             self.publish()
 
@@ -585,6 +613,24 @@ class PublisherTests(unittest.TestCase):
         with patch.object(api, "request", return_value={"unexpected": True}):
             with self.assertRaises(monitor.MonitorError):
                 api.comments(1)
+
+    def test_large_comment_history_fits_the_bounded_gh_transport(self):
+        with tempfile.TemporaryDirectory() as temp:
+            gh = Path(temp) / "gh"
+            gh.write_text("""#!/usr/bin/env python3
+import json, sys
+from urllib.parse import parse_qs, urlsplit
+query = parse_qs(urlsplit(sys.argv[-1]).query)
+size, page = int(query["per_page"][0]), int(query["page"][0])
+first = (page - 1) * size
+records = [{"id": i, "body": "x" * (60000 if i >= 100 else 10)}
+           for i in range(first, min(first + size, 220))]
+print(json.dumps(records))
+""")
+            gh.chmod(0o755)
+            with patch.dict(os.environ, PATH=temp + os.pathsep + os.environ["PATH"]):
+                notes = monitor.GitHub("example/harness").comments(1)
+            self.assertEqual(list(range(220)), [row["id"] for row in notes])
 
 
 class CliTests(RepositoryFixture):
@@ -652,7 +698,8 @@ class CliTests(RepositoryFixture):
         wrapper = tools / "gh"
         wrapper.write_text("#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\n"
                            "a=sys.argv[1:]\n"
-                           "if a[a.index('--method')+1]=='GET': print('[]')\n"
+                           "if 'graphql' in a: print(json.dumps({'data':{'viewer':{'login':'example'}}}))\n"
+                           "elif a[a.index('--method')+1]=='GET': print('[]')\n"
                            "else:\n payload=json.loads(Path(a[a.index('--input')+1]).read_text())\n"
                            f" Path({str(capture)!r}).write_text(json.dumps(payload))\n"
                            " print(json.dumps(dict(payload,number=1,state='open')))\n")

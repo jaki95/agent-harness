@@ -83,6 +83,24 @@ def parse_status(raw):
     return {"tracked": tracked, "untracked": untracked, "ignored": ignored}
 
 
+def populated_submodules(worktree):
+    populated = []
+    for entry in git(worktree, "ls-files", "--stage", "-z").split(b"\0"):
+        if not entry.startswith(b"160000 "):
+            continue
+        path = os.fsdecode(entry.split(b"\t", 1)[1])
+        directory = worktree / path
+        if directory.is_symlink():
+            raise AuditError(f"submodule path is a symlink: {path}")
+        try:
+            with os.scandir(directory) as children:
+                if next(children, None) is not None:
+                    populated.append(path)
+        except FileNotFoundError:
+            continue
+    return populated
+
+
 def load_usage(path, repo):
     if path is None:
         return {}
@@ -171,6 +189,8 @@ def classify(row):
         reasons.append("untracked-files")
     if row["ignored"]:
         reasons.append("ignored-files-need-disposal-review")
+    if row["populated_submodules"]:
+        reasons.append("submodules-need-preservation-review")
     if not row.get("branch"):
         reasons.append("detached-head-needs-retention-review")
     if row["prs"] is not None and any(pr["state"] == "OPEN" for pr in row["prs"]):
@@ -195,13 +215,14 @@ def audit(repository, base, usage_path=None, use_github=False, sizes=False):
     for index, record in enumerate(records):
         path = Path(record["path"])
         row = {**record, "primary": index == 0, "current": path.resolve() == repo,
-               "tracked": [], "untracked": [], "ignored": [],
+               "tracked": [], "untracked": [], "ignored": [], "populated_submodules": [],
                "prs": None, "merged": False, "merge_evidence": None, "age_days": None,
                "size_bytes": None, "errors": [], "usage": usage.get(str(path.resolve()))}
         if not record.get("bare") and not record.get("prunable"):
             try:
                 row.update(parse_status(git(path, "status", "--porcelain=v1", "-z",
-                                            "--untracked-files=all", "--ignored=matching")))
+                                            "--untracked-files=all", "--ignored=matching", "--ignore-submodules=none")))
+                row["populated_submodules"] = populated_submodules(path)
                 head = os.fsdecode(git(path, "rev-parse", "--verify", "HEAD^{commit}")).strip()
                 if head != row.get("head"):
                     raise AuditError("worktree HEAD changed during discovery")

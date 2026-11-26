@@ -208,7 +208,12 @@ function currentHead(ctx) { return git(ctx.root, ["rev-parse", "HEAD"]); }
 
 function clean(ctx, head) {
 	if (currentHead(ctx) !== head) throw new Error("actual HEAD changed during execution");
-	if (git(ctx.root, ["status", "--porcelain=v1", "--untracked-files=all"])) throw new Error("actual worktree is dirty");
+	const status = ["status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=none"];
+	if (git(ctx.root, status)) throw new Error("actual worktree is dirty");
+	// Git does not propagate --ignore-submodules=none to status checks inside nested submodules.
+	if (git(ctx.root, ["submodule", "foreach", "--quiet", "--recursive", `git ${status.join(" ")}`])) {
+		throw new Error("actual worktree is dirty inside a submodule");
+	}
 	if (hash(fs.readFileSync(ctx.manifestPath)) !== ctx.manifestSha256) throw new Error("manifest changed during execution");
 }
 

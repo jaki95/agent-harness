@@ -77,12 +77,12 @@ Refreshing from a different repository fails. Failed discovery preserves the las
 ```sh
 orch standing add <instruction>
 orch standing show --json
-orch gate park <id> --question <question> --options <options> --default <continuation>
+orch gate park <id> [--unit <unit-id>] --question <question> --options <options> --default <continuation>
 orch gate list --json
 orch gate resolve <id> --answer <answer>
 orch status
 ```
 
-A gate's default is recorded, never automatically accepted. Missing authorization requires an actual answer or an existing grant; elapsed time supplies neither. Continue independent authorized work around a parked gate.
+Use `--unit` to limit a gate to one existing unit. Pickup holds reassignment for that unit while it can recommend independent work elsewhere. Without a unit, an open gate holds reassignment across the queue. This includes gates written by earlier versions. If the operator says to keep a unit paused, leave its gate open. You can park the same ID again with the continuing hold and its unit. Resolve it when that hold ends, and record the operator's answer. Apply the answer within the saved authorization. A default supplies no approval.
 
 Store operations take a nonblocking process lock. A competing writer gets an error and retries only after the holder exits. Process termination releases the lock; the persistent `.orch.lock` file is not evidence of a live writer and must not be deleted to bypass an active lock. Table updates use temporary files and atomic replacement. The lock coordinates one local store, not writers on different machines. Agent replacement still requires a confirmed stop or an isolated writable scope.

@@ -23,7 +23,7 @@ SOURCE = monitor.Source("sample", "source", "https://github.com/fixture/upstream
 def issue(generation=1, head=HEAD, *, number=6, state="open", status="pending"):
     changes = (CHANGE,) if status == "pending" else ()
     snapshot = monitor.compact(monitor.Report((monitor.Result(SOURCE, status, head, changes),)), {})
-    return {"number": number, "state": state, "body": monitor.issue_body(snapshot, monitor.fingerprint(snapshot), generation)}
+    return {"number": number, "state": state, "user": {"login": monitor.ACTIONS_LOGIN}, "body": monitor.issue_body(snapshot, monitor.fingerprint(snapshot), generation)}
 
 
 def evidence():
@@ -46,6 +46,9 @@ class FakeGitHub:
         self.fail_after_delivery = False
         self.fail_before_delivery = False
 
+    def viewer_login(self):
+        return "reviewer"
+
     def issues(self):
         return copy.deepcopy([*self.history, self.issue] if self.issue else self.history)
 
@@ -55,7 +58,7 @@ class FakeGitHub:
     def comment(self, number, body):
         if self.fail_before_delivery and review.ReviewKey(6, 1, "").marker.split(":")[0] in body:
             raise monitor.MonitorError("command-failed", "GitHub unavailable")
-        self.notes.append({"number": number, "body": body})
+        self.notes.append({"number": number, "body": body, "user": {"login": self.viewer_login()}})
         if self.fail_after_delivery and any(marker in body for marker in ("upstream-codex-review:", "upstream-codex-partial:")):
             raise monitor.MonitorError("timeout", "Delivery response lost")
 
@@ -80,6 +83,61 @@ class WorkerTests(unittest.TestCase):
     def run_review(self, **kwargs):
         return review.review_queue("fixture/harness", self.root, github=self.client,
             evidence=kwargs.pop("evidence", self.collect), analyze=kwargs.pop("analyze", self.analyze), **kwargs)
+
+    def test_only_reviewers_own_footer_confirms_delivery(self):
+        marker = review.queue_from_issue(self.client.issue).key.marker
+        body = "## Codex analysis and suggested next actions\n\nReview advice.\n\n" + marker
+        self.client.notes.extend([
+            {"number": 6, "body": body, "user": {"login": monitor.ACTIONS_LOGIN}},
+            {"number": 6, "body": "Quoted record\n" + body, "user": {"login": "reviewer"}},
+            {"number": 6, "body": body + "\nText after marker", "user": {"login": "reviewer"}},
+        ])
+        self.assertEqual("published", self.run_review().kind)
+        self.assertEqual("quiet", self.run_review().kind)
+        self.assertEqual(1, self.models)
+
+    def test_multipart_resumes_at_missing_part_after_lost_response(self):
+        value = advice()
+        finding = value["findings"][0]
+        for field in ("summary", "local_impact", "limits"):
+            finding[field] = "🎵" * 4000
+        finding["next_actions"] = ["🎵" * 1500] * 8
+        attempts = []
+        def analyze(*args):
+            attempts.append(1)
+            return value
+
+        original = self.client.comment
+        def lose_response(number, body):
+            original(number, body)
+            if "Review part 1." in body:
+                raise monitor.MonitorError("timeout", "Part posted before connection closed")
+
+        with patch.object(self.client, "comment", side_effect=lose_response):
+            self.assertEqual("failed", self.run_review(analyze=analyze, now=0).kind)
+        self.assertFalse(any(review.queue_from_issue(self.client.issue).key.marker in note["body"]
+                             for note in self.client.notes))
+        self.assertEqual("published", self.run_review(analyze=analyze, now=3601).kind)
+        self.assertEqual("quiet", self.run_review(analyze=analyze, now=3602).kind)
+        parts = [note["body"] for note in self.client.notes if "<!-- upstream-codex-part:" in note["body"]]
+        self.assertGreater(len(parts), 1)
+        self.assertEqual(len(parts), len(set(parts)))
+        self.assertEqual(24000, sum(part.count("🎵") for part in parts))
+        self.assertTrue(all(len(note["body"].encode()) <= monitor.ISSUE_LIMIT for note in self.client.notes))
+        self.assertEqual(1, len(attempts))
+
+    def test_queue_rotation_between_parts_prevents_final_receipt(self):
+        original = self.client.comment
+        new_queue = issue(generation=2)
+        def rotate(number, body):
+            original(number, body)
+            self.client.issue = new_queue
+        value = advice()
+        value["findings"][0]["summary"] = "a" * 1000
+        with patch.object(monitor, "ISSUE_LIMIT", 900), patch.object(self.client, "comment", side_effect=rotate):
+            self.assertEqual("stale", self.run_review(analyze=lambda *args: value).kind)
+        self.assertEqual(1, len(self.client.notes))
+        self.assertIn("Review part 1.", self.client.notes[0]["body"])
 
     def test_completed_generation_remains_quiet_without_model_or_fetch(self):
         self.assertEqual("published", self.run_review().kind)
@@ -231,7 +289,7 @@ class WorkerTests(unittest.TestCase):
         clean = monitor.parse_snapshot(issue(status="unchanged")["body"])
         for body in (monitor.MARKER, monitor.issue_body(clean, "0" * 64, 1)):
             with self.subTest(body=body):
-                self.client.history = [{"number": 5, "state": "closed", "body": body}]
+                self.client.history = [{"number": 5, "state": "closed", "body": body, "user": {"login": monitor.ACTIONS_LOGIN}}]
                 with self.assertRaises(monitor.MonitorError) as raised:
                     self.run_review()
                 self.assertEqual("invalid-snapshot", raised.exception.code)
@@ -345,6 +403,17 @@ class ValidationTests(unittest.TestCase):
                 return b'{"type":"turn.completed"}'
             with patch.object(monitor, "run", side_effect=fake_run):
                 self.assertEqual(advice(), review.codex_review(evidence(), Path(temp), model="gpt-6.1-sol"))
+
+    def test_valid_model_output_can_exceed_one_comment(self):
+        value = advice()
+        value["findings"][0]["next_actions"] = ["🎵" * 1500] * 8
+        output = json.dumps(value)
+        self.assertGreater(len(output), monitor.ISSUE_LIMIT)
+        def fake_run(args, **kwargs):
+            Path(args[args.index("--output-last-message") + 1]).write_text(output)
+            return b'{"type":"turn.completed"}'
+        with tempfile.TemporaryDirectory() as temp, patch.object(monitor, "run", side_effect=fake_run):
+            self.assertEqual(value, review.codex_review(evidence(), Path(temp)))
 
     def test_metadata_does_not_change_semantic_digest_and_outage_preserves_revision(self):
         snapshot = monitor.parse_snapshot(issue()["body"])

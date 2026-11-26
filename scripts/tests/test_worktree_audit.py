@@ -89,6 +89,30 @@ class WorktreeAuditTests(unittest.TestCase):
         self.assertEqual(row["bucket"], "hold")
         self.assertTrue((self.worktree / "ignored-cache/data.txt").exists())
 
+    def test_populated_submodule_needs_preservation_review(self):
+        source = self.root / "source"
+        self.git(self.repo, "clone", str(self.repo), str(source))
+        self.git(self.repo, "-c", "protocol.file.allow=always", "submodule", "add", str(source), "child")
+        self.git(self.repo, "config", "-f", ".gitmodules", "submodule.child.ignore", "all")
+        self.git(self.repo, "commit", "-am", "Add submodule")
+        self.git(self.worktree, "merge", "--ff-only", "main")
+        self.receipt()
+        self.assertEqual(self.row()["bucket"], "eligible-for-confirmation")
+        child = self.worktree / "child"
+        note = child / "local-note"
+        note.write_text("not initialized, but still contains work")
+        self.assertIn("submodules-need-preservation-review", self.row()["reasons"])
+        note.unlink()
+        self.git(self.worktree, "-c", "protocol.file.allow=always", "submodule", "update", "--init")
+        (child / "ignored-cache").mkdir()
+        (child / "ignored-cache/notes").write_text("locally saved work")
+        row = self.row()
+        self.assertEqual(row["bucket"], "hold")
+        self.assertIn("submodules-need-preservation-review", row["reasons"])
+        self.assertEqual(row["populated_submodules"], ["child"])
+        (child / "tracked.txt").write_text("local edit")
+        self.assertIn("child", [entry["path"] for entry in self.row()["tracked"]])
+
     def test_closed_pr_does_not_prove_merge(self):
         (self.worktree / "new.txt").write_text("unmerged work\n")
         self.git(self.worktree, "add", "new.txt")

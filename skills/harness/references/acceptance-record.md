@@ -64,6 +64,8 @@ A gate's optional `environment` contains `probeArgv` and a nonempty `required` J
 
 Measurement gates set `measurement` to `true` and require an environment probe. The runner probes before and after each measurement. Both observations must match. Every command, including each probe, requires the same clean actual head before and after execution.
 
+Acceptance checks the parent repository and its initialized submodules recursively. A tracked edit or untracked source file in a submodule fails readiness even when the parent normally hides submodule changes.
+
 The optional `projectRules` object has no default rules. A project can provide either or both of these inputs.
 
 ```json

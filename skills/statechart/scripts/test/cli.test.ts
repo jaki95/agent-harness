@@ -4,7 +4,7 @@ import { once } from "node:events";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
@@ -14,6 +14,11 @@ import { drawn } from "./drawn.ts";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const read = (file: string) => fs.readFileSync(file, "utf8");
+
+const toolsDir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-tools-"));
+const replayJar = path.join(toolsDir, "tla2tools.jar");
+fs.writeFileSync(replayJar, "");
+after(() => fs.rmSync(toolsDir, { recursive: true, force: true }));
 
 function run(
   dir: string,
@@ -47,6 +52,7 @@ function run(
       ...args,
     ],
     {
+      cwd: toolsDir,
       encoding: "utf8",
       env: {
         ...process.env,
@@ -270,7 +276,7 @@ function startCommand(
       env: {
         ...process.env,
         JAVA: java,
-        TLA2TOOLS: "tla2tools.jar",
+        TLA2TOOLS: replayJar,
         STATECHART_REPLAY: dir,
         TMPDIR: tmpdir,
       },

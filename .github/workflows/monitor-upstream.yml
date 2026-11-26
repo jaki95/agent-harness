@@ -32,6 +32,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          UPSTREAM_MONITOR_LOGIN: ${{ vars.UPSTREAM_MONITOR_LOGIN }}
         run: python3 scripts/monitor_upstream.py --output-dir work/upstream-report --issue-repo "$GITHUB_REPOSITORY"
       - name: Preserve the review report
         if: always()
