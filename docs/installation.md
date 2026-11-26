@@ -1,27 +1,47 @@
-# Installation and upgrades
+# Install and update skills
 
-## Requirements and current status
-
-Use Node 22.20 or newer, npm/npx, and Git. Anyone can read this public repository over HTTPS. The examples use Skills CLI 1.7.0.
-
-See the [skill catalog](skills.md) for descriptions, or list the skills available on the remote branch:
+Use Node 22.20 or newer, npm/npx, and Git. The examples use Skills CLI 1.7.0 and Codex. Choose a skill from the [catalog](skills.md) or list the current collection:
 
 ```sh
 npx skills@1.7.0 add jaki95/agent-harness --list
 ```
 
-The `grill-me` examples on `main` are available now. Release-tag examples remain illustrative until those versions are published.
+## Pin a release in a project
 
-## Personal installation: follow approved changes on main
+Run inside the consuming project. This example installs `grill-me` from the [published v0.1.0 release](https://github.com/jaki95/agent-harness/releases/tag/v0.1.0).
 
-Install globally for your personal Codex setup:
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#v0.1.0' --skill grill-me --agent codex --copy
+```
+
+Commit the installed files and `skills-lock.json`. The CLI uses symlinks by default. Use `--copy` for independent project files.
+
+**Upgrade or roll back.** Select a [published tag](https://github.com/jaki95/agent-harness/releases), substitute it for `v0.1.0` in the same command, and review the project diff. A project update preserves the installed tag:
+
+```sh
+npx skills@1.7.0 update grill-me --project
+```
+
+## Follow main
+
+For a personal install that follows reviewed changes, run:
 
 ```sh
 npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill grill-me --agent codex --global
 npx skills@1.7.0 update grill-me --global
 ```
 
-For the full Harness workflow, use the same selection for installation and updates. In Bash or Zsh, set this array before running either command:
+For a project install, omit `--global` on `add` and use `--project` on `update`. Edit skills in the source repository. An update can replace edits made to installed copies.
+
+## Install Harness
+
+To get the bundled playbooks and scripts, select `harness` alone. Invoke it with `$harness` in Codex.
+
+```sh
+npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex --global
+```
+
+Harness looks up companion skills by name in the host catalog and reports any missing skill. For its full selection from this collection, use the same names for installation and updates. Run in Bash or Zsh:
 
 ```bash
 harness_skills=(
@@ -44,133 +64,21 @@ npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill "${harness_skills[@]}" 
 npx skills@1.7.0 update "${harness_skills[@]}" --global
 ```
 
-Harness can also be installed alone:
+The [Harness playbook index](../skills/harness/SKILL.md) links to the instructions for each task. Codex requires explicit invocation for Harness and permits implicit invocation for its routed skills. On other hosts, upstream `disable-model-invocation` settings can require explicit selection.
 
-```sh
-npx skills@1.7.0 add 'jaki95/agent-harness#main' --skill harness --agent codex --global
-```
+## Check prerequisites for the work you want to do
 
-Harness looks up each routed skill by name in the host's catalog. If one is missing, Harness names it and continues with its own communication rules. Bundled playbooks are available with either installation.
+Installation supplies runtime instructions and bundled helpers. The project and host supply tools, permissions, and accounts.
 
-Harness routes read-only code questions through How. How answers narrow questions directly with source citations. Complex How investigations use two to four explorers followed by an explainer. These investigations and Why require host subagent tools. Why defaults to parallel investigators for available evidence categories followed by a synthesizer. It requires local git history and `gh` access for repository discussions; connected MCP sources are optional and missing sources are recorded as coverage gaps. Delegates use existing host role models or inherit the parent model. Host concurrency limits determine scheduling. Missing tools and denied access are reported; skipped steps are not presented as completed. The installer does not provide delegation tools, connect services, or configure models.
+| Workflow | What to have available |
+| --- | --- |
+| [Feature](../skills/harness/playbooks/feature.md), [review](../skills/interrogate/SKILL.md), and [investigation](../skills/how/SKILL.md) | Host delegation for independent work. UI and CLI verification need a running project and its browser or terminal driver. Historical investigations use Git and authenticated `gh`. The [Bug fix playbook](../skills/harness/playbooks/bug-fix.md) can use a separately installed `tdd` skill. |
+| [Plan and acceptance checks](../skills/harness/references/acceptance-record.md) | Node 22.20+, Git, and the project's declared verification commands. [Isolated verification lanes](../skills/harness/references/isolated-lanes.md) require Linux and Python 3.10+. |
+| [Queue recovery](../skills/harness/references/queue-recovery.md) and [unattended audits](../skills/harness/references/audit-registration.md) | Git, Python 3.10+, and authenticated `gh` for PR state. Unattended audits require a supported host scheduler and adapter. The package includes the manual recovery path. |
+| [Wayfinder](../skills/wayfinder/SKILL.md) | A host `Skill` tool, `grilling`, `domain-modeling`, `research`, `prototype`, and a tracker configured for Wayfinding operations. Research tickets also need subagents, Git branches, and push access. |
+| [Retro](../skills/retro/SKILL.md) | A host `Skill` tool, the separate `writing-for-agents` skill, and access to session evidence. |
+| [Statechart](../skills/statechart/SKILL.md) | A TypeScript-capable runtime, Java, and TLC. Its launcher can obtain tools with mise and network access. Image rendering uses Pele. |
+| [Correct](../skills/correct/SKILL.md) and [Blast Radius](../skills/blast-radius/SKILL.md) | Project history, source, and executable checks. Blast Radius uses Arena for wide reviews and Unslop for its report. |
+| [Maintain Verification Skill](../skills/maintain-verification-skill/SKILL.md) | A project-local verification skill with a feature map, a runnable app or CLI, and host delegation. The [generator](../skills/create-verification-skill/SKILL.md) writes to `.agents/skills/verify-<slug>/`. |
 
-The bundled Feature playbook traces the affected subsystem and uses Architect for parallel design exploration. Before delegating implementation, record all four throughput-checkpoint items in the host todo list or the task plan, keeping nonapplicable dimensions with `n/a` and a reason. Feature implementation is delegated even for small changes, using an existing configured feature model or parent inheritance. The delegate receives file scope, a domain data shape, and success criteria. Multiple valid implementation shapes use Arena. A child agent forbidden to spawn owns its code directly while preserving separate review. Feature verification runs on the matching surface; inconclusive or wrong-surface results are flagged and do not count as a pass. Feature delivery builds, verifies, and commits each small unit before the next, then organizes small ordered commits and stacked follow-ups. Contested feature designs require Interrogate before shipping; task-authorized PR preparation or creation follows the bundled Opening a PR playbook. One owner handles coupled feature or migration work and fans out after the blocking phase. Parent-level fan-out is for independent artifacts. Checkpoints are rewritten at phase boundaries, and new work goes to a fresh owner rather than chained interrupts. Architect and Arena can be invoked directly. They require host delegation tools and use a todo list when the host provides one. Arena defaults to three independent parent-model candidates and an inherited cross-judge; configured host runner and judge models take precedence. Architect uses its own configured roster when available and requires at least two structurally distinct completed designs before synthesis. Separate named skills provide grounding and verification when installed; missing skills are reported without claiming their rules were applied.
-
-The bundled plan checker keeps `node <Harness-package>/scripts/check-plan.mjs <plan.md>` as a Markdown structural check. Its `acceptance declare`, `acceptance run`, and `acceptance check` commands validate one committed JSON record, capture project gates, and enforce current-head evidence before full review. They require Node 22.20+, Git, and the declared project tools, with no new dependency or installation. Receipts use Git metadata by default or an explicit external `--store`. Read the installed Harness reference `references/acceptance-record.md` for the schema, failure codes, finding history, and project rules. Autopilot owners declare before implementation or measurement and run before every code-ready report. The root rechecks before full independent review. Missing tools and failed preflight block readiness. Independent review, applicable live proof, and current-head CI still gate merge.
-
-Control UI and Control CLI retain their pinned upstream instructions. They reuse repository-native test or demo harnesses first. Control UI needs a running app and available browser automation or a Chromium debugging connection. Control CLI needs terminal access and an available harness such as tmux or a PTY helper. Their packages provide instructions and examples, not browser binaries, automation dependencies, or terminal tools.
-
-No-comments requires host delegation tools. Its Comment Sicko prompt is bundled inside the package; no Cursor custom agent registration is required. The reviewer uses existing host model configuration or inherits the parent model. The reviewer traces the named symbol directly and uses Why for historical evidence. The parent uses Architect for structural changes when needed. The reviewer and parent retain unresolved comments, and constraint comments remain until an approved replacement is verified.
-
-Interrogate requires host delegation and repository read/search tools. Reviewers are read-only and receive the same prompt and rubric. It uses the host reviewer roster, or three independent parent-model reviewers when none is configured. It reports missing model diversity and rejected-model fallbacks without opening a maintenance PR. The lead produces a verdict; the skill does not apply fixes automatically.
-
-The bundled Bug fix playbook requires host delegation tools and access to the matching control surface. The lead reproduces and verifies the bug while delegating investigation and implementation. The fix agent uses an existing configured bug-fix model or inherits the parent model. Stubborn investigations continue an evidence-driven hypothesis loop until the mechanism is confirmed or a concrete blocker prevents progress. Persistent goal modes are not required. The `tdd` and `principle-sequence-verifiable-units` references resolve by installed skill name. Sequence Work into Verifiable Units is included; `tdd` is not included in this collection. Missing skills are reported without claiming their instructions were applied.
-
-Show Me Your Work can be invoked directly or routed by name. Its log needs filesystem access, and its unchanged bundled helper needs Bash and standard shell utilities. Logs remain local by default and are committed only when a reviewer needs the trail. Auditing requires host-provided access to the current run's transcript; separate trail review also requires delegation. Missing transcript or delegation access leaves review incomplete. A different model family is used when available; an available separate reviewer otherwise reports missing diversity. Attention replies name the actual reviewer and report incomplete review rather than claiming a pass. Unslop and Encode Lessons in Structure are included as separate skills and resolve by installed name; missing skills are reported. The installer supplies the instructions, template, and helper, not host transcripts, delegation tools, or models.
-
-Figure It Out can be invoked directly or routed for large migrations, ambitious multi-part changes, work reviewed after stepping away, unmatched tasks, and explicit requests. It reads the installed Harness Principles by name before framing completion, quantified scope, rigor, and a long-run checkpoint. It designs independent units, captures the original verification baseline, runs per-unit experiments with judging, logs through Show Me Your Work, and verifies the final product. Host todo tooling is optional, with the same ordered items in a task plan otherwise. Filesystem, read/search, measurement, and delegation capabilities are host requirements. Missing tools or named skills are reported without claiming affected steps ran.
-
-Benchmark Checklist can be invoked directly or routed for measured performance numbers. It requires host execution, filesystem, system-monitoring, and profiling capabilities. System load, core counts, and profiling use host-appropriate tools; source commands are examples. Missing tools or access are reported without claiming checks ran, and missing required evidence leaves a comparison inconclusive. The `principle-explain-the-number` dependency is included as a separate skill and resolves by installed name. The installer does not supply measurement tools or named dependencies. Perf issue and Hillclimb are bundled with Harness.
-
-The bundled Perf issue playbook requires host read/search, measurement, profiling, filesystem, and delegation tools and access to the matching control surface. Baseline and subsequent measurements use Benchmark Checklist. The lead traces the code behind the measured cost and uses Architect for fixes that cross a function boundary. Implementation uses the configured host performance model or parent inheritance. Each attempt is verified before the next, artifacts are compared, and missing capabilities or inconclusive results are reported without claiming a pass. PR work follows task authorization and the bundled Opening a PR playbook.
-
-The bundled Hillclimb playbook requires Git and host read/search, filesystem, measurement, and delegation tools. It agrees a reproducing workload, one metric, a target, and a minimum-attempt predicate, then freezes a sensitivity-proven measurement harness and records a baseline and green regression checks. Scoped delegates use the configured host hillclimb model or parent inheritance; independent hypotheses use isolated worktrees. Each attempt is measured, checked, and kept or reverted before proceeding. Show Me Your Work owns the canonical log and commit policy, with linked attempt evidence local and uncommitted by default. PR work follows task authorization. Guard the Context Window is included as a separate skill and resolves by installed name. Missing skills or capabilities are reported without claiming affected steps ran. Unattended runs borrow only the supported host watch/wake mechanism from Autonomous run, keeping Hillclimb's own stopping rule.
-
-The bundled Runtime forensics playbook requires access to the matching live surface and host read/search, filesystem, profiling, live-instrumentation, and delegation tools. CDP is one instrumentation option. Trace forensics requires filesystem, read/search, format-appropriate parsing and query tools, and delegation for large artifacts. Existing captures are analyzed without rerunning the workload; SQLite is optional. Both map findings to source and report evidence gaps without claiming confirmation. They deliver diagnoses, with fixes only when requested. Both use the included Guard the Context Window skill by installed name. The installer supplies the playbooks, not instrumentation or parsing tools.
-
-The bundled Prototype playbook requires host filesystem, execution, reference-search, and matching control tools. It builds a disposable artifact in isolated scratch space, compares labeled alternatives, and observes them on their actual surface. Missing tools or access are reported without claiming observation occurred. Exhaust the Design Space and Architect resolve by installed skill name; Feature is linked inside Harness. The installer provides the playbook, not a browser, dev server, or reference-search service.
-
-The bundled Visual parity playbook requires Git and host filesystem, execution, image-comparison, delegation, and matching control tools. Capture and freeze the baseline harness before migration; missing baselines or comparisons cannot support a parity claim. Shared primitives migrate before isolated component work. Each component must reach zero pixel difference, or report a concrete blocker without claiming a pass. Baseline concerns stop for clarification. Named principles resolve through the host catalog; Opening a PR is bundled and follows task authorization. The installer provides instructions, not rendering or image-comparison tools.
-
-The bundled Refactoring playbook requires Git and host read/search, verification, and delegation tools. It captures current behavior before changing structure, designs a simpler shape, delegates scoped mechanical edits using an existing configured refactoring model or parent inheritance, proves equivalence on the real artifact, and organizes small ordered passing commits. Large or cross-cutting work uses Figure It Out. PR preparation or creation follows task authorization.
-
-The verification principles are included as separate skills and resolve through the host catalog. Their checks need the host or project tools for the actual artifact, test interface, or measurement; installation does not supply those tools. Never Block on the Human and Encode Lessons in Structure are included as separate skills and resolve by installed name. Missing skills are reported without claiming their instructions were applied. The Skills CLI does not install those dependencies automatically.
-
-Harness subagents use host delegation bindings, background or asynchronous execution when supported, file pointers, role-appropriate tool permissions, existing model configuration, and parent inheritance. Configured role overrides and difficulty tiers take precedence over inherited defaults. Routed workflows retain their roles and reviewers. The parent inspects actual work, owns the result, and prefers fresh delegates with consolidated scope; reuse is for costly state or running processes. Missing tools, model fallbacks, and unavailable diversity are reported. The installer does not add a Cursor wrapper, register custom agents, configure models, or provide delegation tools. Never Block on the Human applies only to authorized execution; Encode Lessons in Structure uses authorized task/project notes, with personal-memory updates governed by host and user rules.
-
-Core Harness Autonomy uses available host tools within current task authorization and host permissions. Routine execution proceeds without repeated confirmation; consequential actions require input only when authorization is missing or the host requires approval. Explicit persistence requests continue until completion, explicit pause, or a concrete blocker requiring input. Installation does not grant external-action permissions, enable a native goal mode, or install scheduling infrastructure. Autonomous run uses only supported host watch/wake capabilities.
-
-Babysit and Shipping are bundled with the review-triage reference. They require Git, authenticated gh access, project tests/builds, and host watch or wake capabilities for sustained monitoring. Shipping also requires independent host delegates and matching control tools. Babysit ends at merge-ready; task-authorized Shipping confirms each bottom PR actually merged before advancing. Review replies, resolutions, verifier posts, follow-up PRs, and CI retriggers follow task authorization. Missing delegation leaves verification incomplete; missing sustained monitoring is reported without claiming a live watcher. The installer does not supply a watcher script, Cursor cloud agents, scheduling infrastructure, or GitHub credentials.
-
-Harness bundles `scripts/pr_receipt.py` for read-only scoped GitHub evidence. It requires Python 3.10+, authenticated gh, and GraphQL access. Read its [PR receipt contract](../skills/harness/references/pr-receipt.md) for complete pagination, stable published references, current-head attribution, and bounded collection. JSON and a bounded summary distinguish collection from check results. Required-policy uncertainty remains explicit. The receipt never replaces independent verification, patch identity, or merge authorization. Host attachment still requires the supported host call. Failed or unconfirmed attachment remains unknown, with bounded retries and the verified URL retained.
-
-The bundled Autonomous run playbook requires the host tools for execution, filesystem access, verification, and any delegation the task needs. Event watches or heartbeats use supported host wake mechanisms within task authorization; missing unattended execution is reported without claiming an active watcher. Sequence Work into Verifiable Units and Show Me Your Work resolve by installed name. The run retains its completion predicate, handles related authorized fixes, records unrelated follow-ups, and stops on explicit pause or genuine blockers. The installer does not supply a scheduler or turn on a native goal mode.
-
-Orchestrate and both Autopilot playbooks require host delegation, Git, authenticated gh, project verification/control tools, and supported wake mechanisms for unattended audits. Swarm is a separately selected dependency; host model configuration or parent inheritance and concurrency limits govern its workers. Missing tools, model diversity, or scheduling are reported as incomplete capability. Orchestrate additionally bundles `scripts/orch.py` inside Harness, requiring Python 3.10+ and a local filesystem with process locking. It installs no packages. Invoke it from its installed package location with an explicit authorized store directory; read the bundled orchestration-store contract before initialization. It maintains plain records, recoverable inbox batches, exact-head verdicts, and gh-derived scoped linear frontiers. Multiple stacks have separate frontier stores. Autopilot-full merges only with task authority and a clean parent verdict; Autopilot-stack leaves landing to the operator. The installer supplies no agent runtime, credentials, or scheduler.
-
-The bundled Multi-phase or multi-PR plan playbook delivers a plan and waits for explicit execution authorization. Its `scripts/check-plan.mjs` checker requires Node 22.20+ and no third-party packages. Fenced examples may use backticks or tildes with up to three leading spaces. The closing marker must match and be at least as long as the opening marker. Verification retains unit, live, and perf sections with scenario-driven lane counts, exact-head evidence, and concrete reasons for nonapplicable checks; missing tools remain incomplete. The Markdown checker validates structure and does not prove evidence or applicability. Acceptance mode captures project gates and checks current-head receipts through `references/acceptance-record.md` in the installed Harness package. Interaction review retains screenshots and video before operator landing. Named writing, exploration, control, and Swarm skills resolve through the host catalog.
-
-Session pickup needs accessible current-project history, saved task state, and Git; missing history is disclosed. Pause safely needs authorized filesystem/Git access and supported cancellation, stages only task-owned changes, and saves a resume note in an authorized location. It activates only on an explicit pause; compaction alone continues the task.
-
-Worktree and simulator cleanup bundles `scripts/worktree-audit.py` and its runtime contract. The audit requires Python 3.10+, filesystem access, and Git with NUL-delimited porcelain worktree listings. Optional PR reads use authenticated gh; allocated-size scans are opt-in. It fetches and deletes nothing and installs no packages. Supply current-project host ownership and activity evidence by explicit usage-file argument; absent or stale evidence holds candidates. Tracked, untracked, and ignored content require preservation review, closed PRs do not prove merge, and primary/invocation or active worktrees stay held. Deletion, simulator IDs, and cache paths follow the confirmed cleanup scope and task authorization. The installer supplies instructions and a read-only helper, not simulator tools or host history access.
-
-The bundled Opening a PR playbook requires Git and authenticated GitHub CLI (`gh`) access to the target repository. PR creation follows task authorization. The playbook uses `gh` for PR operations and host tracking tools to register or attach PR URLs when supported or required. Opening a PR reports its URL and continues the build; a separate monitoring pass waits for a user request after the whole stack exists. An Autopilot owner's lifecycle brief assigns its own Babysit loop after the code-ready report.
-
-Direct technical-writing calls locate and read the installed Unslop skill by name, without requiring Harness or automatic skill injection. If Unslop cannot be located or read, technical writing reports it as unavailable and uses its own rules. Harness follows bundled playbook steps directly when the host has no todo-list tool.
-
-For other supported tools, change `--agent`. For project-local installation, run inside the project and omit `--global`; use `--project` on the update command. The CLI uses symlinks to a canonical installed copy by default; `--copy` selects independent copies where preferred.
-
-Select skill names explicitly so you control what is installed or updated. Make edits in the harness source repository, then distribute them through the CLI. An update can replace installed files, including edits made directly to those files.
-
-## Wayfinder
-
-Invoke Wayfinder with `$wayfinder` in Codex or `/wayfinder` on hosts with skill slash commands. Its source instructions and explicit invocation policy are unchanged.
-
-Wayfinder expects a host `Skill` tool and the `grilling`, `domain-modeling`, `research`, and `prototype` skills. It refers to `/setup-matt-pocock-skills` and tracker documentation with a "Wayfinding operations" section. These dependencies are not bundled or installed automatically. Harness's `grill-me` skill and Prototype playbook are not automatic substitutes.
-
-The source uses issues, child relationships, labels, assignment, blocking dependencies, frontier queries, comments, and issue updates. It describes a local Markdown fallback when no tracker is configured, but does not bundle that tracker implementation. Research tickets also require subagents with fresh context windows, Git branches, and push access. Installation checks verify packaging, not these runtime capabilities.
-
-## Retro
-
-Invoke Retro with `$retro` in Codex or `/retro` on hosts with skill slash commands. Its source instructions and explicit invocation policy are unchanged. It reviews evidence from the specified coding session, defaulting to the current session, and presents environment improvements by severity.
-
-Retro expects a host `Skill` tool, the separate `writing-for-agents` skill, and read access to session evidence and repository configuration. These capabilities are not bundled or installed automatically. The collection's `technical-writing` skill is not an automatic substitute. Installation checks validate packaging, not access to session logs or retrospective behavior.
-
-## Additional pstack skills
-
-Statechart includes a local fix for relative TLC jar paths. Correct and Maintain Verification Skill use their upstream runtime packages. Blast Radius uses the host's configured Arena roles for wide reviews. All four keep upstream `disable-model-invocation` metadata. Host invocation behavior varies; these packages do not add a separate Codex invocation policy.
-
-Statechart needs a TypeScript-capable runtime, Java, and TLC. Its upstream script can use mise and network downloads to obtain tools; image rendering also uses Pele. It checks the supplied bounded model, and source-described bug paths still need to be reproduced against the actual code. Installing the skill does not install these tools.
-
-Correct needs project history, source, and test or lint tools. It can change code and create commits as part of its upstream workflow, subject to existing task authorization and host permissions. Blast Radius needs source and executable checks. It uses Arena for wide changes and Unslop for the report. Install those skills separately.
-
-Maintain Verification Skill needs a project verification skill and feature map, source access, subagents, and a runnable app or CLI. Its source mentions Cursor-style project paths; the bundled generator uses `.agents/skills/verify-*`. No automatic path substitution or companion skill installation occurs.
-
-## Work projects: pin a release
-
-After a real `v0.1.0` release exists, run inside the consuming project:
-
-```sh
-npx skills@1.7.0 add 'jaki95/agent-harness#v0.1.0' --skill grill-me --agent codex --copy
-```
-
-Commit `skills-lock.json` and the generated project skill files so the project records its selection. Review the consuming project's diff before committing updates. Use `--agent` selections appropriate to that project; avoid a global installation for a project-specific pin.
-
-## Explicit upgrade and rollback
-
-Pinned refs are preserved by the CLI. `skills update` does not select the next release tag. To adopt a newer release, install explicitly from that tag:
-
-```sh
-npx skills@1.7.0 add 'jaki95/agent-harness#v0.2.0' --skill grill-me --agent codex --copy
-```
-
-To roll back, run the same command with the earlier tag and review the resulting files and lockfile. Upgrade commands target this harness repository, not the upstream authors recorded in the maintenance registry.
-
-## Source and installation boundaries
-
-The CLI distributes a skill's directory, including its runtime resources. It does not distribute sibling `registry/` or `reviews/` directories, or this repository's `AGENTS.md`. Top-level maintenance scripts require a repository clone. Keep scripts needed by an installed skill inside `skills/<name>/scripts/`.
-
-Harness uses `policy.allow_implicit_invocation: false` in Codex. Invoke it as `$harness`. The routed writing, code cleanup, review, control, investigation, and engineering skills use `true`, so Codex can discover them when Harness routes to them. They can also be selected for their matching tasks outside Harness. This Codex policy is a deliberate adaptation of the upstream explicit-only settings. See [OpenAI's invocation-policy documentation](https://learn.chatgpt.com/docs/build-skills#optional-metadata).
-
-Imported `disable-model-invocation: true` frontmatter is retained where present. Deslop, Control UI, and Control CLI retain their upstream default invocation metadata. Other hosts that honor it may require explicitly invoking the routed skills alongside Harness. Hosts that expose slash commands can use `/harness`. Cursor's `mode` and `reminder` metadata is retained but does not implement those native features in other hosts.
-
-Our integration test verifies tagged installs and upgrades with disposable Git repositories. It installs all owned skills into one temporary project and Harness alone into another. It checks every installed runtime file against its source and verifies that the standalone package includes its playbooks and invocation policy, that bundled file references stay inside the package, and that separate routed skills are not installed automatically. It does not modify user-wide skill directories or publish local changes.
-
-Generated `__pycache__` directories are excluded from the expected source files. A disposable fixture verifies that these caches are not installed, including when the Python maintenance tests run before the CLI checks.
-
-## References
-
-- [Skills CLI v1.7.0 documentation](https://github.com/vercel-labs/skills/blob/v1.7.0/README.md)
-- [Source ref parsing](https://github.com/vercel-labs/skills/blob/v1.7.0/src/source-parser.ts)
-- [Update source and ref handling](https://github.com/vercel-labs/skills/blob/v1.7.0/src/update-source.ts)
-- [Project lockfile](https://github.com/vercel-labs/skills/blob/v1.7.0/src/local-lock.ts)
+The CLI distributes each selected skill's directory. Repository maintenance scripts, the upstream registry, Statechart's test corpus, and review records stay with the source checkout. See the [Skills CLI documentation](https://github.com/vercel-labs/skills/blob/v1.7.0/README.md) for other agent selections.

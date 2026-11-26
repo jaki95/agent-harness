@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Queue recovery preserves completed action receipts and resumes unfinished units, including units with a passing PR check. Isolated verification lanes check nested submodules for edits before and after running a command.
+- Multi-PR plans must name each acceptance manifest. Add `**Acceptance manifest.**` followed by its repository-relative JSON path in backticks after each PR's dependency line. State the verification policy once in the introduction.
+- The upstream monitor can publish large review queues in verified parts. Update the installed reviewer before using multipart queues. It now runs the exact GitHub CLI selected during installation.
+- Statechart installations contain the runtime and license. The full test corpus stays in the repository. Release commits reuse one set of collection and Statechart checks on `main`.
+- The installation guide groups project pins, upgrades, and rollback. The Feature playbook uses one implementer and independent review when a change follows an established pattern within one component.
+
 ## v0.1.0 - 2026-11-26
 
 - Install any of 48 skills from the collection with Skills CLI. Select Harness alone for its bundled playbooks or add its routed skills for the full workflow.
