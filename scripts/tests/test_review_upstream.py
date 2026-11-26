@@ -487,7 +487,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(2, len(list((root / "units").iterdir())))
             self.assertTrue((root / "state/scratch").is_dir())
 
-from test_monitor_upstream import FakeIssues, RepositoryFixture, git
+from test_monitor_upstream import FakeIssues, RepositoryFixture, commit_archive, git
 
 
 class EvidenceTests(RepositoryFixture):
@@ -559,6 +559,11 @@ class EvidenceTests(RepositoryFixture):
             self.assertEqual("quiet", run().kind)
             self.assertEqual(1, analyze.call_count)
             self.assertEqual(321, len(analyze.call_args.args[0].sources[0]["changed_files"]))
+
+    def test_unrelated_harness_tree_does_not_block_review(self):
+        commit_archive(self.harness)
+        source = self.gather().sources[0]
+        self.assertEqual({"skills/sample/SKILL.md": "customized skill\n"}, source["local_files"])
 
     def test_relocated_test_and_split_package_manifest_are_selected_individually(self):
         testdir = self.harness / "tests/sample"

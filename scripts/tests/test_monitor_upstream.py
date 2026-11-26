@@ -18,6 +18,13 @@ def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.DEVNULL).decode().strip()
 
 
+def commit_archive(root):
+    blob = subprocess.check_output(["git", "-C", str(root), "hash-object", "-w", "--stdin"], input=b"archive")
+    rows = (f"100644 {blob.decode().strip()}\tarchive/{index:05d}-{'x' * 88}\n" for index in range(16000))
+    subprocess.run(["git", "-C", str(root), "update-index", "--index-info"], input="".join(rows).encode(), check=True)
+    git(root, "commit", "-qm", "Add unrelated archive")
+
+
 class RepositoryFixture(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="monitor-test-")
@@ -87,6 +94,22 @@ class DetectorTests(RepositoryFixture):
         self.assertEqual("unchanged", second.results[0].status)
         self.assertNotEqual(first.results[0].head, second.results[0].head)
         self.assertEqual(monitor.fingerprint(monitor.compact(first, {})), monitor.fingerprint(monitor.compact(second, {})))
+
+    def test_large_unrelated_tree_and_diff_preserve_boundary_renames(self):
+        (self.upstream / "watched" / "helper.txt").rename(self.upstream / "helper.txt")
+        (self.upstream / "outside.txt").rename(self.upstream / "watched" / "outside.txt")
+        self.commit()
+        commit_archive(self.upstream)
+        result = self.collect().results[0]
+        self.assertEqual("pending", result.status, result.error)
+        self.assertEqual({("R", "watched/helper.txt", "helper.txt"), ("R", "outside.txt", "watched/outside.txt")},
+                         {(change.kind, change.old_path, change.new_path) for change in result.changes})
+        self.source["paths"] = ["watched/SKILL.md"]
+        self.write_registry()
+        self.assertEqual("unchanged", self.collect().results[0].status)
+        self.source["paths"] = ["archive/"]
+        self.write_registry()
+        self.assertEqual("output-limit", self.collect().results[0].error)
 
     def test_change_and_entrypoint_customization_are_reported(self):
         self.write("watched/SKILL.md", "new upstream skill\n")
