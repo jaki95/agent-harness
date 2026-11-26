@@ -716,6 +716,25 @@ class CliTests(RepositoryFixture):
         self.assertFalse((self.harness / "registry" / "report.json").exists())
         self.assertNotIn("Traceback", result.stderr)
 
+    def test_issue_writes_are_reserved_for_the_target_monitor_workflow_on_main(self):
+        tools = self.root / "bin"
+        tools.mkdir()
+        gh = tools / "gh"
+        called = self.root / "gh-called"
+        gh.write_text("#!/bin/sh\ntouch gh-called\nexit 1\n")
+        gh.chmod(0o755)
+        (self.harness / "registry" / "skills.json").write_text("invalid")
+        for ref in ("", "example/harness/.github/workflows/check.yml@refs/heads/main",
+                    "example/harness/.github/workflows/monitor-upstream.yml@refs/heads/topic",
+                    "other/harness/.github/workflows/monitor-upstream.yml@refs/heads/main"):
+            with self.subTest(workflow_ref=ref):
+                env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}", GITHUB_WORKFLOW_REF=ref)
+                result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
+                                  "--issue-repo", "example/harness", env=env)
+                self.assertEqual(1, result.returncode)
+                self.assertFalse(called.exists(), result.stderr)
+                self.assertIn("gh workflow run monitor-upstream.yml --repo example/harness --ref main", result.stderr)
+
     def test_fake_gh_publishes_errors_with_full_newlines_and_keeps_failure(self):
         (self.harness / "registry" / "skills.json").write_text("invalid")
         tools = self.root / "bin"
@@ -730,8 +749,10 @@ class CliTests(RepositoryFixture):
                            f" Path({str(capture)!r}).write_text(json.dumps(payload))\n"
                            " print(json.dumps(dict(payload,number=1,state='open')))\n")
         wrapper.chmod(0o755)
+        env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}",
+                   GITHUB_WORKFLOW_REF="example/harness/.github/workflows/monitor-upstream.yml@refs/heads/main")
         result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
-                          "--issue-repo", "example/harness", env=dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}"))
+                          "--issue-repo", "example/harness", env=env)
         self.assertEqual(1, result.returncode)
         self.assertIn("Issue reconciliation created", result.stdout)
         body = json.loads(capture.read_text())["body"]
@@ -749,8 +770,10 @@ class CliTests(RepositoryFixture):
         wrapper = tools / "gh"
         wrapper.write_text("#!/bin/sh\nprintf 'API unavailable' >&2\nexit 1\n")
         wrapper.chmod(0o755)
+        env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}",
+                   GITHUB_WORKFLOW_REF="example/harness/.github/workflows/monitor-upstream.yml@refs/heads/main")
         result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
-                          "--issue-repo", "example/harness", env=dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}"))
+                          "--issue-repo", "example/harness", env=env)
         self.assertEqual(1, result.returncode)
         self.assertIn("API unavailable", result.stderr)
         self.assertTrue((self.root / "report" / "report.json").exists())
