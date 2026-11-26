@@ -375,7 +375,10 @@ def run_lane(spec):
         if code != 0:
             raise LaneFailure("venv_setup_failed")
         environment["PATH"] = str(root / "venv" / "bin") + os.pathsep + os.defpath
-        executable = shutil.which(spec.argv[0], path=environment["PATH"])
+        command = spec.argv[0]
+        if os.path.dirname(command):
+            command = os.path.join(checkout, command)
+        executable = shutil.which(command, path=environment["PATH"])
         if executable is None:
             raise LaneFailure("command_unavailable")
         if re.fullmatch(r"python(?:[0-9]+(?:\.[0-9]+)?)?", Path(executable).name) and Path(executable).absolute().parent != root / "venv" / "bin":

@@ -96,7 +96,8 @@ The host observation format is:
 }
 ```
 
-Use observations from the current host query, no older than 300 seconds.
+Pickup reads the host observation after the forge queries. It must be no older
+than 300 seconds when pickup returns. Retry with fresh evidence if it expires.
 Active states are `running`, `waiting`, and `needs-input`.
 Terminal states are `completed`, `failed`, `cancelled`, and `stopped`.
 Missing, stale, inaccessible, or `pending-init` status remains unknown.
@@ -113,7 +114,11 @@ arbitrary commands or grant new access.
 The report includes current store differences, retained completion batches,
 current forge observations, owner classifications, evidence applicability,
 and a consolidated replacement packet with the next safe action.
-Units added after the checkpoint require owner reconciliation before dispatch.
+Pickup treats a recorded branch as a shared resource alongside the declared
+writable scopes. If a unit was added or its branch changed since the checkpoint,
+record the current owners and scopes in a fresh checkpoint before reusing a
+scope. Different branch names alone cannot establish separate worktrees or
+other writable resources.
 Missing host access remains unknown. A merged PR preserves completed external
 work even when its owner's host is inaccessible.
 An inaccessible forge cannot certify a saved head or old verdict.

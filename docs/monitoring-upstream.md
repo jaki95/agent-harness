@@ -1,6 +1,6 @@
 # Keep track of external skill updates
 
-Use the monitor to review upstream changes without changing local skills or registry revisions. Python 3.10 or newer and Git are required. GitHub issue publication also requires an authenticated `gh` command with issue write access.
+Use the monitor to review upstream changes without changing local skills or registry revisions. Python 3.10 or newer and Git are required. GitHub Actions publishes the queue with its workflow token.
 
 ## Inspect changes locally
 
@@ -27,7 +27,7 @@ Watched paths cover files and directories. A trailing slash requires a directory
 
 Each changed source includes its upstream patch. When one watched upstream `SKILL.md` exists at the incorporated revision, the report compares that entrypoint with the local skill. Inspiration without an incorporated revision uses the reviewed revision. The report includes maintenance notes. Supporting files need an explicit local mapping before you can judge their equivalence.
 
-Exit code `0` means every comparison completed, including comparisons with pending changes. Exit code `1` means detection or publication failed. An unknown status requires investigation. Missing paths, unavailable commits or refs, rewritten history, unavailable comparison evidence, and command limits cannot count as a clean result. Commands have a 90-second timeout and a 2 MiB output limit. Oversized evidence fails visibly rather than presenting a partial patch as complete.
+Exit code `0` means every comparison completed, including comparisons with pending changes. Exit code `1` means detection or publication failed. An unknown status requires investigation. Missing paths, unavailable commits or refs, rewritten history, unavailable comparison evidence, and command limits cannot count as a clean result. Commands have a 90-second timeout and a 2 MiB evidence limit. The detector reads the watched trees first. If they differ, it streams the repository-wide diff to identify moves across watch boundaries. Only matching change records count toward the evidence limit for that diff. Oversized watched evidence fails visibly.
 
 ## Receive the weekly digest
 
@@ -38,7 +38,7 @@ Exit code `0` means every comparison completed, including comparisons with pendi
 5. Read the source summary in the issue. Open the linked workflow run and download `upstream-skill-report` for complete patches.
 6. Configure the recurring Codex reviewer below to receive analysis and suggested next actions in comments.
 
-The workflow runs only on `main`. A single concurrency group serializes publishers. Its job has read access to contents and write access to issues. It preserves reports even when detection or publication fails, and the workflow retains a failed result.
+The workflow runs only on `main`. Scheduled and manual runs share the `upstream-skill-monitor` concurrency group, so one run at a time can create or update the queue. Its job has read access to contents and write access to issues. It preserves reports even when detection or publication fails, and the workflow retains a failed result.
 
 [GitHub scheduled workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) run on the default branch. Scheduling is best effort. Runs can be delayed or dropped under load. GitHub disables schedules in inactive public repositories after 60 days. Use the manual trigger when you need a current comparison.
 
@@ -56,17 +56,17 @@ An open issue with a clean snapshot remains the current batch until closure succ
 
 Merging an adoption PR does not run detection. Run the workflow manually after merging or wait for its schedule. If fresh upstream changes are already pending at that detection, the current batch remains open until those changes are reviewed too.
 
-## Publish a local report to the issue
+## Request a publication from the command line
 
-To authorize publication in a local run, supply the repository explicitly:
+Run the monitor on the target repository's `main` with a GitHub account that can dispatch workflows:
 
 ```sh
-python3 scripts/monitor_upstream.py --output-dir work/upstream-report --issue-repo OWNER/REPO
+gh workflow run monitor-upstream.yml --repo OWNER/REPO --ref main
 ```
 
-For an organization repository with a separate local publisher, set the repository Actions variable `UPSTREAM_MONITOR_LOGIN` to that account's GitHub login. Pass the same value with `--monitor-login LOGIN` to the local monitor and reviewer installer. It replaces the repository owner in the trusted publisher list. To accept only Actions as a monitor publisher, set the value to `github-actions[bot]`. The local publisher must authenticate as one of the trusted accounts.
+The workflow reads the registry on `main` and publishes the result. To inspect an unmerged checkout, run the local report command above. Replace older local `--issue-repo` publication commands in scripts and timers with the workflow dispatch before the next run.
 
-Without `--issue-repo`, the command performs detection and writes local reports only. It does not infer a publication destination or subscribe other users.
+If previous queues used a separate publisher account, retain its login in the repository's `UPSTREAM_MONITOR_LOGIN` Actions variable and the reviewer installer's `--monitor-login` argument. This lets the workflow and reviewer find existing issues and snapshot parts during the transition.
 
 ## Review each new queue with Codex
 

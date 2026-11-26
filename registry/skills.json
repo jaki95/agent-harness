@@ -790,8 +790,8 @@
       ]
     },
     "wayfinder": {
-      "maintenance_notes": "Preserves Matt Pocock's Wayfinder SKILL.md and agents/openai.yaml byte-for-byte at the incorporated revision, including the fresh-context requirement for research subagents. Both files map from skills/engineering/wayfinder/ to skills/wayfinder/ with matching content and modes. Keeps explicit invocation, planning by default, decision-ticket types, tracker-native relationships, human participation, research delegation, and one-ticket-per-session behavior. Omits the standalone upstream LICENSE at the user's request; source attribution remains in this registry. The source assumes a host Skill tool, grilling, domain-modeling, research, prototype, setup-matt-pocock-skills, and configured tracker operations; these are not bundled or automatically installed. Harness's grill-me and Prototype playbook are not substituted. No local instruction or behavior changes.",
-      "reviewed_on": "2026-11-11",
+      "maintenance_notes": "Adapts Matt Pocock's Wayfinder from skills/engineering/wayfinder/ to skills/wayfinder/. The local charting step claims research tickets on the unblocked frontier before dispatch. Retains the upstream agent configuration and fresh context for each research subagent. Keeps explicit invocation, planning by default, decision-ticket types, tracker-native relationships, human participation, research delegation, and one-ticket-per-session behavior. Omits the standalone upstream LICENSE at the user's request; source attribution remains in this registry. The source assumes a host Skill tool, grilling, domain-modeling, research, prototype, setup-matt-pocock-skills, and configured tracker operations; these are not bundled or automatically installed. Harness's grill-me and Prototype playbook are not substituted.",
+      "reviewed_on": "2026-11-26",
       "sources": [
         {
           "id": "matt-pocock-wayfinder",

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Queue pickup holds reassignment until the coordinator checkpoints new or changed branch ownership. It checks that host observations are still fresh before reporting its decision.
+- Isolated verification lanes resolve project commands such as `./check-project` from the selected checkout.
+- The upstream monitor applies its evidence limit to watched paths and recognizes moves across watch boundaries. To publish on demand, run `gh workflow run monitor-upstream.yml --repo OWNER/REPO --ref main`. Manual and scheduled publications share one writer. Local detection still writes reports.
+- Wayfinder claims eligible research tickets after it records their dependencies.
+
 - Queue recovery preserves completed action receipts and resumes unfinished units, including units with a passing PR check. Isolated verification lanes check nested submodules for edits before and after running a command.
 - Multi-PR plans must name each acceptance manifest. Add `**Acceptance manifest.**` followed by its repository-relative JSON path in backticks after each PR's dependency line. State the verification policy once in the introduction.
 - The upstream monitor can publish large review queues in verified parts. Update the installed reviewer before using multipart queues. It now runs the exact GitHub CLI selected during installation.

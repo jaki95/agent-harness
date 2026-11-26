@@ -707,6 +707,7 @@ def checkpoint(args, store):
 
 
 HOST_ADAPTER_TIMEOUT = 10
+HOST_MAX_AGE = 300
 
 
 def read_host_adapter(argv, request, repo):
@@ -776,7 +777,7 @@ def read_host_adapter(argv, request, repo):
 
 def host_observation(args, owner_ids, repo):
     if not args.host_state and not args.host_command:
-        return {}, "no host adapter or fresh observation supplied"
+        return {}, "no host adapter or fresh observation supplied", None
     try:
         if args.host_state:
             value = read_json(Path(args.host_state))
@@ -792,8 +793,8 @@ def host_observation(args, owner_ids, repo):
         if type(value["schema_version"]) is not int or value["schema_version"] != 1:
             raise StoreError("host schema_version must be 1")
         observed = datetime.fromisoformat(value["observed_at"].replace("Z", "+00:00"))
-        if observed.utcoffset() is None or not 0 <= time.time() - observed.timestamp() <= 300:
-            raise StoreError("host observation must be fresh within 300 seconds")
+        if observed.utcoffset() is None or not 0 <= time.time() - observed.timestamp() <= HOST_MAX_AGE:
+            raise StoreError(f"host observation must be fresh within {HOST_MAX_AGE} seconds")
         if not isinstance(value["owners"], list):
             raise StoreError("host owners must be a list")
         owners = {}
@@ -807,9 +808,9 @@ def host_observation(args, owner_ids, repo):
             if type(owner["writer_stopped"]) is not bool:
                 raise StoreError("host owner.writer_stopped must be a boolean")
             owners[owner["id"]] = owner
-        return owners, None
+        return owners, None, observed.timestamp() + HOST_MAX_AGE
     except (StoreError, OSError, ValueError, TypeError, AttributeError, subprocess.TimeoutExpired) as exc:
-        return {}, f"host observation unavailable: {exc}"
+        return {}, f"host observation unavailable: {exc}", None
 
 
 def recovery_prs(metadata, snapshot, repo, historical):
@@ -859,12 +860,18 @@ def pickup(args, store):
     if current["frontier"].get("repository", metadata["repository"]["name"]) != metadata["repository"]["name"]:
         raise StoreError("checkpoint repository differs from current durable frontier")
     repo = Path(metadata["repository"]["path"])
-    owners, host_error = host_observation(args, {row["owner_id"] for row in metadata["units"]}, repo)
     prs = recovery_prs(metadata, current, repo, saved["snapshot"])
+    owners, host_error, host_expires = host_observation(args, {row["owner_id"] for row in metadata["units"]}, repo)
     old_prs = {row["pr"]: row for row in saved["snapshot"]["frontier"]["prs"]}
     frontier_merged = {row["pr"] for row in current["frontier"]["prs"] if row["state"] == "MERGED"}
     old_units = {row["id"]: row for row in saved["snapshot"]["units"]}
     live_units = {row["id"]: row for row in current["units"]}
+    unreconciled_scopes = [row["id"] for row in current["units"]
+                           if row["id"] not in old_units or row["branch"] != old_units[row["id"]]["branch"]]
+    scopes = {unit["id"]: {cell(resource) for resource in unit["work_scope"]} for unit in metadata["units"]}
+    for unit_id, old in old_units.items():
+        if old["branch"]:
+            scopes[unit_id].add(old["branch"])
     retained = [row for bucket in current["inbox"].values() for row in bucket["pointers"]]
     historical = [row for bucket in saved["snapshot"]["inbox"].values() for row in bucket["pointers"]]
     units = []
@@ -877,7 +884,7 @@ def pickup(args, store):
         stopped = classification == "terminal" and owner["writer_stopped"]
         overlapping = []
         for other in metadata["units"]:
-            if other["owner_id"] == unit["owner_id"] or not set(other["work_scope"]) & set(unit["work_scope"]):
+            if other["owner_id"] == unit["owner_id"] or scopes[other["id"]].isdisjoint(scopes[unit["id"]]):
                 continue
             writer = owners.get(other["owner_id"])
             if not writer or writer["state"] not in TERMINAL_OWNERS or not writer["writer_stopped"]:
@@ -926,6 +933,8 @@ def pickup(args, store):
             action = "observe existing owner; do not duplicate dispatch"
         elif open_gates:
             action = "hold; reconcile open operator gates before dispatch: " + ", ".join(gate["id"] for gate in open_gates)
+        elif unreconciled_scopes:
+            action = "hold; checkpoint current owners and writable scopes for units: " + ", ".join(unreconciled_scopes)
         elif overlapping:
             action = "hold or isolate a new writable scope; overlapping owners are not confirmed stopped"
         elif not stopped:
@@ -958,6 +967,8 @@ def pickup(args, store):
                       "next_safe_action": action, "replacement_packet": packet})
     if stable_snapshot(store) != current or read_json(store / "checkpoint.json") != saved:
         raise StoreError("store changed during pickup; retry after writers settle")
+    if host_expires is not None and time.time() > host_expires:
+        raise StoreError("host observation expired during pickup; retry with a fresh observation")
     return {"schema_version": 1, "program": metadata["program"], "authorization": metadata["authorization"],
             "checkpoint_at": saved["captured_at"], "host_error": host_error, "units": units,
             "uncheckpointed_units": [{"current_unit": row, "owner_classification": "unknown",

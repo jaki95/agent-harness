@@ -18,6 +18,13 @@ def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.DEVNULL).decode().strip()
 
 
+def commit_archive(root):
+    blob = subprocess.check_output(["git", "-C", str(root), "hash-object", "-w", "--stdin"], input=b"archive")
+    rows = (f"100644 {blob.decode().strip()}\tarchive/{index:05d}-{'x' * 88}\n" for index in range(16000))
+    subprocess.run(["git", "-C", str(root), "update-index", "--index-info"], input="".join(rows).encode(), check=True)
+    git(root, "commit", "-qm", "Add unrelated archive")
+
+
 class RepositoryFixture(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="monitor-test-")
@@ -87,6 +94,22 @@ class DetectorTests(RepositoryFixture):
         self.assertEqual("unchanged", second.results[0].status)
         self.assertNotEqual(first.results[0].head, second.results[0].head)
         self.assertEqual(monitor.fingerprint(monitor.compact(first, {})), monitor.fingerprint(monitor.compact(second, {})))
+
+    def test_large_unrelated_tree_and_diff_preserve_boundary_renames(self):
+        (self.upstream / "watched" / "helper.txt").rename(self.upstream / "helper.txt")
+        (self.upstream / "outside.txt").rename(self.upstream / "watched" / "outside.txt")
+        self.commit()
+        commit_archive(self.upstream)
+        result = self.collect().results[0]
+        self.assertEqual("pending", result.status, result.error)
+        self.assertEqual({("R", "watched/helper.txt", "helper.txt"), ("R", "outside.txt", "watched/outside.txt")},
+                         {(change.kind, change.old_path, change.new_path) for change in result.changes})
+        self.source["paths"] = ["watched/SKILL.md"]
+        self.write_registry()
+        self.assertEqual("unchanged", self.collect().results[0].status)
+        self.source["paths"] = ["archive/"]
+        self.write_registry()
+        self.assertEqual("output-limit", self.collect().results[0].error)
 
     def test_change_and_entrypoint_customization_are_reported(self):
         self.write("watched/SKILL.md", "new upstream skill\n")
@@ -223,10 +246,10 @@ class DetectorTests(RepositoryFixture):
         self.commit()
         original = self.transport.command
 
-        def limited(transport, *args):
+        def limited(transport, *args, **kwargs):
             if "--binary" in args:
                 raise monitor.MonitorError("output-limit", "Too much patch")
-            return original(transport, *args)
+            return original(transport, *args, **kwargs)
 
         with patch.object(self.transport, "command", limited):
             result = self.collect().results[0]
@@ -716,6 +739,25 @@ class CliTests(RepositoryFixture):
         self.assertFalse((self.harness / "registry" / "report.json").exists())
         self.assertNotIn("Traceback", result.stderr)
 
+    def test_issue_writes_are_reserved_for_the_target_monitor_workflow_on_main(self):
+        tools = self.root / "bin"
+        tools.mkdir()
+        gh = tools / "gh"
+        called = self.root / "gh-called"
+        gh.write_text("#!/bin/sh\ntouch gh-called\nexit 1\n")
+        gh.chmod(0o755)
+        (self.harness / "registry" / "skills.json").write_text("invalid")
+        for ref in ("", "example/harness/.github/workflows/check.yml@refs/heads/main",
+                    "example/harness/.github/workflows/monitor-upstream.yml@refs/heads/topic",
+                    "other/harness/.github/workflows/monitor-upstream.yml@refs/heads/main"):
+            with self.subTest(workflow_ref=ref):
+                env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}", GITHUB_WORKFLOW_REF=ref)
+                result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
+                                  "--issue-repo", "example/harness", env=env)
+                self.assertEqual(1, result.returncode)
+                self.assertFalse(called.exists(), result.stderr)
+                self.assertIn("gh workflow run monitor-upstream.yml --repo example/harness --ref main", result.stderr)
+
     def test_fake_gh_publishes_errors_with_full_newlines_and_keeps_failure(self):
         (self.harness / "registry" / "skills.json").write_text("invalid")
         tools = self.root / "bin"
@@ -730,8 +772,10 @@ class CliTests(RepositoryFixture):
                            f" Path({str(capture)!r}).write_text(json.dumps(payload))\n"
                            " print(json.dumps(dict(payload,number=1,state='open')))\n")
         wrapper.chmod(0o755)
+        env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}",
+                   GITHUB_WORKFLOW_REF="example/harness/.github/workflows/monitor-upstream.yml@refs/heads/main")
         result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
-                          "--issue-repo", "example/harness", env=dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}"))
+                          "--issue-repo", "example/harness", env=env)
         self.assertEqual(1, result.returncode)
         self.assertIn("Issue reconciliation created", result.stdout)
         body = json.loads(capture.read_text())["body"]
@@ -749,8 +793,10 @@ class CliTests(RepositoryFixture):
         wrapper = tools / "gh"
         wrapper.write_text("#!/bin/sh\nprintf 'API unavailable' >&2\nexit 1\n")
         wrapper.chmod(0o755)
+        env = dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}",
+                   GITHUB_WORKFLOW_REF="example/harness/.github/workflows/monitor-upstream.yml@refs/heads/main")
         result = self.cli("--root", str(self.harness), "--output-dir", str(self.root / "report"),
-                          "--issue-repo", "example/harness", env=dict(os.environ, PATH=f"{tools}:{os.environ['PATH']}"))
+                          "--issue-repo", "example/harness", env=env)
         self.assertEqual(1, result.returncode)
         self.assertIn("API unavailable", result.stderr)
         self.assertTrue((self.root / "report" / "report.json").exists())
@@ -765,8 +811,9 @@ class CommandTests(unittest.TestCase):
     def test_limits_and_timeout(self):
         with self.assertRaisesRegex(monitor.MonitorError, "evidence limit"):
             monitor.run([sys.executable, "-c", "print('x'*1000)"], limit=10)
-        with self.assertRaisesRegex(monitor.MonitorError, "time limit"):
-            monitor.run([sys.executable, "-c", "import time; time.sleep(2)"], timeout=0.1)
+        for consume in (None, lambda stream: stream.read()):
+            with self.subTest(consume=consume), self.assertRaisesRegex(monitor.MonitorError, "time limit"):
+                monitor.run([sys.executable, "-c", "import time; time.sleep(2)"], timeout=0.1, read_stdout=consume)
 
 
 if __name__ == "__main__":

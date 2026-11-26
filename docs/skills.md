@@ -5,8 +5,8 @@ Each link opens the skill's instructions. For installation and host requirements
 | Skill | Purpose |
 | --- | --- |
 | [grill-me](../skills/grill-me/SKILL.md) | Stress-test a plan, decision, or idea in rounds of questions |
-| [wayfinder](../skills/wayfinder/SKILL.md) | Plan large efforts as linked decision tickets; requires companion skills and tracker setup described in the [installation notes](installation.md#wayfinder) |
-| [retro](../skills/retro/SKILL.md) | Review a coding session and propose environment improvements by severity; see the [host and dependency requirements](installation.md#retro) |
+| [wayfinder](../skills/wayfinder/SKILL.md) | Plan large efforts as linked decision tickets; requires companion skills and tracker setup described in the [installation notes](installation.md#check-prerequisites-for-the-work-you-want-to-do) |
+| [retro](../skills/retro/SKILL.md) | Review a coding session and propose environment improvements by severity; see the [host and dependency requirements](installation.md#check-prerequisites-for-the-work-you-want-to-do) |
 | [statechart](../skills/statechart/SKILL.md) | Model and check state transitions, then draw a statechart |
 | [correct](../skills/correct/SKILL.md) | Turn recurring mistakes into enforceable checks |
 | [maintain-verification-skill](../skills/maintain-verification-skill/SKILL.md) | Check a project's verification skill against source and live behavior |
