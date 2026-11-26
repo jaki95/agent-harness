@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import os
 import shlex
@@ -120,7 +121,11 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual("failed", self.run_review(analyze=analyze, now=0).kind)
         self.assertFalse(any(review.find_queue(self.client, {monitor.ACTIONS_LOGIN}).key.marker in note["body"]
                              for note in self.client.notes))
-        self.assertEqual("published", self.run_review(analyze=analyze, now=3601).kind)
+        def new_revision(*args):
+            return review.Evidence("4" * 40, evidence().sources)
+
+        self.assertEqual("published", self.run_review(analyze=analyze, evidence=new_revision, now=3601).kind)
+        self.assertIn("4" * 40, self.client.notes[-1]["body"])
         self.assertEqual("quiet", self.run_review(analyze=analyze, now=3602).kind)
         parts = [note["body"] for note in self.client.notes if "<!-- upstream-codex-part:" in note["body"]]
         self.assertGreater(len(parts), 1)
@@ -190,6 +195,43 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual("published", result.kind)
         self.assertEqual([["sample/source"], ["second/source"], ["second/source"]], batches)
         self.assertIn("### second/source", self.client.notes[-1]["body"])
+
+    def test_legacy_partial_recognized_after_unrelated_commit(self):
+        snapshot = monitor.parse_snapshot(self.client.issue["body"])
+        snapshot["sources"].append({**snapshot["sources"][0], "key": "other/source", "status": "unknown"})
+        self.client.issue["body"] = monitor.issue_body(snapshot, monitor.fingerprint(snapshot), 1)
+        queue = review.find_queue(self.client, {monitor.ACTIONS_LOGIN})
+        unavailable = (("other/source", "evidence-unknown"),)
+        old = review.Evidence(MAIN, evidence().sources, unavailable)
+        digest = hashlib.sha256(json.dumps(monitor.asdict(old), sort_keys=True).encode()).hexdigest()
+        marker = f"<!-- upstream-codex-partial:1:{queue.key.digest}:{digest} -->"
+        heading = review.REVIEW_HEADING
+        old_body = (f"{heading}\n\nQueue generation 1. Fingerprint `{queue.key.digest}`.\n"
+                    f"Local evidence from harness main `{MAIN}`.\n\nEvidence digest `{digest}`.")
+        part_marker = f"<!-- upstream-codex-part:{'f' * 64}:1 -->"
+        part = f"{heading}\n\nQueue generation 1. Review part 1.\n\n{old_body}\n\n{part_marker}"
+        summary = (f"{heading}\n\nQueue generation 1. See the 2 review parts above. Some sources require another review."
+                   f"\n\nEvidence digest `{digest}`.\n\n{marker}")
+        new = review.Evidence("4" * 40, old.sources, unavailable)
+        for index, comments in enumerate(([old_body + "\n\n" + marker], [part, summary])):
+            with self.subTest(parts=len(comments)):
+                self.client.notes.clear()
+                for body in comments:
+                    self.client.comment(6, body)
+                self.assertEqual("failed", self.run_review(evidence=lambda *args: new, now=index * 3601).kind)
+                self.assertEqual(0, self.models)
+                self.assertEqual(comments, [note["body"] for note in self.client.notes])
+
+        changed = review.Evidence(new.harness_revision, ({**new.sources[0], "maintenance_notes": "Changed"},), unavailable)
+        self.assertEqual("failed", self.run_review(evidence=lambda *args: changed, now=7202).kind)
+        self.assertEqual(1, self.models)
+        self.assertEqual(3, len(self.client.notes))
+
+        self.client.notes = [{"number": 6, "body": part, "user": {"login": "unrelated"}}]
+        self.client.comment(6, summary)
+        self.assertEqual("failed", self.run_review(evidence=lambda *args: new, now=10803).kind)
+        self.assertEqual(2, self.models)
+        self.assertEqual(3, len(self.client.notes))
 
     def test_stale_partial_analysis_is_discarded(self):
         snapshot = monitor.parse_snapshot(self.client.issue["body"])
@@ -699,6 +741,8 @@ class EvidenceTests(RepositoryFixture):
         self.assertIn("evidence-limit", client.notes[0]["body"])
         self.assertNotIn("upstream-codex-review:", client.notes[0]["body"])
         self.assertEqual("quiet", run(5).kind)
+        queue = review.find_queue(client, {monitor.ACTIONS_LOGIN})
+        (self.root / "state" / (queue.key.filename + ".json")).unlink()
         (self.harness / "README.md").write_text("Unrelated change")
         self.commit_harness()
         self.assertEqual("failed", run(3601).kind)

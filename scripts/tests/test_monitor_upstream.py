@@ -525,6 +525,20 @@ class PublisherTests(unittest.TestCase):
         self.assertEqual(calls, self.client.calls)
         self.assertEqual("open", self.client.records[0]["state"])
 
+    def test_legacy_watch_paths_preserve_the_queue_across_an_outage(self):
+        self.publish()
+        legacy = self.snapshot()
+        legacy["sources"][0]["paths"] = ["./watched//"]
+        self.client.records[0]["body"] = monitor.issue_body(legacy, monitor.fingerprint(legacy), 1)
+        self.assertEqual("quiet", self.publish())
+        self.assertEqual(1, self.snapshot()["generation"])
+
+        offline = monitor.Report((monitor.Result(self.source, "unknown", error="timeout"),))
+        self.publish(offline)
+        self.assertEqual(2, self.snapshot()["generation"])
+        self.assertEqual([monitor.asdict(self.change)], self.snapshot()["sources"][0]["changes"])
+        self.assertEqual("quiet", self.publish(offline))
+
     def test_new_watermark_drops_old_proposals_during_outage(self):
         self.publish()
         source = monitor.Source("sample", "source", self.source.repository, "main", ("watched/",), "c" * 40, "a" * 40, "Notes.")

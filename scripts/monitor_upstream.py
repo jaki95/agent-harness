@@ -9,7 +9,7 @@ import difflib
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shlex
 import signal
@@ -43,6 +43,11 @@ class Source:
     reviewed: str
     incorporated: str | None
     notes: str
+
+    @classmethod
+    def from_registry(cls, skill, item, notes):
+        return cls(skill, item["id"], item["repository"], item["ref"], watch_paths(item["paths"]),
+                   item["last_reviewed_revision"], item["last_incorporated_revision"], notes)
 
     @property
     def key(self):
@@ -230,6 +235,16 @@ def watched_changes(pipe, paths):
     return tuple(changes)
 
 
+def watch_paths(paths):
+    normalized = []
+    for path in paths:
+        name = str(PurePosixPath(path))
+        if name != "." and path.endswith(("/", "/.")):
+            name += "/"
+        normalized.append(name)
+    return tuple(normalized)
+
+
 def watches(path, watched):
     return path is not None and any(p == "." or (not p.endswith("/") and path == p)
                                    or path.startswith(p.rstrip("/") + "/") for p in watched)
@@ -286,8 +301,7 @@ def collect(root, *, git_factory=Git):
         if errors:
             continue
         for item in record["sources"]:
-            sources.append(Source(skill, item["id"], item["repository"], item["ref"], tuple(item["paths"]),
-                                  item["last_reviewed_revision"], item["last_incorporated_revision"], record["maintenance_notes"]))
+            sources.append(Source.from_registry(skill, item, record["maintenance_notes"]))
     if errors:
         return Report((), tuple(errors))
     results = []
@@ -351,6 +365,9 @@ def compact(report, previous):
                 "reviewed": source.reviewed, "status": result.status, "error": result.error,
                 "missing_paths": list(result.missing_paths), "changes": [asdict(c) for c in result.changes]}
         prior = old.get(source.key)
+        if prior and watch_paths(prior["paths"]) == source.paths:
+            # Existing generation fingerprints include the registered path spelling.
+            item["paths"] = prior["paths"]
         if result.head:
             item["observed_revision"] = result.head
         if result.status == "unknown" and not result.changes and prior and all(
