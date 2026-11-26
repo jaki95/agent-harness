@@ -468,6 +468,47 @@ print(json.dumps({'owners': owners, 'error': error,
             self.assertEqual(unit["overlapping_unconfirmed_owners"], ["owner-2"])
             self.assertIn("overlapping owners", unit["next_safe_action"])
 
+    def test_new_unit_holds_reuse_until_scope_is_checkpointed(self):
+        self.call("unit", "set", "u1", "--state", "building", "--branch", "feature/shared")
+        self.save_checkpoint()
+        self.call("unit", "add", "u2", "--track", "build")
+        host = self.host_state()
+        for branch in ("feature/shared", "feature/other"):
+            with self.subTest(branch=branch):
+                self.call("unit", "set", "u2", "--state", "building", "--branch", branch)
+                result = self.call("pickup", "--host-state", host)
+                self.assertFalse(result["units"][0]["same_scope_replacement_allowed"])
+                self.assertIn("u2", result["units"][0]["next_safe_action"])
+                self.assertFalse(result["uncheckpointed_units"][0]["same_scope_replacement_allowed"])
+        self.metadata["units"].append(self.unit("u2", "owner-2", "worktree-B"))
+        self.save_checkpoint()
+        result = self.call("pickup", "--host-state", host)
+        self.assertTrue(result["units"][0]["same_scope_replacement_allowed"])
+        self.assertFalse(result["units"][1]["same_scope_replacement_allowed"])
+
+    def test_changed_branch_needs_new_ownership_and_shared_branches_count_as_scope(self):
+        self.call("unit", "set", "u1", "--state", "building", "--branch", "shared")
+        self.call("unit", "add", "u2", "--track", "build")
+        self.call("unit", "set", "u2", "--state", "building", "--branch", "other")
+        self.metadata["units"].append(self.unit("u2", "owner-2", "worktree-B"))
+        self.save_checkpoint()
+        self.call("unit", "set", "u2", "--state", "building", "--branch", "shared")
+        owners = [{"id": owner, "state": "stopped", "writer_stopped": True}
+                  for owner in ("owner-1", "owner-2")]
+        result = self.call("pickup", "--host-state", self.host_state(owners=owners))
+        self.assertFalse(any(unit["same_scope_replacement_allowed"] for unit in result["units"]))
+        self.save_checkpoint()
+        result = self.call("pickup", "--host-state", self.host_state(owners=owners[:1]))
+        self.assertFalse(result["units"][0]["same_scope_replacement_allowed"])
+        self.assertEqual(result["units"][0]["overlapping_unconfirmed_owners"], ["owner-2"])
+
+    def test_owner_observation_expires_during_forge_reads(self):
+        gh = self.bin / "gh"
+        gh.write_text(gh.read_text().replace("arguments = sys.argv[1:]", "import time\ntime.sleep(0.6)\narguments = sys.argv[1:]"))
+        result = self.call("pickup", "--host-state", self.host_state(age=299))
+        self.assertFalse(result["units"][0]["same_scope_replacement_allowed"])
+        self.assertIn("fresh", result["host_error"])
+
     def test_resolved_findings_stay_resolved_on_stale_checkpoint_refresh(self):
         finding = self.metadata["units"][0]["findings"][0]
         self.metadata["units"][0]["findings"] = []
