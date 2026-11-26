@@ -397,6 +397,28 @@ print(json.dumps({'owners': owners, 'error': error,
                 self.assertEqual(unit["verification"], "verifier-failed")
                 self.assertEqual(before, self.inventory())
 
+    def test_finished_dispatch_leaves_building_unit_recoverable(self):
+        self.call("unit", "add", "work", "--track", "build")
+        self.call("unit", "set", "work", "--state", "building")
+        assignment = self.unit("work", "worker", "worktree-B")
+        dispatch = {"id": "send-worker", "kind": "dispatch", "status": "completed", "receipt": "dispatch-1"}
+        assignment["next_actions"] = [dispatch]
+        self.metadata["units"].append(assignment)
+        host = self.host_state(owners=[{"id": "worker", "state": "failed", "writer_stopped": True}])
+        for has_pr in (False, True):
+            with self.subTest(has_pr=has_pr):
+                if has_pr:
+                    self.call("unit", "set", "work", "--state", "building", "--pr", "11", "--sha", "a" * 40)
+                    self.forge["11"] = dict(self.forge["10"], number=11)
+                    self.forge_file.write_text(json.dumps(self.forge))
+                    self.call("ledger", "record", "11", "a" * 40, "unit-test-verified", "--evidence", "passing-run")
+                self.save_checkpoint()
+                unit = self.call("pickup", "--host-state", host)["units"][1]
+                self.assertIn("create fresh owner", unit["next_safe_action"])
+                self.assertTrue(unit["same_scope_replacement_allowed"])
+                self.assertEqual(unit["replacement_packet"]["completed_action_receipts"], [dispatch])
+                self.assertEqual(unit["replacement_packet"]["findings"], assignment["findings"])
+
     def test_done_local_unit_without_pr_preserves_historical_completion(self):
         self.call("unit", "add", "local-unit", "--track", "build")
         self.call("unit", "set", "local-unit", "--state", "done")

@@ -135,6 +135,33 @@ print(json.dumps({'package': lane_package.value, 'cache': cache.read_text(), 'pr
         self.assertEqual(receipt["reason"], "source_not_clean")
         self.assertFalse(marker.exists())
 
+    def test_submodule_edits_before_and_during_lane_reject_verification(self):
+        leaf = self.root / "leaf"
+        middle = self.root / "middle"
+        for repo in (leaf, middle):
+            self.git("clone", "-q", str(self.repo), str(repo))
+        for repo, source in ((middle, leaf), (self.repo, middle)):
+            self.git("-C", str(repo), "-c", "protocol.file.allow=always", "submodule", "add", "-q", str(source), "child")
+            self.git("-C", str(repo), "config", "-f", ".gitmodules", "submodule.child.ignore", "all")
+            self.git("-C", str(repo), "add", ".gitmodules")
+            self.git("-C", str(repo), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                     "commit", "-qm", "Add submodule")
+        self.git("-c", "protocol.file.allow=always", "submodule", "update", "--quiet", "--init", "--recursive")
+        self.head = self.git("rev-parse", "HEAD").strip()
+        for relative in ("child/source.txt", "child/child/source.txt"):
+            with self.subTest(relative=relative):
+                tracked = self.repo / relative
+                original = tracked.read_bytes()
+                tracked.write_text("local edit")
+                result, _ = self.run_code("print('unexpected')")
+                self.assertEqual((result.reason, result.returncode), ("source_not_clean", None))
+                tracked.write_bytes(original)
+                result, _ = self.run_code(f"from pathlib import Path; Path({relative!r}).write_text('new edit')")
+                self.assertEqual((result.reason, result.returncode), ("source_not_clean", 0))
+                tracked.write_bytes(original)
+        result, _ = self.run_code("print('clean')")
+        self.assertEqual(result.outcome, "passed")
+
     def test_head_mutation_after_success_is_environment_failure(self):
         code = "import subprocess; subprocess.check_call(['git','-c','user.name=Fixture','-c','user.email=fixture@example.invalid','commit','--allow-empty','-qm','changed'])"
         result, receipt = self.run_code(code)

@@ -902,8 +902,6 @@ def pickup(args, store):
         operator_gates = [gate for gate in current["gates"]
                           if gate.get("Unit") not in live_units or gate["Unit"] == unit["id"]]
         open_gates = [gate for gate in operator_gates if gate["Status"] == "open"]
-        complete = bool(live and live["state"] in ("done", "merged", "completed", "landed")) or (
-            bool(unit["next_actions"]) and len(completed) == len(unit["next_actions"]))
         replacement_allowed = False
         if merged:
             action = "complete; preserve merged result and do not dispatch"
@@ -919,7 +917,8 @@ def pickup(args, store):
             action = "hold; published PR state is unknown"
         elif observed and observed["state"] == "CLOSED":
             action = "hold; reconcile PR closed without merge"
-        elif complete and (not number or verification in ("unit-test-verified", "live-ui-verified")):
+        elif live["state"] in ("done", "merged", "completed", "landed") and (
+                not number or verification in ("unit-test-verified", "live-ui-verified")):
             action = "complete; preserve completed work and receipts and do not dispatch"
         elif number and verification == "verifier-blocked":
             action = "hold; current-head verification is blocked, reconcile the environment before retrying"
