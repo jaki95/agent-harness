@@ -500,7 +500,11 @@ print(json.dumps({'owners': owners, 'error': error,
         first = {"id": "first", "kind": "dispatch", "status": "pending", "receipt": None}
         second = {**first, "id": "second"}
         writer["next_actions"] = [first]
-        self.save_checkpoint()
+        legacy = self.save_checkpoint()
+        legacy.pop("dispatch_scopes", None)
+        (self.store / "checkpoint.json").write_text(json.dumps(legacy))
+        units = self.call("pickup", "--host-state", self.host_state())["units"]
+        self.assertEqual({u["id"] for u in units if u["same_scope_replacement_allowed"]}, {"second-tree", "disjoint"})
 
         writer["work_scope"] = ["worktree-B"]
         self.call("unit", "set", "u1", "--state", "building", "--branch", "feature-B")

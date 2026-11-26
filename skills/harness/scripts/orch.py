@@ -544,6 +544,28 @@ def string_list(value, label, nonempty=False):
         text_value(item, label)
 
 
+def writable_scopes(units, snapshot):
+    scopes = {unit["id"]: {cell(resource) for resource in unit["work_scope"]} for unit in units}
+    if scopes.keys() != {row["id"] for row in snapshot["units"]}:
+        raise StoreError("saved checkpoint unit metadata differs from its queue snapshot")
+    for row in snapshot["units"]:
+        if row["branch"]:
+            scopes[row["id"]].add(row["branch"])
+    return scopes
+
+
+def pending_dispatch_scopes(units, scopes, previous):
+    reservations = {}
+    for unit in units:
+        unit_id = unit["id"]
+        prior = previous.get(unit_id, {})
+        actions = {action["id"]: prior.get(action["id"], sorted(scopes[unit_id]))
+                   for action in unit["next_actions"] if action["kind"] == "dispatch" and action["status"] == "pending"}
+        if actions:
+            reservations[unit_id] = actions
+    return reservations
+
+
 def recovery_metadata(value):
     shape(value, RECOVERY_FIELDS, "checkpoint input")
     if type(value["schema_version"]) is not int or value["schema_version"] != 1:
@@ -671,6 +693,28 @@ def validate_saved_snapshot(value):
                 raise StoreError("checkpoint inbox pointer batch must be string or null")
 
 
+def read_checkpoint(path):
+    saved = read_json(path)
+    fields = RECOVERY_FIELDS | {"captured_at", "snapshot"}
+    if isinstance(saved, dict) and "dispatch_scopes" in saved:
+        fields.add("dispatch_scopes")
+    shape(saved, fields, "saved checkpoint")
+    metadata = recovery_metadata({field: saved[field] for field in RECOVERY_FIELDS})
+    text_value(saved["captured_at"], "checkpoint captured_at")
+    validate_saved_snapshot(saved["snapshot"])
+    scopes = writable_scopes(metadata["units"], saved["snapshot"])
+    pending = pending_dispatch_scopes(metadata["units"], scopes, {})
+    if "dispatch_scopes" in saved:
+        reservations = saved["dispatch_scopes"]
+        shape(reservations, pending, "dispatch_scopes")
+        for unit_id, actions in pending.items():
+            shape(reservations[unit_id], actions, f"dispatch_scopes.{unit_id}")
+            for resources in reservations[unit_id].values():
+                string_list(resources, "dispatch resources", nonempty=True)
+        pending = reservations
+    return saved, metadata, scopes, pending
+
+
 def checkpoint(args, store):
     metadata = recovery_metadata(read_json(Path(args.input)))
     snapshot = stable_snapshot(store)
@@ -679,9 +723,9 @@ def checkpoint(args, store):
     if snapshot["frontier"].get("repository", metadata["repository"]["name"]) != metadata["repository"]["name"]:
         raise StoreError("checkpoint repository differs from the saved frontier")
     previous_path = store / "checkpoint.json"
+    prior_scopes = {}
     if previous_path.exists():
-        previous = read_json(previous_path)
-        previous_metadata = recovery_metadata({field: previous.get(field) for field in RECOVERY_FIELDS})
+        _, previous_metadata, _, prior_scopes = read_checkpoint(previous_path)
         if previous_metadata["repository"] != metadata["repository"] or previous_metadata["program"] != metadata["program"]:
             raise StoreError("checkpoint cannot replace a different program or repository identity")
         old_units = {row["id"]: row for row in previous_metadata["units"]}
@@ -701,7 +745,9 @@ def checkpoint(args, store):
                     raise StoreError("checkpoint cannot change action identity or regress a completed receipt")
                 elif action["status"] == "pending" and new["status"] == "planned":
                     raise StoreError("checkpoint cannot regress a pending action; reconcile its receipt")
-    value = {**metadata, "captured_at": now(), "snapshot": snapshot}
+    scopes = writable_scopes(metadata["units"], snapshot)
+    reservations = pending_dispatch_scopes(metadata["units"], scopes, prior_scopes)
+    value = {**metadata, "captured_at": now(), "snapshot": snapshot, "dispatch_scopes": reservations}
     atomic_write(store / "checkpoint.json", json.dumps(value, indent=2) + "\n")
     return value
 
@@ -849,13 +895,7 @@ def recovery_prs(metadata, snapshot, repo, historical):
 
 
 def pickup(args, store):
-    saved = read_json(store / "checkpoint.json")
-    shape(saved, RECOVERY_FIELDS | {"captured_at", "snapshot"}, "saved checkpoint")
-    metadata = recovery_metadata({field: saved[field] for field in RECOVERY_FIELDS})
-    text_value(saved["captured_at"], "checkpoint captured_at")
-    validate_saved_snapshot(saved["snapshot"])
-    if {row["id"] for row in saved["snapshot"]["units"]} != {row["id"] for row in metadata["units"]}:
-        raise StoreError("saved checkpoint unit metadata differs from its queue snapshot")
+    saved, metadata, scopes, reservations = read_checkpoint(store / "checkpoint.json")
     current = stable_snapshot(store)
     if current["frontier"].get("repository", metadata["repository"]["name"]) != metadata["repository"]["name"]:
         raise StoreError("checkpoint repository differs from current durable frontier")
@@ -868,13 +908,8 @@ def pickup(args, store):
     live_units = {row["id"]: row for row in current["units"]}
     unreconciled_scopes = [row["id"] for row in current["units"]
                            if row["id"] not in old_units or row["branch"] != old_units[row["id"]]["branch"]]
-    scopes = {unit["id"]: {cell(resource) for resource in unit["work_scope"]} for unit in metadata["units"]}
-    for unit_id, old in old_units.items():
-        if old["branch"]:
-            scopes[unit_id].add(old["branch"])
-    dispatch_units = {unit["id"] for unit in metadata["units"]
-                      if any(action["kind"] == "dispatch" and action["status"] == "pending"
-                             for action in unit["next_actions"])}
+    dispatch_scopes = {unit_id: scopes[unit_id].union(*actions.values())
+                       for unit_id, actions in reservations.items()}
     retained = [row for bucket in current["inbox"].values() for row in bucket["pointers"]]
     historical = [row for bucket in saved["snapshot"]["inbox"].values() for row in bucket["pointers"]]
     units = []
@@ -913,8 +948,8 @@ def pickup(args, store):
                           if gate.get("Unit") not in live_units or gate["Unit"] == unit["id"]]
         open_gates = [gate for gate in operator_gates if gate["Status"] == "open"]
         replacement_allowed = False
-        shared_dispatches = sorted(unit_id for unit_id in dispatch_units if unit_id != unit["id"]
-                                   and not scopes[unit_id].isdisjoint(scopes[unit["id"]]))
+        shared_dispatches = sorted(unit_id for unit_id, reserved in dispatch_scopes.items()
+                                   if unit_id != unit["id"] and not reserved.isdisjoint(scopes[unit["id"]]))
         if merged:
             action = "complete; preserve merged result and do not dispatch"
         elif merge_claim and observed_state in ("OPEN", "CLOSED"):
@@ -956,7 +991,7 @@ def pickup(args, store):
             action = "create fresh owner in confirmed stopped scope with the consolidated packet"
             replacement_allowed = True
         if replacement_allowed:
-            dispatch_units.add(unit["id"])
+            dispatch_scopes[unit["id"]] = scopes[unit["id"]]
             if operator_gates:
                 action = "only if the recorded operator answers permit reassignment: " + action
         packet = {**unit, "program": metadata["program"], "authorization": metadata["authorization"], "repository": metadata["repository"],

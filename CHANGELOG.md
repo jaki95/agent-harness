@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Queue pickup holds units that share writable scope with a pending dispatch. It recommends at most one replacement per overlapping scope in a pickup.
+- Queue pickup reserves a pending dispatch's original branch and writable resources across checkpoint updates. It recommends at most one replacement per overlapping scope in a pickup.
+- An acceptance check reports stale evidence if another run supersedes the one it is checking.
 - Acceptance declarations can resume after a snapshot was saved. Worktree audits protect the checkout containing the caller even when `--repo` selects another checkout.
 - Statechart avoids module-name collisions with the model. The Control CLI example waits for the command response and fails on timeout.
 - The upstream reviewer reuses partial reviews across unrelated Harness commits. The monitor accepts equivalent relative spellings of watched paths.
