@@ -23,7 +23,7 @@ jobs:
       - name: Validate skills
         run: python3 scripts/check.py
       - name: Test maintenance scripts
-        run: python3 -m unittest discover -s scripts/tests
+        run: python3 -m unittest discover -s scripts/tests -v
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
