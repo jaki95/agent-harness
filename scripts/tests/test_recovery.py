@@ -488,6 +488,46 @@ print(json.dumps({'owners': owners, 'error': error,
         units = self.call("pickup", "--host-state", host)["units"]
         self.assertEqual([u["id"] for u in units if u["same_scope_replacement_allowed"]], ["u1", "u3"])
 
+    def test_refresh_preserves_each_pending_dispatch_original_resources(self):
+        writer = self.metadata["units"][0]
+        for unit_id, scope, branch in (("old-tree", "worktree-A", ""), ("old-branch", "another-tree", "feature-A"),
+                                       ("second-tree", "worktree-B", ""), ("disjoint", "unrelated-tree", "")):
+            self.call("unit", "add", unit_id, "--track", "build")
+            if branch:
+                self.call("unit", "set", unit_id, "--state", "building", "--branch", branch)
+            self.metadata["units"].append(self.unit(unit_id, "owner-1", scope))
+        self.call("unit", "set", "u1", "--state", "building", "--branch", "feature-A")
+        first = {"id": "first", "kind": "dispatch", "status": "pending", "receipt": None}
+        second = {**first, "id": "second"}
+        writer["next_actions"] = [first]
+        legacy = self.save_checkpoint()
+        legacy.pop("dispatch_scopes", None)
+        (self.store / "checkpoint.json").write_text(json.dumps(legacy))
+        units = self.call("pickup", "--host-state", self.host_state())["units"]
+        self.assertEqual({u["id"] for u in units if u["same_scope_replacement_allowed"]}, {"second-tree", "disjoint"})
+
+        writer["work_scope"] = ["worktree-B"]
+        self.call("unit", "set", "u1", "--state", "building", "--branch", "feature-B")
+        writer["next_actions"] = [second]
+        self.save_checkpoint()
+        writer["work_scope"] = ["worktree-C"]
+        self.call("unit", "set", "u1", "--state", "building", "--branch", "feature-C")
+        writer["next_actions"] = []
+        self.save_checkpoint()
+        host = self.host_state()
+
+        def eligible():
+            units = self.call("pickup", "--host-state", host)["units"]
+            return {u["id"] for u in units if u["same_scope_replacement_allowed"]}
+
+        self.assertEqual(eligible(), {"disjoint"})
+        writer["next_actions"] = [{**first, "status": "completed", "receipt": "first receipt"}]
+        self.save_checkpoint()
+        self.assertEqual(eligible(), {"old-tree", "old-branch", "disjoint"})
+        writer["next_actions"] = [{**second, "status": "completed", "receipt": "second receipt"}]
+        self.save_checkpoint()
+        self.assertEqual(eligible(), {"u1", "old-tree", "old-branch", "second-tree", "disjoint"})
+
     def test_only_one_replacement_per_shared_writable_scope(self):
         self.call("unit", "add", "u2", "--track", "build")
         self.metadata["units"].append(self.unit("u2", "owner-2", "worktree-A"))

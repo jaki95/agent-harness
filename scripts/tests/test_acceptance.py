@@ -284,6 +284,40 @@ else console.log(JSON.stringify({ok: true}));
         Path(failed["store"], "runs", failed["runId"], "receipt.json").unlink()
         self.assertIn("run", " ".join(self.cli("check", 1)["problems"]))
 
+    def test_overlapping_check_rejects_superseded_evidence(self):
+        self.manifest["gates"][0]["argv"] = [NODE, "-e", "process.exit(process.env.FAIL_GATE === 'yes' ? 1 : 0)"]
+        self.manifest["gates"][0]["predicate"] = {"exitCode": 0}
+        self.save()
+        self.commit()
+        hook = Path(self.temp.name) / "overlap.cjs"
+        hook.write_text("""const fs = require('node:fs');
+const {spawnSync} = require('node:child_process');
+const read = fs.readFileSync;
+fs.readFileSync = function(file, ...args) {
+    const bytes = read(file, ...args);
+    if (file === process.env.PASS_EVIDENCE) {
+        fs.readFileSync = read;
+        const action = process.env.OVERLAP_ACTION;
+        const writer = spawnSync(process.execPath, [process.argv[1], 'acceptance', action, process.argv[4]],
+            {env: {...process.env, FAIL_GATE: 'yes'}, encoding: 'utf8'});
+        require('node:assert/strict').equal(writer.status, action === 'run' ? 1 : 0, writer.stdout + writer.stderr);
+    }
+    return bytes;
+};
+""")
+        for action in ("run", "declare"):
+            with self.subTest(action=action):
+                passed = self.ready()
+                evidence = Path(passed["store"], "runs", passed["runId"], "focus", "command-stdout.txt")
+                result = subprocess.run([NODE, "--require", str(hook), str(SCRIPT), "acceptance", "check",
+                                         str(self.root / "acceptance.json")], capture_output=True, text=True,
+                                        env={**os.environ, "PASS_EVIDENCE": str(evidence), "OVERLAP_ACTION": action},
+                                        timeout=30)
+                self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+                report = json.loads(result.stdout)
+                self.assertFalse(report["ready"])
+                self.assertIn("changed during check", " ".join(report["problems"]))
+
     def test_explicit_store_is_isolated_and_source_store_rejected(self):
         store = Path(self.temp.name) / "receipts"
         declared = self.cli("declare", 0, "--store", str(store))

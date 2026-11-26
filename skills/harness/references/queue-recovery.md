@@ -116,9 +116,13 @@ current forge observations, owner classifications, evidence applicability,
 and a consolidated replacement packet with the next safe action.
 Pickup treats a recorded branch as a shared resource alongside the declared
 writable scopes. A pending dispatch holds every replacement that shares any
-of its resources, even when the previous owner has stopped. Among eligible
-units, pickup recommends replacements in checkpoint order and skips any that
-overlap an earlier recommendation. Checkpoint each pending dispatch before
+of its resources, even when the previous owner has stopped. Checkpoint records
+the branch and writable resources when each dispatch first becomes pending.
+Moving the unit or omitting that action in a refresh keeps its original
+resources reserved until the action has a completed receipt. Older checkpoints
+use the branch and resources from their saved snapshot and unit declaration.
+Among eligible units, pickup recommends replacements in checkpoint order and
+skips any that overlap an earlier recommendation. Checkpoint each pending dispatch before
 assignment. Reconcile its receipt and current owner, then rerun pickup before
 assigning another unit on that scope.
 
