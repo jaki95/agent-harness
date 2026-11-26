@@ -114,6 +114,11 @@ Units added after the checkpoint require owner reconciliation before dispatch.
 Missing host access remains unknown. A merged PR preserves completed external
 work even when its owner's host is inaccessible.
 An inaccessible forge cannot certify a saved head or old verdict.
+Pickup retains a checkpointed merge for the same PR when the forge is unavailable.
+If the forge reports that PR open or closed without merging, pickup holds the
+unit for reconciliation even if its head passed verification. One valid unmerged
+read is enough to hold the unit. If the second read fails or differs, the current
+state and head remain unknown until a later pickup gets two matching reads.
 A changed published head invalidates affected verification under the existing
 exact-head ledger rules. Keep historical evidence for the replacement owner.
 For an open PR, a completed unit or action receipt cannot replace a passing

@@ -97,6 +97,15 @@ function validate(manifest) {
 		requireInput(gate.predicate.jsonEquals === undefined || object(gate.predicate.jsonEquals), `${gate.id} jsonEquals must be an object`);
 		strings(gate.artifacts, `${gate.id} artifacts`, true);
 		requireInput(new Set(gate.artifacts).size === gate.artifacts.length, `${gate.id} has duplicate artifact paths`);
+		for (const artifact of gate.artifacts) {
+			const parts = path.normalize(artifact).toLowerCase().split(path.sep);
+			requireInput(artifact.startsWith("{run}/") && parts.length > 1 && parts.at(-1)
+				&& !artifact.split(/[\\/]/).includes(".."), `${gate.id} generated artifacts must use {run}/<file>`);
+			const runnerFile = parts.length === 3 && gateIds.includes(parts[1])
+				&& /^(?:(?:before|after|command)-std(?:out|err)\.txt|artifact-\d+)$/.test(parts[2]);
+			requireInput(!runnerFile && !(parts.length === 2 && ["receipt.json", "receipt.sha256"].includes(parts[1])),
+				`${gate.id} artifact path is reserved for the runner: ${artifact}`);
+		}
 		requireInput(gate.measurement === undefined || typeof gate.measurement === "boolean", `${gate.id} measurement must be boolean`);
 		if (gate.environment !== undefined) {
 			fields(gate.environment, ["probeArgv", "required"], `${gate.id} environment`);
@@ -344,7 +353,7 @@ function readRun(ctx, id, source = false) {
 	const bytes = fs.readFileSync(path.join(dir, "receipt.json"));
 	requireInput(hash(bytes) === fs.readFileSync(path.join(dir, "receipt.sha256"), "utf8").trim(), "run receipt hash mismatch");
 	const run = parseJSON(bytes);
-	requireInput(run.version === 1 && run.runId === id && run.repoRoot === ctx.root && run.manifestPath === ctx.relativeManifest, "run identity mismatch");
+	requireInput([1, 2].includes(run.version) && run.runId === id && run.repoRoot === ctx.root && run.manifestPath === ctx.relativeManifest, "run identity mismatch");
 	const declared = declaration(ctx, run.declarationId);
 	requireInput(run.manifestSha256 === declared.manifestSha256, "run manifest and declaration disagree");
 	git(ctx.root, ["merge-base", "--is-ancestor", declared.head, run.head]);
@@ -357,7 +366,9 @@ function readRun(ctx, id, source = false) {
 		verifyEvidence(gate.stdout);
 		verifyEvidence(gate.stderr);
 		requireInput(gate.stdout.path === path.join(gateDir, "command-stdout.txt") && gate.stderr.path === path.join(gateDir, "command-stderr.txt"), `${gate.id} evidence path differs from run directory`);
-		requireInput(gate.artifacts.length === configured.artifacts.length, `${gate.id} missing artifact receipts`);
+		requireInput(!source || run.version >= 2 || !configured.artifacts.length, `${gate.id} rerun the gate to establish artifact freshness`);
+		requireInput(gate.artifacts.length === configured.artifacts.length, gate.error
+			|| run.problems.find((problem) => problem.startsWith(`${gate.id} artifact evidence:`)) || `${gate.id} missing artifact receipts`);
 		for (const [index, artifact] of gate.artifacts.entries()) {
 			requireInput(index < configured.artifacts.length && artifact.sourcePath === path.resolve(ctx.root, replace(configured.artifacts[index]))
 				&& artifact.path === path.join(gateDir, `artifact-${index}`), `${gate.id} artifact path differs from declaration`);
@@ -458,7 +469,7 @@ function run(ctx) {
 	const dir = path.join(ctx.store, "runs", id);
 	fs.mkdirSync(dir, { recursive: true });
 	atomicJSON(path.join(ctx.store, "run.json"), { id });
-	const receipt = { version: 1, runId: id, repoRoot: ctx.root, manifestPath: ctx.relativeManifest, head,
+	const receipt = { version: 2, runId: id, repoRoot: ctx.root, manifestPath: ctx.relativeManifest, head,
 		manifestSha256: ctx.manifestSha256, declarationId: null, startedAt: new Date().toISOString(), gates: [], problems: [], projectRule: null };
 	try {
 		clean(ctx, head);
@@ -487,16 +498,24 @@ function run(ctx) {
 				catch (error) { setupProblem = error.message; }
 			}
 			const argv = gate.argv.map(replace);
-			const result = setupProblem ? capture(gateDir, "command", argv, cwd, gate.timeoutMs, { status: null, error: new Error(`environment setup failed, gate skipped: ${setupProblem}`) })
+			const outputPaths = gate.artifacts.map((artifact) => path.resolve(replace(artifact)));
+			const occupied = outputPaths.find((file) => fs.lstatSync(file, { throwIfNoEntry: false }));
+			if (occupied) setupProblem = `artifact already exists before the gate: ${occupied}`;
+			const result = setupProblem ? capture(gateDir, "command", argv, cwd, gate.timeoutMs, { status: null, error: new Error(`setup failed, gate skipped: ${setupProblem}`) })
 				: execute(ctx, head, gateDir, "command", argv, cwd, gate.timeoutMs);
-			if (gate.measurement && !setupProblem) probe("after");
 			const artifacts = [];
-			for (const [index, artifact] of gate.artifacts.entries()) {
-				const sourcePath = path.resolve(ctx.root, replace(artifact));
+			for (const [index, sourcePath] of outputPaths.entries()) {
+				if (setupProblem) break;
 				const captured = path.join(gateDir, `artifact-${index}`);
-				try { fs.copyFileSync(sourcePath, captured); artifacts.push({ ...evidence(captured), sourcePath }); }
+				try {
+					requireInput(fs.realpathSync(sourcePath) === sourcePath && fs.statSync(sourcePath).isFile(),
+						`expected a regular output file at ${sourcePath}`);
+					fs.copyFileSync(sourcePath, captured);
+					artifacts.push({ ...evidence(captured), sourcePath });
+				}
 				catch (error) { receipt.problems.push(`${gate.id} artifact evidence: ${error.message}`); }
 			}
+			if (gate.measurement && !setupProblem) probe("after");
 			receipt.gates.push({ id: gate.id, declaredCwd: path.resolve(ctx.root, gate.cwd || "."), ...result, environment, artifacts });
 		}
 		clean(ctx, head);

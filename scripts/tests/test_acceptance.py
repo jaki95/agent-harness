@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -307,6 +308,67 @@ else console.log(JSON.stringify({ok: true}));
         self.commit()
         self.assertTrue(self.ready()["ready"])
         self.assertTrue(self.cli("check")["ready"])
+
+    def test_old_ignored_file_cannot_be_declared_as_generated_proof(self):
+        proof = self.root / "proof/screen.txt"
+        proof.parent.mkdir()
+        proof.write_text("old screen")
+        self.manifest["gates"][0]["artifacts"] = ["proof/screen.txt"]
+        self.save()
+        self.commit()
+        self.assertIn("{run}", self.cli("declare", 2))
+        self.assertEqual(proof.read_text(), "old screen")
+
+    def test_gate_cannot_claim_a_previous_gates_output(self):
+        self.manifest["gates"][0]["argv"] = [
+            NODE, "-e", "require('fs').writeFileSync(process.argv[1], 'first'); console.log(JSON.stringify({ok:true}))",
+            "{run}/first.txt"]
+        self.manifest["gates"][1]["artifacts"] = ["{run}/first.txt"]
+        self.save()
+        self.commit()
+        self.declare()
+        self.assertIn("already exists", " ".join(self.cli("run", 1)["problems"]))
+        self.assertFalse(self.cli("check", 1)["ready"])
+
+    def test_post_measurement_probe_cannot_supply_missing_gate_artifact(self):
+        gate = self.manifest["gates"][0]
+        gate["artifacts"] = ["{run}/screen.txt"]
+        gate["measurement"] = True
+        gate["environment"] = {
+            "probeArgv": [NODE, "-e", """
+const fs = require('fs');
+if (fs.existsSync(process.argv[1])) fs.writeFileSync(process.argv[2], 'after the command');
+else fs.writeFileSync(process.argv[1], 'first probe');
+console.log(JSON.stringify({source:'canonical'}));
+""", "{run}/first-probe", "{run}/screen.txt"],
+            "required": {"source": "canonical"}}
+        self.save()
+        self.commit()
+        self.declare()
+        report = self.cli("run", 1)
+        self.assertIn("artifact evidence", " ".join(report["problems"]))
+        self.assertEqual(Path(report["store"], "runs", report["runId"], "screen.txt").read_text(),
+                         "after the command")
+
+    def test_old_artifact_receipt_needs_one_fresh_run(self):
+        gate = self.manifest["gates"][0]
+        gate["argv"] = [NODE, "-e", "require('fs').writeFileSync(process.argv[1], 'proof')", "{run}/proof.txt"]
+        gate["artifacts"] = ["{run}/proof.txt"]
+        gate["predicate"] = {"exitCode": 0}
+        self.save()
+        self.commit()
+        report = self.ready()
+        store = Path(report["store"])
+        run_dir = store / "runs" / report["runId"]
+        receipt = run_dir / "receipt.json"
+        data = json.loads(receipt.read_bytes())
+        data["version"] = 1
+        receipt.write_text(json.dumps(data))
+        digest = hashlib.sha256(receipt.read_bytes()).hexdigest()
+        (run_dir / "receipt.sha256").write_text(digest)
+        (store / "run.json").write_text(json.dumps({"id": report["runId"], "receiptSha256": digest}))
+        self.assertIn("rerun", " ".join(self.cli("check", 1)["problems"]))
+        self.assertTrue(self.cli("run")["ready"])
 
     def test_artifact_bytes_and_command_predicate_are_checked(self):
         gate = self.manifest["gates"][0]

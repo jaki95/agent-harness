@@ -31,7 +31,13 @@ with open(os.environ['RECOVERY_FORGE_LOG'], 'a') as stream:
     stream.write(json.dumps(arguments) + '\\n')
 if arguments[:2] != ['pr', 'view'] or arguments[3:5] != ['--repo', 'fixture/repo']:
     sys.exit(9)
-row = json.loads(pathlib.Path(os.environ['RECOVERY_FORGE_FILE']).read_text()).get(arguments[2])
+source = pathlib.Path(os.environ['RECOVERY_FORGE_FILE'])
+rows = json.loads(source.read_text())
+row = rows.get(arguments[2])
+if isinstance(row, list):
+    rows[arguments[2]] = row[1:]
+    source.write_text(json.dumps(rows))
+    row = row[0]
 if row is None:
     sys.exit(4)
 print(json.dumps(row))
@@ -245,6 +251,43 @@ print(json.dumps({'owners': owners, 'error': error,
         self.call("unit", "set", "u1", "--state", "building", "--pr", "11", "--sha", "b" * 40)
         unit = self.call("pickup")["units"][0]
         self.assertFalse(unit["merged"])
+
+    def test_local_merge_claim_cannot_complete_a_pr_the_forge_says_is_unmerged(self):
+        self.call("unit", "set", "u1", "--state", "merged")
+        self.call("ledger", "record", "10", "a" * 40, "unit-test-verified", "--evidence", "pass")
+        for checkpointed in (False, True):
+            if checkpointed:
+                self.save_checkpoint()
+            for state in ("OPEN", "CLOSED"):
+                with self.subTest(checkpointed=checkpointed, state=state):
+                    self.forge["10"]["state"] = state
+                    self.forge_file.write_text(json.dumps(self.forge))
+                    unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+                    self.assertFalse(unit["merged"])
+                    self.assertFalse(unit["same_scope_replacement_allowed"])
+                    self.assertIn("hold; reconcile", unit["next_safe_action"])
+                    self.assertIn(state, unit["next_safe_action"])
+        self.forge["10"]["state"] = "MERGED"
+        self.forge_file.write_text(json.dumps(self.forge))
+        self.assertTrue(self.call("pickup")["units"][0]["merged"])
+
+    def test_unconfirmed_unmerged_read_holds_a_checkpointed_merge(self):
+        self.call("unit", "set", "u1", "--state", "merged")
+        self.call("ledger", "record", "10", "a" * 40, "unit-test-verified", "--evidence", "pass")
+        self.save_checkpoint()
+        open_pr = self.forge["10"]
+        for reads in ([open_pr, None], [open_pr, dict(open_pr, headRefOid="b" * 40)],
+                      [dict(open_pr, state="MERGED"), open_pr]):
+            with self.subTest(reads=reads):
+                self.forge_file.write_text(json.dumps({"10": reads}))
+                unit = self.call("pickup", "--host-state", self.host_state())["units"][0]
+                self.assertFalse(unit["merged"])
+                self.assertFalse(unit["same_scope_replacement_allowed"])
+                self.assertIn("hold; reconcile", unit["next_safe_action"])
+                self.assertEqual("NOT-VERIFIED", unit["verification"])
+                observed = unit["replacement_packet"]["published_pr"]
+                self.assertEqual("UNKNOWN", observed["state"])
+                self.assertIsNone(observed["sha"])
 
     def test_done_open_pr_requires_current_head_behavioral_verification(self):
         self.call("unit", "set", "u1", "--state", "done")
