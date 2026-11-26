@@ -477,7 +477,7 @@
       ]
     },
     "no-comments": {
-      "maintenance_notes": "Trace the symbol directly or use Why for history. Keep unproven constraints, permissions for structural replacements, and host-configured reviewer settings.",
+      "maintenance_notes": "Use comment-reviewer as the local role name and references/comment-reviewer.md as its prompt. Trace the symbol directly or use Why for history. Keep unproven constraints, permissions for structural replacements, and host-configured reviewer settings.",
       "reviewed_on": "2026-11-26",
       "sources": [
         {

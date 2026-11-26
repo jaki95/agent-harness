@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `/no-comments` now delegates to `comment-reviewer`. If you configured a model for the old reviewer role, use the new role name in your host settings.
 - Add an opt-in issue-driven upstream operator. Discuss numbered proposals, approve or hold individual items, and track verified adoption PRs from the original issue. Registry changes on main trigger a fresh comparison.
 - Queue pickup reserves a pending dispatch's original branch and writable resources across checkpoint updates. It recommends at most one replacement per overlapping scope in a pickup.
 - An acceptance check reports stale evidence if another run supersedes the one it is checking.
