@@ -441,7 +441,9 @@ function check(ctx) {
 	try {
 		clean(ctx, head);
 		const active = bindDeclaration(ctx, head);
-		const { id, receiptSha256 } = parseJSON(fs.readFileSync(path.join(ctx.store, "run.json")));
+		const runPath = path.join(ctx.store, "run.json");
+		const runPointer = fs.readFileSync(runPath);
+		const { id, receiptSha256 } = parseJSON(runPointer);
 		report.runId = id;
 		requireInput(nonempty(receiptSha256) && hash(fs.readFileSync(path.join(ctx.store, "runs", id, "receipt.json"))) === receiptSha256, "latest run is incomplete or its receipt hash changed");
 		const { run } = readRun(ctx, id, true);
@@ -468,6 +470,9 @@ function check(ctx) {
 		if (rule && rule.count > rule.maximum) report.problems.push(`changed-file count ${rule.count} exceeds project maximum ${rule.maximum}`);
 		report.problems.push(...findingsProblems(ctx));
 		clean(ctx, head);
+		requireInput(parseJSON(fs.readFileSync(path.join(ctx.store, "declaration.json"))).id === active.id,
+			"active declaration changed during check; retry");
+		requireInput(fs.readFileSync(runPath).equals(runPointer), "latest run changed during check; retry");
 	} catch (error) { report.problems.push(error.message); }
 	report.problems = [...new Set(report.problems)];
 	report.ready = report.problems.length === 0;

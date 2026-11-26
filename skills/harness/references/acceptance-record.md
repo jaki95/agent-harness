@@ -112,7 +112,7 @@ The store contains immutable full declaration snapshots, per-run evidence direct
 
 Declarations bind a Git ancestor containing the exact manifest bytes. Receipts bind that declaration, manifest digest, actual HEAD, exact commands, captured outputs, artifact paths, and observed environment. A rebase or amend requires a new run. Changed declaration or evidence bytes invalidate readiness.
 
-The runner publishes the latest-run pointer before any commands. A failed or interrupted new run cannot reuse an earlier pass. A complete run publishes its receipt and digest last. Readiness never combines gates from separate runs. An interrupted writer may leave `owner.lock`. Removal requires confirmation that its recorded process has stopped. After clearing the stopped owner's lock, retry the interrupted declaration. The runner verifies any existing snapshot before publishing its pointer.
+The runner publishes the latest-run pointer before any commands. A failed or interrupted new run cannot reuse an earlier pass. A complete run publishes its receipt and digest last. Before reporting readiness, the checker rereads the active declaration and latest-run pointers. If either changed while it checked the evidence, it reports the overlap and asks the caller to retry. An interrupted writer may leave `owner.lock`. Removal requires confirmation that its recorded process has stopped. After clearing the stopped owner's lock, retry the interrupted declaration. The runner verifies any existing snapshot before publishing its pointer.
 
 The store is owner-controlled evidence, not adversarial attestation. Deleting the whole store loses its history. Preserve the store and use one owner for the acceptance record.
 
