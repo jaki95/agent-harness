@@ -60,21 +60,11 @@ class Outcome:
     message: str
 
 
-def queue_from_issue(issue):
-    if (type(issue.get("number")) is not int or issue["number"] < 1
-            or issue.get("state") not in ("open", "closed")):
-        raise monitor.MonitorError("invalid-api-response", "Invalid issue number or state")
-    snapshot = monitor.parse_snapshot(issue.get("body") or "")
-    if monitor.fingerprint(snapshot) != snapshot["fingerprint"]:
-        raise monitor.MonitorError("invalid-snapshot", "Queue fingerprint does not match its source identities")
-    if issue["state"] == "closed" or not monitor.is_actionable(snapshot):
+def find_queue(client, publishers):
+    issue, snapshot = monitor.select_issue(client, publishers)
+    if not snapshot or issue["state"] == "closed" or not monitor.is_actionable(snapshot):
         return None
     return Queue(ReviewKey(issue["number"], snapshot["generation"], snapshot["fingerprint"]), snapshot)
-
-
-def find_queue(client, publishers):
-    issue = monitor.select_issue(client.issues(), publishers)
-    return queue_from_issue(issue) if issue else None
 
 
 def observed_revision(item):
@@ -112,7 +102,11 @@ def local_evidence(harness, revision, tree, root, source, changes):
         relatives = {upstream.relative_to(d) for d in directories if d in upstream.parents}
         if not relatives and path in source.paths:
             relatives.add(PurePosixPath(upstream.name))
-        matches = {package + str(relative) for relative in relatives if package + str(relative) in tree}
+        candidates = {package + str(relative) for relative in relatives}
+        for relative in relatives:
+            if relative.parts[:2] == ("scripts", "test") or str(relative) == "scripts/package.json":
+                candidates.add(f"tests/{source.skill}/{relative.relative_to('scripts')}")
+        matches = candidates.intersection(tree)
         if matches:
             paths.update(matches)
         else:
@@ -132,7 +126,7 @@ def local_evidence(harness, revision, tree, root, source, changes):
     detector_entrypoint = root / entrypoint
     detector_entrypoint.parent.mkdir(parents=True, exist_ok=True)
     detector_entrypoint.write_text(files[entrypoint], encoding="utf-8")
-    omitted = sum(path.startswith(package) for path in tree) - len(files)
+    omitted = sum(path.startswith(package) and path not in files for path in tree)
     return files, omitted, unmatched
 
 
@@ -549,13 +543,15 @@ def main():
     parser.add_argument("--issue-repo", required=True)
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--codex", default="codex")
+    parser.add_argument("--gh", default="gh", help="GitHub CLI executable")
     parser.add_argument("--model")
     parser.add_argument("--effort", choices=("low", "medium", "high", "xhigh"), default="high")
     parser.add_argument("--monitor-login", default=os.environ.get("UPSTREAM_MONITOR_LOGIN"),
                         help="trusted monitor login alongside GitHub Actions (default: repository owner)")
     args = parser.parse_args()
     try:
-        outcome = review_queue(args.issue_repo, args.state_dir, monitor_login=args.monitor_login, analyze=lambda e, s: codex_review(
+        outcome = review_queue(args.issue_repo, args.state_dir, github=monitor.GitHub(args.issue_repo, args.gh),
+                               monitor_login=args.monitor_login, analyze=lambda e, s: codex_review(
             e, s, codex=args.codex, model=args.model, effort=args.effort))
         print(outcome.message)
         return int(outcome.kind == "failed")

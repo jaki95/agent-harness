@@ -34,7 +34,7 @@ def render_units(runtime, state, codex, python, gh, *, repository, model=None, e
     if effort not in ("low", "medium", "high", "xhigh"):
         raise ValueError("Unsupported reasoning effort")
     args = [python, Path(runtime) / "review_upstream.py", "--issue-repo", repository, "--state-dir", state,
-            "--codex", codex, "--effort", effort]
+            "--codex", codex, "--gh", gh, "--effort", effort]
     if monitor_login:
         args.extend(["--monitor-login", monitor_login])
     if model:

@@ -592,6 +592,32 @@ class PublisherTests(unittest.TestCase):
                 self.publish(self.report("3" * 40))
         self.assertEqual(1, self.snapshot()["generation"])
 
+    def test_large_snapshot_retries_preserve_the_published_generation_and_pending_files(self):
+        self.publish()
+        first = self.snapshot()
+        changes = tuple(monitor.Change("M", f"watched/file-{i}", f"watched/file-{i}", "1" * 40, "2" * 40,
+                                       "100644", "100644") for i in range(400))
+        report = monitor.Report((monitor.Result(self.source, "pending", "b" * 40, changes),))
+        self.client.fail_after = "comment"
+        with self.assertRaisesRegex(monitor.MonitorError, "Response lost"):
+            self.publish(report)
+        self.assertEqual(first, self.snapshot())
+        self.assertEqual("updated", self.publish(report))
+        number_of_notes = len(self.client.notes)
+        self.assertEqual(len({n["body"] for n in self.client.notes}), number_of_notes)
+        self.assertEqual("quiet", self.publish(report))
+        self.assertEqual(number_of_notes, len(self.client.notes))
+
+        unavailable = monitor.Report((monitor.Result(self.source, "unknown", error="fetch-failed"),))
+        self.publish(unavailable)
+        _, snapshot = monitor.select_issue(self.client, {self.client.viewer_login()})
+        item = snapshot["sources"][0]
+        self.assertEqual(("unknown", "b" * 40), (item["status"], item["observed_revision"]))
+        self.assertEqual([monitor.asdict(change) for change in changes], item["changes"])
+        self.publish(self.clean_report())
+        self.assertEqual("closed", self.client.records[0]["state"])
+        self.assertEqual("quiet", self.publish(self.clean_report()))
+
     def test_unrelated_head_is_quiet(self):
         self.publish()
         result = self.pending.results[0]
