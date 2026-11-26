@@ -1,4 +1,4 @@
-# agent-harness
+# <img src="docs/assets/agent-harness-logo.png" alt="agent-harness" width="480">
 
 Portable agent skills, scripts, and conventions maintained across projects.
 Public skills are adapted deliberately, with sources and revisions tracked in [the registry](registry/skills.json).
