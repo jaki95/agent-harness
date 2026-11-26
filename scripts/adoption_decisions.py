@@ -90,20 +90,21 @@ def render_proposal(proposal):
     version = proposal["version"]
     items = proposal["items"]
     lines = [f"## Proposal P{version} · {len(items)} decisions", "",
+             f"Reply `approve P{version}` for all eligible items or "
+             f"`approve P{version} item {items[0]['id'] if items else 1}` to select one. "
+             "Ask questions in plain English.", "",
              "| Item | Recommendation | What approval means |", "| --- | --- | --- |"]
     for item in items:
-        lines.append(f"| {item['id']} · {_text(item['key'])} | {_text(item['decision'])} | {_text(item['behavior'])} |")
-    lines.extend(["", f"Reply `approve P{version}` for all eligible items or "
-                  f"`approve P{version} item {items[0]['id'] if items else 1}` to select one. "
-                  "Ask questions in plain English.", "",
-                  "<details><summary>Reasons, evidence, dependencies, and verification</summary>", ""])
+        lines.append(f"| {item['id']} · {_text(item['key'])} | {_text(item['decision'])} | "
+                     f"{_text(item['behavior'])}<br>Preserve: {_text(item['preserve'])}"
+                     f"<br>Verify: {_text(item['verify'])} |")
+    lines.extend(["", "<details><summary>Reasons, evidence and dependencies</summary>", ""])
     for item in items:
         dependencies = ", ".join(
             f"item {proposal['numbers'][d]}" if d in proposal["numbers"] else f"{_text(d)} (unavailable)"
             for d in item["depends"]) or "none"
         lines.extend([f"**{item['id']} · {_text(item['key'])}**", "",
-                      f"- Reason: {_text(item['why'])}", f"- Preserve: {_text(item['preserve'])}",
-                      f"- Verify: {_text(item['verify'])}", f"- Depends on: {dependencies}",
+                      f"- Reason: {_text(item['why'])}", f"- Depends on: {dependencies}",
                       f"- Upstream revision: {_text(item['revision'])}. Evidence digest: {_text(item['evidence'])}."])
         source = item.get("source_url", "")
         if re.fullmatch(r"https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+/(?:compare|commit|blob)/[A-Za-z0-9_/%~.-]+", source):

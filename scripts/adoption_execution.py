@@ -249,6 +249,8 @@ def execute_group(ctx, group_id, items, recheck):
                 return result("blocked", "Merged PR differs from the recorded approval head")
             return result("merged", "PR merged to main. Host update pending.")
         if pr and pr["closed"]:
+            if not items and not state.get("submitted"):
+                return result("held", "The withdrawn approval has a closed PR")
             return result("blocked", "The adoption PR was closed without merging")
         if state.get("submitted") and pr:
             observed = git.merge_status(pr["pr"], state["head"], state["submitted"])
@@ -344,6 +346,8 @@ def execute_group(ctx, group_id, items, recheck):
             if errors and {p: v for p, (_, v) in edits.items() if p != REGISTRY} == state.get("edits"):
                 return result("blocked", "The proposed repair produced the same failing patch. Please revise the proposal.")
             message = title + "\n\nApproval " + str(group_id) + ", items " + ", ".join(str(i["id"]) for i in items)
+            if errors:
+                message += f"\n\nRepair {state['repairs']}: {state['repair_log'][-1]}"
             head = git.commit(base, remote, tree, edits, message)
             if errors:
                 paths = sorted(p for p in edits if p != REGISTRY)
