@@ -220,7 +220,7 @@ def record_process(*args, **kwargs):
     return process
 module['subprocess'].Popen = record_process
 before = set(threading.enumerate())
-owners, error = module['host_observation'](
+owners, error, _ = module['host_observation'](
     types.SimpleNamespace(host_state=None, host_command=sys.argv[2]),
     {'owner-' + str(index) + '-' + 'x' * 64 for index in range(50000)}, sys.argv[3])
 print(json.dumps({'owners': owners, 'error': error,
@@ -504,7 +504,10 @@ print(json.dumps({'owners': owners, 'error': error,
 
     def test_owner_observation_expires_during_forge_reads(self):
         gh = self.bin / "gh"
-        gh.write_text(gh.read_text().replace("arguments = sys.argv[1:]", "import time\ntime.sleep(0.6)\narguments = sys.argv[1:]"))
+        reader = gh.rename(self.bin / "read-pr")
+        gh.write_text(f"#!{sys.executable}\nimport os, sys, time\ntime.sleep(0.6)\n"
+                      f"os.execv({str(reader)!r}, sys.argv)\n")
+        gh.chmod(0o755)
         result = self.call("pickup", "--host-state", self.host_state(age=299))
         self.assertFalse(result["units"][0]["same_scope_replacement_allowed"])
         self.assertIn("fresh", result["host_error"])
