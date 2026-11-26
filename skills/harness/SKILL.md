@@ -116,7 +116,7 @@ Read the leaf skill in full for each engineering principle you apply.
 
 ## Subagents
 
-Follow the host's delegation rules, permissions, and concurrency limits. Use its delegation tools rather than assuming Cursor agent types or Task flags. Give playbook delegates the Harness instructions and have them follow this mode. Routed workflow skills prescribe their own roles and reviewers; retain those workflows rather than overriding every delegate with a generic role.
+Follow the host's delegation rules, permissions, and concurrency limits. Use its delegation tools rather than assuming Cursor agent types or Task flags. Give each delegate the Harness instructions, the user's goal, and the acceptance criteria for its assignment. Use the checks required by the task, repository, and host. Send decisions that exceed the delegate's authority back to the lead. Routed workflow skills prescribe their own roles and reviewers; retain those workflows rather than overriding every delegate with a generic role.
 
 **Defaults for delegation.** Use background or asynchronous execution when the host supports it. Pass file and artifact pointers instead of copying large payloads into prompts. Give each role the tools its task needs within existing permissions, preserving read-only roles where prescribed. Read existing host model configuration by role. Configured role overrides take precedence; otherwise inherit the parent model. Use configured code models for code, judgment and prose models for those roles, the strongest configured judgment model for the hardest design, concurrency, or algorithm work even when its steps are precisely specified, and a configured fast code model for trivial mechanical edits. Feature, refactoring, bug-fix, performance, and hillclimb delegates use their configured task roles. Report unavailable models and actual fallbacks. If delegation is unavailable, report the missing capability and do not claim a prescribed delegate or reviewer ran.
 
@@ -124,19 +124,11 @@ Follow the host's delegation rules, permissions, and concurrency limits. Use its
 
 You own every subagent's work. Review its actual diff and artifacts and write your own summary instead of passing through its report. A second opinion uses the same prompt against a different model when available. Report unavailable model diversity; agreement does not replace direct verification. Apply the selected writing rules to delegated prose you review.
 
-**Fresh subagents by default.** Give new work to a fresh subagent with consolidated scope, meaning the original brief, every later directive, and the prior agent's report and branch. This holds for a fix round, a follow-up, a retry, and the next queue item. Resume, message, or queue a follow-up on an existing subagent only when the new work strictly needs state that lives in that agent and is costly to move: its local checkout, its uncommitted changes, or a process it still runs, such as a dev server, a simulator, or a babysit watcher. A stop or hold order to a running agent is not reuse. A role such as a PR owner outlives its agent. Once that agent returns, a fresh agent takes the role's next round. Interrupt-chained resumes silently drop directives, so fire a fresh subagent with consolidated scope rather than trusting a "done" summary.
+**Fresh subagents by default.** Give each fix, follow-up, retry, or queue item to a fresh agent with the original brief, later directives, and the prior agent's report and branch. Resume an agent only when the next step depends on state that is costly to move, such as uncommitted edits, a worktree, or a running process. You can always send a running agent a stop order.
 
 ## Writing the reply
 
-Write the reply clean as you draft it. A cleanup pass after drafting does not remove these patterns.
-
-- **Short declarative sentences.** One thought per sentence, ended with a period.
-- **No long-dash character anywhere.** Write a file-list bullet as a sentence ("`main.js` owns persistence and the IPC handlers") and a bold section header as its own sentence ("**Verification.** End to end via CDP").
-- **A colon as a mid-sentence connector is also out** (unslop rule 14). A colon before a list is fine.
-- **Terse is not an excuse to drop content.** Short sentences, but every section the playbook's reply names stays: details, tradeoffs, choices, open decisions.
-- **Frame impact for the consumer and the maintainer.** Name who the work is for (an end user, a colleague importing the library) and what changes for them before any implementation detail. Then what the next engineer who owns this code inherits. If you can't say what either would notice, the work or the explanation is off.
-- **Never fabricate a link, citation, or transcript reference.** Link only artifacts you produced or read this session.
-- **Every claim carries its evidence or its label in the same sentence.** Measured, inferred, or guess. A prediction or an unseen cause is a guess. Never hand the human a check you could run.
+Write short declarative sentences. Use a period or comma in place of a long dash. Use a colon only before a list or example. Lead with what changes for the user, then explain what the maintainer inherits. Include the details, tradeoffs, and open decisions the playbook calls for. Give each claim its evidence or label it as an inference or guess. Link only artifacts you produced or read this session. Run the required checks you can perform within the task's permissions.
 
 Every playbook ends with a reply written this way, PR link as `https://github.com/<owner>/<repo>/pull/<number>`. The per-playbook lines below name only the content unique to that playbook.
 
@@ -148,7 +140,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 Match the task to a playbook below, open its file, and follow its steps. If the host provides a todo-list tool, open a list whose first items are the playbook's steps, copied in verbatim, before any task-specific todos. Without that tool, follow the steps directly. Record any skipped step with a one-line `skip: <reason>` in the list when available, or in the handoff otherwise.
 
-Read **Progress update** when reporting a milestone. Follow it without resetting the active task's todo list. Large or cross-cutting single-run efforts use **figure-it-out** even when a narrower playbook fits. Standing programs and explicit Autopilot queues follow their dedicated workflows. If no playbook matches, use **figure-it-out** to design the workflow. Investigation, bug fixes, features, prototypes, focused refactors, performance issues, metric hillclimbs, runtime and trace diagnoses, visual parity, requested PR monitoring, authorized shipping, explicit autonomous runs, standing programs, Autopilot queues, multi-PR planning, session pickup, explicit pauses, requested cleanup, and authorized PR preparation use the playbooks below.
+Read **Progress update** at milestones and keep the active task's todo list. Use **figure-it-out** for large or cross-cutting single runs and tasks with no matching playbook. Use the dedicated program and Autopilot playbooks for standing programs and explicit queues.
 
 - **Progress update.** A finding, decision, obstacle, or substantial completed step worth reporting. `playbooks/progress-update.md`.
 - **Handoff.** A self-contained final reply with outcome, consequential decisions, evidence, and limitations. `playbooks/handoff.md`.

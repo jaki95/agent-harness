@@ -5,9 +5,9 @@
 Use the host's read/search, measurement, profiling, filesystem, and delegation tools and the matching control skill. Resolve named skills through Harness's skill catalog rules. Report unavailable tools, skills, or denied access, follow this playbook's own instructions where possible, and do not claim affected steps ran. Follow the user's authorization and the host's permission rules.
 
 1. Capture a baseline trace via the matching control skill. Vet the baseline, and each later number, with the **benchmark-checklist** skill.
-2. Run the **how** skill to ground hypotheses. Don't claim a perf ceiling without running it first.
+2. Trace the code behind the measured cost to ground hypotheses. Measure the limiting resource before claiming a performance ceiling.
    Most fixes come from eight strategy families. Use them as hypothesis generators, not a checklist. A family earns an attempt only when the trace shows the signal it names.
-   - **Elimination.** Before optimizing the hot path, ask whether it needs to exist: a computation nobody consumes, a feature gate that's always off for this user, a sync that redundantly mirrors state, a legacy path kept "just in case". The trace shows what's slow, never that it's deletable, so this family needs the **how** pass, not the profiler.
+   - **Elimination.** Before optimizing the hot path, ask whether it needs to exist: a computation nobody consumes, a feature gate that's always off for this user, a sync that redundantly mirrors state, a legacy path kept "just in case". Trace the callers to verify that the result has no consumer in the affected case.
    - **Divide and conquer.** The dominant cost scales with input size. Split the work so each piece touches less (chunk, shard, prune the search space) or so independent pieces run in parallel.
    - **Caching.** The same computation or fetch repeats on identical inputs. Store and reuse the result. Name what invalidates it before claiming the win.
    - **Indirection.** The hot path does expensive work a cheaper intermediate could absorb: an index instead of a scan, a queue that shifts work off the interactive thread, a handle that lets a cheaper implementation swap in. Add the hop only when it removes more from the critical path than it adds.

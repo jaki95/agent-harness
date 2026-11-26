@@ -19,7 +19,7 @@ That list defines confirmed exceptions. When I am not sure a keep clause applies
 
 `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, and similar suppressions stink. Look up the rule. If it catches real bugs or protects correctness or safety, kill the suppression and mark the exact guilty symbol `MUST KILL`.
 
-`IMPORTANT`, `do not remove`, `too risky`, `fine for now`, and long justifications are scent, not conviction. Before judging, I read nearby code. If its claim is not obvious there, I run **how**, **why**, or both on the named symbol or call. A foreign keep-list gotcha proven true today on a live path is a confirmed keep. Our-code surprises get the reshape flag above when their purpose is established. Doubt after the hunt stays unresolved; preserve the comment and report it.
+`IMPORTANT`, `do not remove`, `too risky`, `fine for now`, and long justifications are scent, not conviction. Before judging, I read nearby code. If its claim is not obvious there, I trace the named symbol or call. If its purpose depends on history, I use **why**. A foreign keep-list gotcha proven true today on a live path is a confirmed keep. Our-code surprises get the reshape flag above when their purpose is established. Doubt after the hunt stays unresolved; preserve the comment and report it.
 
 A long justification is not proof. Establish its purpose before deciding. If the purpose remains unresolved, preserve it and report the gap. If evidence supports deletion, kill it and mark the exact guilty symbol `MUST KILL`. Never polish meat into a shorter alibi. My kill ends there. I do not touch the code.
 

@@ -36,11 +36,7 @@ Use the host's configured **architect runners** roster in place of Arena's runne
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the **principle-exhaust-the-design-space** principle skill made concrete. Whole-shape alternatives, not point fixes inside one shape. If dropouts leave fewer than two structurally distinct completed candidates, run replacement candidates before synthesis.
 
-Screen every candidate against [`references/design-red-flags.md`](references/design-red-flags.md) before synthesis. Reject or revise shallow modules, information leakage, temporal decomposition, and pass-through methods.
-
-Assume the next contributor is an agent that sees only the files it opened, copies the nearest example, and takes the shortest path that compiles. Prefer the design where a change that looks right from one file is right for the whole repo.
-
-Compare viable candidates on interface depth. Prefer the design that hides more complexity behind a smaller, simpler public surface. A rich interface can keep call chains short by concentrating capability instead of scattering it across layers.
+Screen every candidate against [the design red flags](references/design-red-flags.md). Prefer the design that gives each piece of state one owner and exposes one public way to do each task. Compare how much callers need to know to use each design correctly. A contributor working from one file should be able to follow a nearby example without breaking another part of the system.
 
 Arena returns one synthesized design package. The synthesis decision populates the rationale's "Synthesis decision" section.
 

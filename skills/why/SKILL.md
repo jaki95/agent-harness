@@ -1,12 +1,12 @@
 ---
 name: why
-description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available MCPs and queries each evidence category (source control, issue tracker, long-form docs, real-time chat, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
+description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
 disable-model-invocation: true
 ---
 
 # Why
 
-Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
+Trace the decision from the commits and PR discussions that introduced it through later revisions. Cite the authors' reasons, label your inferences, and say what the record leaves open.
 
 Use the host's subagent tools. Investigators use the **why investigators** role; the synthesizer uses **why synthesizer**. Use configured role models or inherit the parent model. When available, follow the **harness** Subagents policy for supported reasoning and speed settings. Schedule agents within host concurrency limits. Delegation tools are required. Report unavailable tools or denied access without claiming the affected steps ran.
 
@@ -14,7 +14,7 @@ Give investigators access to their assigned source's read and query tools and th
 
 ## Operating Posture
 
-Operate as a **careful, cautious, and precise investigator**. Be honest about what you know vs what you're inferring. Read `references/epistemics.md` for the full confidence framework and phrasing guide. The synthesizer must follow it.
+Use the confidence tiers in `references/epistemics.md` for investigation and synthesis.
 
 ## Step 1. Understand the Target and the Question
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Update Statechart with clearer nested transitions, SANY parse diagnostics, CRLF handling, and a native Windows launch command.
+- Pass the operator's acceptance criteria to delegates, and shorten the writing and engineering skills. Keep local orchestration and configured reviewer models. [Upstream review decisions](reviews/2026-11-26-upstream-skill-updates.md).
+
 - Add a bundled verification launcher with private environments and caches, owned process deadlines, cleanup receipts, and an opt-in acceptance gate integration.
 
 - Add executable acceptance declaration, captured project gates, current-head readiness checks, and preserved review-finding history before Autopilot review rounds.
