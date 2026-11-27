@@ -1,10 +1,72 @@
 # Run issue-driven upstream adoption
 
-The public monitor checks weekly, on manual dispatch, and after a change to `registry/skills.json` reaches `main`. It sends the changed issue number directly to a private operator workflow. A fresh comment from the configured maintainer on an open, monitor-authored issue also wakes the worker. CI completion or closure of a same-repository adoption PR wakes it to verify, retry, or report the result. The worker rereads the queue and the conversation from GitHub before taking action. The event contains only a wake hint.
+The public monitor checks the upstream paths tracked in `registry/skills.json` on Mondays at 08:17 UTC, on manual dispatch, and after a push to `main` changes the registry. When it finds work, it opens a staging issue, locks the conversation, and publishes the review queue. The lock limits who can post. Anyone with access to the public repository can still read the issue.
 
-The monitor locks each new adoption issue before publishing the review and restores the lock on an active batch if necessary. The issue stays publicly readable. Only original comments from the configured maintainer account enter the worker's discussion and approval history. An adoption PR links to that approval and lists each selected source, its revision, the reason for the decision, and its verification plan.
+## Where the work runs
 
-After an adoption merges, the worker waits for the monitor to refresh the issue if it still shows the merged revision as pending. If the registry changed independently, the worker can ask for a fresh detection run before proceeding.
+```mermaid
+flowchart LR
+    subgraph publicRepo["Public source repository"]
+        monitor["Monitor on GitHub-hosted runner"]
+        issue["Locked review issue"]
+        dispatch["Dispatch upstream adoption"]
+        pr["Adoption PR and CI"]
+        monitor -->|Publish queue| issue
+        monitor -->|Batch ready| dispatch
+        issue -->|New owner comment| dispatch
+        pr -->|Checks finish or PR closes| dispatch
+    end
+    subgraph privateRepo["Private operator repository"]
+        job["Reconcile upstream adoption"]
+    end
+    subgraph host["Operator host"]
+        runner["Dedicated self-hosted runner"]
+        worker["Installed worker and Codex"]
+        journal["Persistent decision journal"]
+        runner --> worker
+        worker --> journal
+    end
+    dispatch -->|Dispatch App sends issue number| job
+    job -->|Run on labeled runner| runner
+    worker -->|Worker App posts proposal and receipts| issue
+    worker -->|Worker App opens and merges PR| pr
+```
+
+The dispatch App can start the private workflow. The worker App can update the public issue and PR. Each wake carries an issue number. Before taking action, the worker rereads the monitor's queue, its own receipts, and original comments from the configured maintainer. Other users' comments do not enter the Codex discussion or approval history.
+
+## Follow one approval
+
+```mermaid
+sequenceDiagram
+    participant M as Monitor
+    participant I as Locked issue
+    actor O as Maintainer
+    participant W as Private worker
+    participant P as Adoption PR
+    M->>I: Publish changed sources and pinned revisions
+    M->>W: Wake worker for this issue
+    W->>I: Post numbered proposal P1 and reasons
+    opt Clarify the proposal
+        O->>I: Ask a question in a new comment
+        W->>I: Answer or post a revised proposal
+    end
+    O->>I: Approve selected items in the current proposal
+    W->>P: Open PR with rationale and link to approval
+    P-->>W: CI finishes on the PR head
+    W->>W: Recheck approval, head, and verification
+    alt Ordinary approved change passes
+        W->>P: Submit merge for verified head
+        W->>I: Post merge receipt
+        M->>I: Refresh queue after registry changes on main
+        W->>I: Close after clean detection and completed decisions
+    else Change affects automation authority
+        W->>I: Request personal review and merge
+    else Verification fails or approval is held
+        W->>I: Leave decision open for repair or review
+    end
+```
+
+To approve only the first item in proposal P1, post `approve P1 item 1` as a new standalone comment. Use the version shown on the issue. The adoption PR identifies the selected sources, upstream revisions, expected behavior, and verification plan. A `keep` decision records the review in the registry and retains local skill behavior. The worker waits for a fresh detector snapshot if a merged revision still appears pending. Refresh installed skills separately after adopting runtime changes. See [approval, hold, and defer commands](monitoring-upstream.md#review-and-approve-changes-on-the-issue) and [skill upgrades](installation.md).
 
 ## Configure the two repositories
 
