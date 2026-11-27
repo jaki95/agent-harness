@@ -105,6 +105,10 @@ class AdoptionFlowTests(unittest.TestCase):
         self.assertEqual([self.git.branch], self.git.merges)
         self.assertIn("Host update pending", self.client.notes[-1]["body"])
         self.assertIn("1 · first/upstream (keep)", self.client.notes[-1]["body"])
+        receipt_count = len(self.client.notes)
+        with patch.object(self.worker, "gather", side_effect=monitor.MonitorError("queue-superseded", "old queue")):
+            self.assertEqual(self.worker.reconcile(4), "waiting for post-merge detection")
+        self.assertEqual(len(self.client.notes), receipt_count)
         self.client.snapshot([])
         self.worker.reconcile()
         self.assertEqual(self.client.issue["state"], "closed")
@@ -112,6 +116,30 @@ class AdoptionFlowTests(unittest.TestCase):
         self.worker.reconcile()
         self.assertEqual(self.client.notes, notes_before)
         self.assertEqual(self.questions, [adoption.PROPOSE, adoption.DISCUSS])
+
+    def test_public_comments_never_enter_owner_discussion_or_authorize_execution(self):
+        self.worker.reconcile(4)
+        self.client.add("visitor", "An unrelated visitor question")
+        self.client.add("visitor", "approve P1")
+        self.client.add("Maintainer", "Explain the decision")
+        with patch.object(self.worker, "ask", wraps=self.ask) as ask:
+            self.worker.reconcile(4)
+        ask.assert_called_once()
+        role, payload, _ = ask.call_args.args
+        self.assertEqual(role, adoption.DISCUSS)
+        self.assertEqual(payload["maintainer_comment"], "Explain the decision")
+        self.assertNotIn("visitor", json.dumps(payload))
+        self.assertNotIn("approve P1", payload["recent_conversation"])
+        self.assertFalse(self.git.opened)
+
+    def test_unexplained_stale_queue_requests_detection_without_executing(self):
+        self.client.add("Maintainer", "approve P1")
+        with patch.object(self.worker, "gather", side_effect=monitor.MonitorError("queue-superseded", "stale")):
+            for _ in range(2):
+                self.assertEqual(self.worker.reconcile(4), "waiting for detection")
+        self.assertEqual(len(self.client.notes), 2)
+        self.assertIn("monitor must refresh", self.client.notes[-1]["body"])
+        self.assertFalse(self.git.opened)
 
     def test_offline_approval_and_later_hold_never_publish(self):
         self.worker.reconcile()

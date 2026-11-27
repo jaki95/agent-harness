@@ -52,9 +52,13 @@ class Forge:
                     "head": self.branch, "merged": self.merged, "closed": self.merged}
 
     def open_pull(self, branch, title, body):
+        self.title, self.body = title, body
         self.number = 3
         self.opened.append(branch)
         return self.pull(branch)
+
+    def describe_pull(self, pr, title, body):
+        self.title, self.body = title, body
 
     def checks(self, pr, head, base, workflows):
         return self.ci
@@ -86,7 +90,7 @@ class ExecutionTests(unittest.TestCase):
             key = skill + "/upstream"
             self.items.append({"key": key, "revision": NEW, "id": i, "decision": "keep",
                                "digest": str(i) * 64, "behavior": "retain", "preserve": "original scope",
-                               "verify": "check"})
+                               "verify": "check", "why": "The local skill already covers this behavior."})
             skills[skill] = {"reviewed_on": "2025-01-01", "maintenance_notes": "keep local scheduling",
                 "sources": [{"id": "upstream", "relationship": "adapted", "repository": "https://example.org/repo",
                              "ref": "main", "paths": ["watched/"], "baseline_revision": OLD,
@@ -117,6 +121,10 @@ class ExecutionTests(unittest.TestCase):
         published = self.run_group()
         self.assertEqual(published["status"], "published")
         self.assertEqual(list(self.forge.tree), [worker.REGISTRY])
+        self.assertIn("2 sources", self.forge.title)
+        self.assertIn("The local skill already covers this behavior.", self.forge.body)
+        self.assertIn("issues/7#issuecomment-13", self.forge.body)
+        self.assertIn(NEW, self.forge.body)
         record = json.loads(self.forge.tree[worker.REGISTRY][1])["skills"]["first"]["sources"][0]
         self.assertEqual(record["last_reviewed_revision"], NEW)
         self.assertEqual(record["last_incorporated_revision"], OLD)
@@ -135,6 +143,8 @@ class ExecutionTests(unittest.TestCase):
         records = json.loads(self.forge.tree[worker.REGISTRY][1])["skills"]
         self.assertEqual(records["second"]["sources"][0]["last_reviewed_revision"], OLD)
         self.assertEqual(self.run_group(self.items[:1])["status"], "merged")
+        self.assertIn("Keep local behavior for first/upstream", self.forge.title)
+        self.assertNotIn("second/upstream", self.forge.body)
         self.assertEqual(len(self.forge.published), 2)
         self.assertEqual(len(self.forge.opened), 1)
 

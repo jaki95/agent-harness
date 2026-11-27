@@ -241,13 +241,27 @@ class Worker:
         sources, candidates = {}, []
         proof = None
         if active:
+            pending = {row["key"]: row.get("observed_revision") for row in queue.snapshot["sources"]
+                       if row["status"] != "unchanged"}
+            merged_in_queue = {item["key"] for item in (history[-1]["items"] if history else [])
+                               if item["digest"] in state["merged"] and pending.get(item["key"]) == item["revision"]}
             try:
                 with tempfile.TemporaryDirectory(dir=journal.directory) as tmp:
                     proof = review.validate_evidence(self.gather(self.repo, queue, Path(tmp)), queue)
             except monitor.MonitorError as exc:
+                if exc.code == "queue-superseded":
+                    if pending.keys() == merged_in_queue:
+                        return "waiting for post-merge detection"
+                    journal.post(self.client, number, self.bot, f"refresh-{queue.key.digest}",
+                                 "The registry changed after this review was queued. The monitor must refresh "
+                                 "the issue before review can continue. You can run Monitor upstream skills to refresh it now.")
+                    return "waiting for detection"
                 journal.post(self.client, number, self.bot, f"failure-{queue.key.digest}-{exc.code}",
                              f"Review is blocked. Evidence could not be verified (`{exc.code}`).")
                 return "blocked"
+            if any(code == "queue-superseded" and key in merged_in_queue for key, code in proof.unavailable):
+                # A mixed batch still contains an already merged item. Review the fresh batch on the monitor wake.
+                return "waiting for post-merge detection"
             sources = {s["key"]: s for s in proof.sources}
             previous = {i["key"]: i for i in history[-1]["items"]} if history else {}
             queued = {s["key"]: s for s in queue.snapshot["sources"]}

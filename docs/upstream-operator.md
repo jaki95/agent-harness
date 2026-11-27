@@ -2,6 +2,10 @@
 
 The public monitor checks weekly, on manual dispatch, and after a change to `registry/skills.json` reaches `main`. It sends the changed issue number directly to a private operator workflow. A fresh comment from the configured maintainer on an open, monitor-authored issue also wakes the worker. CI completion or closure of a same-repository adoption PR wakes it to verify, retry, or report the result. The worker rereads the queue and the conversation from GitHub before taking action. The event contains only a wake hint.
 
+On a public, unlocked issue, other users can post comments. Only original comments from the configured maintainer account enter the worker's discussion and approval history. An adoption PR links to that approval and lists each selected source, its revision, the reason for the decision, and its verification plan.
+
+After an adoption merges, the worker waits for the monitor to refresh the issue if it still shows the merged revision as pending. If the registry changed independently, the worker can ask for a fresh detection run before proceeding.
+
 ## Configure the two repositories
 
 Use a private repository whose default branch is writable only by the operator. Copy [upstream-adoption.yml](../templates/upstream-operator/upstream-adoption.yml) to `.github/workflows/upstream-adoption.yml` on that branch. Create a repository-scoped Linux runner in this private repository with label `upstream-adoption`. Use a dedicated OS account with its own authenticated Codex CLI, Git, GitHub CLI, Python 3.10+, and the prerequisites for the installed worker. In the private repository, open **Settings → Actions → Runners → New self-hosted runner**, use its registration commands, add the custom label, and install the runner service for that dedicated account. Restrict repository write access to people who may operate this host. Run a single worker for the same source repository and persistent state directory. The runner connects outbound. The public repository runs its CI jobs on GitHub-hosted runners.

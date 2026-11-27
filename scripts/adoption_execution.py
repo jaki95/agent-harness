@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 from difflib import unified_diff
+from html import escape
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -11,7 +12,7 @@ import time
 from adoption_git import AdoptionGit, Stopped, sha
 from check import NAME, check_record
 from review_upstream import atomic_json
-from monitor_upstream import MonitorError
+from monitor_upstream import ISSUE_LIMIT, MonitorError
 
 
 REGISTRY = "registry/skills.json"
@@ -48,6 +49,35 @@ class Execution:
 
 def approved(items):
     return [[item["id"], item["digest"]] for item in sorted(items, key=lambda i: i["id"])]
+
+
+def pull_description(ctx, group_id, items):
+    first = items[0]
+    actions = {"keep": "Keep local behavior", "adapt": "Adapt upstream changes", "adopt": "Adopt upstream changes"}
+    title = f"{actions[first['decision']]} for {first['key']}" if len(items) == 1 else (
+        f"Review upstream changes for {len(items)} sources (#{ctx.issue})")
+    approval = f"https://github.com/{ctx.repository}/issues/{ctx.issue}#issuecomment-{group_id}"
+    lines = [f"[Maintainer approval in #{ctx.issue}]({approval})"]
+    if all(item["decision"] == "keep" for item in items):
+        lines.append("This PR records the reviewed upstream revisions in the registry. Local skill behavior stays the same.")
+    size = sum(len(line.encode()) + 2 for line in lines)
+    overflow = "See the linked issue for the remaining approved items."
+    for item in items:
+        paragraphs = [f"### Item {item['id']} · {item['decision']} · `{item['key']}`",
+                      f"Upstream revision `{item['revision']}`"]
+        for label, field in (("Behavior", "behavior"), ("Reason", "why"),
+                             ("Preserve", "preserve"), ("Verification plan", "verify")):
+            # Keep proposal text literal in the bot's PR, including mentions and issue references.
+            plain = escape(" ".join(item[field].split()), quote=False)
+            plain = re.sub(r"[@#*_`\\\[\]~]", lambda match: f"&#{ord(match[0])};", plain)
+            paragraphs.append(f"**{label}** {plain}")
+        section = "\n\n".join(paragraphs)
+        size += len(section.encode()) + 2
+        if size + len(overflow) + 2 > ISSUE_LIMIT:
+            lines.append(overflow)
+            break
+        lines.append(section)
+    return title[:240], "\n\n".join(lines)
 
 
 def safe_path(path):
@@ -284,15 +314,16 @@ def execute_group(ctx, group_id, items, recheck):
             return result("blocked", "Unexpected adoption branch head; manual reconciliation required")
         if pr and pr["head"] != remote:
             return result("changed", "GitHub PR and branch heads disagree; retry")
-        title = f"Apply approved upstream decisions for issue #{ctx.issue}"
+        title, body = pull_description(ctx, group_id, items)
         errors = []
         fresh = state.get("selection") != selection or state.get("base") != base
         if not fresh and not pr:
-            pr = git.open_pull(branch, title, f"Approved items for #{ctx.issue}. Approval comment {group_id}.")
+            pr = git.open_pull(branch, title, body)
             state["pr"] = pr["pr"]
             atomic_json(path, state)
             return result("published", "Created the approved adoption PR")
         if not fresh:
+            git.describe_pull(pr, title, body)
             if state.get("authority"):
                 return result("manual", "Changes to automation authority require your personal review and merge")
             workflows = ["check.yml"]
@@ -365,8 +396,9 @@ def execute_group(ctx, group_id, items, recheck):
         atomic_json(path, state)
         pr = git.pull(branch, state.get("pr"))
         if not pr:
-            pr = git.open_pull(branch, title, f"Implements the selected upstream decisions for #{ctx.issue}.\n\n"
-                               f"Approval: https://github.com/{ctx.repository}/issues/{ctx.issue}#issuecomment-{group_id}")
+            pr = git.open_pull(branch, title, body)
+        else:
+            git.describe_pull(pr, title, body)
         state["pr"] = pr["pr"]
         atomic_json(path, state)
         return result("published", "Approval branch updated; waiting for verification")
