@@ -305,6 +305,11 @@ class FakeIssues:
         self.after("create")
         return self.records[-1]
 
+    def lock(self, number):
+        self.calls.append("lock")
+        next(record for record in self.records if record["number"] == number)["locked"] = True
+        self.after("lock")
+
     def edit(self, number, **fields):
         self.calls.append(tuple(fields))
         record = next(record for record in self.records if record["number"] == number)
@@ -431,6 +436,25 @@ class PublisherTests(unittest.TestCase):
                 self.assertEqual(expected_notes, len(self.client.notes))
                 self.assertEqual(expected_state, self.client.records[0]["state"])
                 self.assertEqual(1, self.client.calls.count("create"))
+
+    def test_adoption_locks_before_publishing_and_recovers_after_lost_response(self):
+        def reconcile():
+            return monitor.reconcile_batch(self.pending, "example/harness", issues=self.client, adoption=True)
+
+        self.client.fail_after = "lock"
+        with self.assertRaisesRegex(monitor.MonitorError, "Response lost"):
+            reconcile()
+        issue, = self.client.records
+        self.assertEqual(issue["body"], monitor.STAGING)
+        self.assertTrue(issue["locked"])
+        reconcile()
+        self.assertEqual(self.client.calls, ["create", "lock", ("body",)])
+        self.assertEqual(self.snapshot()["generation"], 1)
+        self.assertEqual(reconcile(), ("quiet", 1))
+        issue.update(state="closed", locked=False)
+        self.assertEqual(reconcile(), ("reopened", 1))
+        self.assertEqual(self.client.calls[-2:], ["lock", ("state",)])
+        self.assertTrue(issue["locked"])
 
     def test_manual_closed_pending_issue_reopens_without_repeat_comment(self):
         self.publish()
