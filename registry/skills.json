@@ -334,7 +334,7 @@
     },
     "principle-make-operations-idempotent": {
       "maintenance_notes": "Derive each action from current state and check convergence across repeated and interrupted runs. Scope the temporary-path rename example to file replacement.",
-      "reviewed_on": "2026-11-26",
+      "reviewed_on": "2026-11-27",
       "sources": [
         {
           "id": "cursor-pstack",
@@ -357,7 +357,7 @@
             "acceptance-fixture/idempotence/SKILL.md"
           ],
           "baseline_revision": "354f5ac0b9231bf44ba65825b2a90899a86b829f",
-          "last_reviewed_revision": "354f5ac0b9231bf44ba65825b2a90899a86b829f",
+          "last_reviewed_revision": "84a653d081c79f47bcfe4740a1df7b231dd0b13d",
           "last_incorporated_revision": null
         }
       ]
