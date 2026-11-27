@@ -347,6 +347,18 @@
           "baseline_revision": "23e4138daa01c42d4969f7a5465f82704e64f798",
           "last_reviewed_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
           "last_incorporated_revision": "b7b93c36be9bcc36a74db438e0fd385d660bc559"
+        },
+        {
+          "id": "disposable-approval-test",
+          "relationship": "inspired",
+          "repository": "https://github.com/jaki95/agent-harness",
+          "ref": "acceptance/upstream-idempotence-20261127",
+          "paths": [
+            "acceptance-fixture/idempotence/SKILL.md"
+          ],
+          "baseline_revision": "354f5ac0b9231bf44ba65825b2a90899a86b829f",
+          "last_reviewed_revision": "354f5ac0b9231bf44ba65825b2a90899a86b829f",
+          "last_incorporated_revision": null
         }
       ]
     },
