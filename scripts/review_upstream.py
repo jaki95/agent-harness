@@ -204,7 +204,9 @@ def gather_evidence(repository, queue, scratch, *, git_factory=monitor.Git):
             failures.append((item["key"], exc.code, str(exc)))
     if failures and not output:
         details = "; ".join(f"{key} ({code}): {reason}" for key, code, reason in failures)
-        raise monitor.MonitorError(failures[0][1], f"No sources reviewed. {details}")
+        # A stale snapshot can be retried after detection. Preserve any other failure.
+        code = next((code for _, code, _ in failures if code != "queue-superseded"), failures[0][1])
+        raise monitor.MonitorError(code, f"No sources reviewed. {details}")
     return Evidence(revision, tuple(output), tuple((key, code) for key, code, _ in failures))
 
 

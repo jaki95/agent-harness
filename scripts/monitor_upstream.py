@@ -555,6 +555,10 @@ class GitHub:
     def create(self, body):
         return self.request("POST", self.base, {"title": "External skill updates", "body": body})
 
+    def lock(self, number):
+        # GitHub returns 204 with no JSON body.
+        run([self.gh, "api", "--method", "PUT", f"{self.base}/{number}/lock"])
+
     def edit(self, number, **fields):
         return self.request("PATCH", f"{self.base}/{number}", fields)
 
@@ -644,12 +648,19 @@ def reconcile_batch(report, repository, *, issues=None, monitor_login=None, adop
     actionable = is_actionable(snapshot)
     if not issue and not actionable:
         return "quiet", None
+    new_issue = issue is None
+    if adoption and new_issue:
+        # Create and lock a staging issue before exposing a snapshot the worker can act on.
+        issue = client.create(STAGING)
+    needs_lock = adoption and issue.get("locked") is not True
+    if needs_lock:
+        client.lock(issue["number"])
     generation = previous.get("generation", 0)
     changed = digest != previous.get("fingerprint")
     if changed:
         generation += 1
         number = publish_snapshot(client, issue, snapshot, digest, generation, publishers)
-        if not issue:
+        if new_issue:
             return "created", number
     # The adoption worker records the final PR receipt before closing a clean batch.
     handoff = adoption and not actionable and issue["state"] == "open"
@@ -663,6 +674,8 @@ def reconcile_batch(report, repository, *, issues=None, monitor_login=None, adop
                    for comment in client.comments(issue["number"])):
             client.comment(issue["number"], body)
     action = "updated" if changed else "reopened" if issue["state"] != target and actionable else "closed" if not actionable else "quiet"
+    if action == "quiet" and needs_lock:
+        action = "locked"
     return ("awaiting-adoption" if handoff else action), issue["number"]
 
 

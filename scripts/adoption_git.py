@@ -114,7 +114,12 @@ class AdoptionGit:
                     or p[side]["ref"] != ref):
                 raise Stopped("Pull request repository or branch no longer matches")
         return {"pr": p["number"], "url": p["html_url"], "head": sha(p["head"]["sha"]),
+                "title": p["title"], "body": p["body"],
                 "merged": p.get("merged_at") is not None, "closed": p["state"] == "closed"}
+
+    def describe_pull(self, pr, title, body):
+        if (pr["title"], pr["body"]) != (title, body):
+            self.api("PATCH", f"pulls/{pr['pr']}", {"title": title, "body": body})
 
     def open_pull(self, branch, title, body):
         self.api("POST", "pulls", {"head": branch, "base": "main", "title": title, "body": body})
