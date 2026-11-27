@@ -6,6 +6,9 @@ on:
       issue:
         type: string
         required: true
+    secrets:
+      UPSTREAM_DISPATCH_PRIVATE_KEY:
+        required: true
   issue_comment:
     types: [created]
   workflow_run:

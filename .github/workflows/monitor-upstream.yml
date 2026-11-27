@@ -58,3 +58,5 @@ jobs:
     uses: ./.github/workflows/dispatch-upstream-adoption.yml
     with:
       issue: ${{ needs.monitor.outputs.issue }}
+    secrets:
+      UPSTREAM_DISPATCH_PRIVATE_KEY: ${{ secrets.UPSTREAM_DISPATCH_PRIVATE_KEY }}
